@@ -1,0 +1,10 @@
+config.env
+userbot.session
+userbot.session-journal
+__pycache__/*
+userbot/__pycache__/*
+userbot/modules/__pycache__/*
+userbot/modules/custom_modules/__pycache__/*
+userbot/helper/__pycache__/*
+.progress
+.vscode/*
