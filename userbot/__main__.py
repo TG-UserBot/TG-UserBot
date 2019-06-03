@@ -1,3 +1,20 @@
+# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# Copyright (C) 2019  Kandarp <https://github.com/kandnub>
+#
+# TG-UserBot is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# TG-UserBot is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
+
+
 from sys import exit
 from inspect import getmembers, isfunction
 from importlib import import_module, invalidate_caches, reload
@@ -38,6 +55,7 @@ LOG.info(f"UserBot v{__version__} is running, test it with .ping in any chat.")
 
 KEEP_ALIVE = ['reloader', 'modules', 'handlers', 'enable', 'disable', 'disabled']
 DISABLED_HANDLERS = {}
+
 
 @message(disable_edited=True, outgoing=True, pattern=r'^.reload (.*)$')
 async def reloader(event):
@@ -139,7 +157,6 @@ async def disabled(event):
     else:
         text = "**There aren't any disabled event handlers.**"
     await event.edit(text)
-
 
 #############################################################################
 

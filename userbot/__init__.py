@@ -1,3 +1,20 @@
+# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# Copyright (C) 2019  Kandarp <https://github.com/kandnub>
+#
+# TG-UserBot is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# TG-UserBot is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
+
+
 from os import environ, path
 from sys import exit, version_info
 from re import split
@@ -15,7 +32,7 @@ load_dotenv('./config.env')
 API_KEY = int(environ.get("API_KEY")) if environ.get("API_KEY").isdigit() else None
 API_HASH = environ.get("API_HASH", None)
 USERBOT_LOGGER_GROUP = int(environ.get("USERBOT_LOGGER_GROUP", 0))
-USERBOT_LOGGER = USERBOT_LOGGER_GROUP if USERBOT_LOGGER_GROUP else None
+USERBOT_LOGGER = True if USERBOT_LOGGER_GROUP else False
 DONT_LOAD_MODULES = split(r"\W+", environ.get("DONT_LOAD", None))
 DONT_LOAD = [module for module in DONT_LOAD_MODULES if module] 
 BOT_TOKEN = environ.get("BOT_TOKEN", None)
