@@ -28,7 +28,7 @@ def remove_event(*args, **kwargs):
     return disabled_handler
 
 
-def message(disable_edited=False, require_admin=False, **kwargs):
+def message(disable_edited: bool = False, **kwargs):
     pattern = kwargs.get('pattern', None)
 
     if pattern:
