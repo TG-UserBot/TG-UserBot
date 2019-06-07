@@ -36,6 +36,9 @@ async def evaluate(event):
         if isawaitable(result):
             result = await result
         result = str(result)
+        if (len(result)) > 4096:
+            await event.edit("Output was too big, calm down.")
+            return
     except Exception as e:
         await event.edit(type(e).__name__ + ': ' + str(e))
         return
@@ -57,14 +60,14 @@ async def execute(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"\n[**PID:** `{process.pid}`] [**Code:** `{process.returncode}`]\n\n"
+    extras = f"\n[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
         await event.edit(text)
         return
 
-    if stdout:
+    elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
             await event.edit("Output was too big, calm down." + extras)
@@ -88,14 +91,14 @@ async def terminal(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"\n[**PID:** `{process.pid}`] [**Code:** `{process.returncode}`]\n\n"
+    extras = f"\n[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
         await event.edit(text)
         return
 
-    if stdout:
+    elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
             await event.edit("Output was too big, calm down." + extras)
