@@ -38,7 +38,7 @@ BOT_TOKEN = environ.get("BOT_TOKEN", None)
 
 CONSOLE_LOGGER = environ.get("CONSOLE_LOGGER", "INFO")
 
-DONT_LOAD_MODULES = split(r"\W+", environ.get("DONT_LOAD", None))
+DONT_LOAD_MODULES = split(r"\W+", environ.get("DONT_LOAD", "[]"))
 
 DONT_LOAD = [module for module in DONT_LOAD_MODULES if module]
 

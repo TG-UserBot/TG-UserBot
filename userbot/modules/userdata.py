@@ -15,10 +15,45 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from telethon.tl.types import InputPeerUser, InputPeerSelf
+from telethon.tl.functions.users import GetFullUserRequest
+
 from userbot import client
 from userbot.events import message
+from userbot.helper_funcs.ids import get_user_from_entity
+from userbot.helper_funcs.parser import parse_full_user
 
 
-@message(outgoing=True, pattern=r"^.whois(?: |$)(@\w+|\w+|\d+)$")
+@message(outgoing=True, pattern=r"^.whois(?: |$)(.*)$")
 async def whois(event):
-    user = event.pattern_match.group(1)
+    match = event.pattern_match.group(1)
+    if event.entities:
+        user = await get_user_from_entity(event)
+        if not user:
+            await event.edit("Couldn't get user from entity.")
+            return
+    else:
+        if match:
+            user = int(match) if match.isdigit() else match
+        else:
+            user = "self"
+    
+    if event.reply_to_msg_id and not match:
+        reply = await event.get_reply_message()
+        user = reply.sender_id
+    
+    try:
+        input_entity = await client.get_input_entity(user)
+    except Exception as e:
+        await event.edit(type(e).__name__ + ': ' + str(e))
+        return
+
+    allowed = [InputPeerUser, InputPeerSelf]
+    if type(input_entity) not in allowed:
+        await event.edit("Specified entity isn't a user.")
+        return
+    
+    full_user = await client(GetFullUserRequest(input_entity))
+    pfp, string = await parse_full_user(full_user)
+    await event.delete()
+    await event.respond(string, file=pfp)
