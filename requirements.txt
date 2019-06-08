@@ -1,3 +1,4 @@
+cryptg>=0.1.0.7
 python-dotenv>=0.10.3
 requests>=2.22.0
 telethon>=1.8.0

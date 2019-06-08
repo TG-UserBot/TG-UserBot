@@ -15,23 +15,10 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from datetime import datetime
-
 from userbot import client
 from userbot.events import message
 
 
-@message(outgoing=True, pattern='^.ping$')
-async def ping(event):
-    start = datetime.now()
-    await event.edit("**PONG**")
-    duration = (datetime.now() - start)
-    seconds = duration.total_seconds()
-    milliseconds = duration.microseconds / 1000
-    await event.edit(f"**PONG**\n`{milliseconds}ms | {seconds}s`")
-
-
-@message(outgoing=True, pattern='^.disconnect$')
-async def disconnect(event):
-    await event.edit("`Ciao!`")
-    await client.disconnect()
+@message(outgoing=True, pattern=r"^.whois(?: |$)(@\w+|\w+|\d+)$")
+async def whois(event):
+    user = event.pattern_match.group(1)

@@ -17,7 +17,6 @@
 
 from os import environ, path
 from sys import exit, platform, version_info
-from asyncio import get_event_loop, ProactorEventLoop
 from re import split
 from dotenv import load_dotenv
 from json import loads
@@ -48,7 +47,12 @@ USERBOT_LOGGER_GROUP = int(environ.get("USERBOT_LOGGER_GROUP", 0))
 USERBOT_LOGGER = True if USERBOT_LOGGER_GROUP else False
 
 
-loop = ProactorEventLoop() if platform.startswith('win') else get_event_loop()
+if platform.startswith('win'):
+    from asyncio import ProactorEventLoop
+    loop = ProactorEventLoop()
+else:
+    from asyncio import get_event_loop
+    loop = get_event_loop()
 
 python_version = (version_info[0], version_info[1], version_info[2])
 
