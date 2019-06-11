@@ -15,23 +15,15 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from datetime import datetime
-
 from userbot import client
-from userbot.events import message
+from telethon.tl.functions.photos import GetUserPhotosRequest
 
 
-@message(outgoing=True, pattern='^.ping$')
-async def ping(event):
-    start = datetime.now()
-    await event.edit("**PONG**")
-    duration = (datetime.now() - start)
-    seconds = duration.total_seconds()
-    milliseconds = duration.microseconds / 1000
-    await event.edit(f"**PONG**\n`{milliseconds}ms`")
-
-
-@message(outgoing=True, pattern='^.disconnect$')
-async def disconnect(event):
-    await event.edit("`Ciao!`")
-    await client.disconnect()
+async def get_user_profile_pics(user, limit):
+    user_photos = await client(GetUserPhotosRequest(
+        user_id=user,
+        offset=0,
+        max_id=0,
+        limit=limit
+    ))
+    return user_photos

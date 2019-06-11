@@ -1,4 +1,6 @@
 cryptg>=0.1.0.7
+hachoir3>=3.0a2
+Pillow>=6.0.0
 python-dotenv>=0.10.3
 requests>=2.22.0
 telethon>=1.8.0

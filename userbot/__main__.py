@@ -40,7 +40,7 @@ for module, name in list(TO_IMPORT.items()):
         LOG.error("Cannot import multiple modules with the same name, quitting.")
         exit(1)
 
-LOG.info(__copyright__)
+print(__copyright__ + "\n")
 
 if FAILED:
     LOG.error(f"Module(s) which failed to import: {FAILED}")
@@ -49,7 +49,7 @@ if DIDNT_LOAD:
 
 client.start()
 LOG.info(f"Modules which were imported: {sorted(IMPORTED)}")
-LOG.info(f"UserBot v{__version__} is running, test it with .ping in any chat.")
+LOG.info(f"UserBot v{__version__} is running, test it by sending .ping in any chat.")
 
 #############################################################################
 

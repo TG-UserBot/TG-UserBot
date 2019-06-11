@@ -15,6 +15,8 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from userbot.helper_funcs.users import get_user_profile_pics
+
 async def parse_full_user(full_user_object):
     user = full_user_object.user
     profile_pic = full_user_object.profile_photo
@@ -27,6 +29,7 @@ async def parse_full_user(full_user_object):
     is_bot = user.bot
     verified = user.verified
     restricted = user.restricted
+    scam = user.scam
     first_name = user.first_name
     last_name = user.last_name
     username = user.username
@@ -34,12 +37,13 @@ async def parse_full_user(full_user_object):
     common_chats_count = full_user_object.common_chats_count
     blocked = full_user_object.blocked
     about = full_user_object.about
+    total_pics = len((await get_user_profile_pics(user_id, 0)).photos)
 
-    text = f"__Who is__ {first_name}__?__\n"
+    text = f"__Who is {first_name}?__\n"
     if user_id:
-        text += f"\n**ID:** `{user_id}`"
+        text += f"\n**ID:** [{user_id}](tg://user?id={user_id})"
     if username:
-        text += f"\n**Username:** `{username}`"
+        text += f"\n**Username:** `@{username}`"
     if first_name:
         text += f"\n**First name:** `{first_name}`"
     if last_name:
@@ -66,5 +70,9 @@ async def parse_full_user(full_user_object):
         text += f"\n**Restricted:** `{restricted}`"
     if blocked:
         text += f"\n**Blocked:** `{blocked}`"
+    if scam:
+        text += f"\n**Scam:** `{scam}`"
+    if total_pics and total_pics > 1:
+        text += f"\n**Total profile pictures:** `{total_pics}`"
 
     return profile_pic, text

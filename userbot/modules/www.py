@@ -15,23 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from datetime import datetime
+from telethon.tl.functions.help import GetNearestDcRequest
 
 from userbot import client
 from userbot.events import message
 
 
-@message(outgoing=True, pattern='^.ping$')
-async def ping(event):
-    start = datetime.now()
-    await event.edit("**PONG**")
-    duration = (datetime.now() - start)
-    seconds = duration.total_seconds()
-    milliseconds = duration.microseconds / 1000
-    await event.edit(f"**PONG**\n`{milliseconds}ms`")
-
-
-@message(outgoing=True, pattern='^.disconnect$')
-async def disconnect(event):
-    await event.edit("`Ciao!`")
-    await client.disconnect()
+@message(outgoing=True, pattern=r"^.dc$")
+async def dc(event):
+    result = await client(GetNearestDcRequest())
+    text = (
+        f"**Country:** __{result.country}__\n" +
+        f"**This DC:** __{result.this_dc}__\n" +
+        f"**Nearest DC:** __{result.nearest_dc}__"
+    )
+    await event.edit(text)
