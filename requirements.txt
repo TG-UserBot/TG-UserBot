@@ -1,4 +1,5 @@
-cryptg>=0.1.0.7
+aiohttp>=3.5.4
+cryptg>=0.2
 hachoir3>=3.0a2
 Pillow>=6.0.0
 python-dotenv>=0.10.3

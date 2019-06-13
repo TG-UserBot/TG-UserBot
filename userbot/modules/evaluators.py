@@ -22,22 +22,25 @@ from asyncio import create_subprocess_exec, create_subprocess_shell,\
 
 from userbot import client
 from userbot.events import message
+from userbot.helper_funcs.messages import limit_exceeded
 
 
 @message(outgoing=True, pattern=r"^.eval(?: |$)([\s\S]*)")
 async def evaluate(event):
     expression = event.pattern_match.group(1).strip()
+    reply = await event.get_reply_message()
     if not expression:
         await event.edit("Evaluating the void...")
         return
     
     try:
-        result = eval(expression, {'client': client, 'event': event})
+        result = eval(expression, {'client': client, 'event': event, 'reply': reply})
         if isawaitable(result):
             result = await result
         result = str(result)
         if (len(result)) > 4096:
-            await event.edit("Output was too big, calm down.")
+            await event.edit("Output was too big, result can be viewed from the file.")
+            await limit_exceeded(result, event.chat_id, event)
             return
     except Exception as e:
         await event.edit(type(e).__name__ + ': ' + str(e))
@@ -60,7 +63,7 @@ async def execute(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"\n[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
+    extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
@@ -70,7 +73,8 @@ async def execute(event):
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await event.edit("Output was too big, calm down." + extras)
+            await event.edit("Output was too big, result can be viewed from the file.")
+            await limit_exceeded(extras + text, event.chat_id, event)
             return
         await event.edit(extras + text)
     else:
@@ -91,7 +95,7 @@ async def terminal(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"\n[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
+    extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
@@ -101,7 +105,8 @@ async def terminal(event):
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await event.edit("Output was too big, calm down." + extras)
+            await event.edit("Output was too big, result can be viewed from the file.")
+            await limit_exceeded(extras + text, event.chat_id, event)
             return
         await event.edit(extras + text)
     else:

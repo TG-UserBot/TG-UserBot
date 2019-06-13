@@ -192,14 +192,20 @@ async def pfp(event):
 @message(outgoing=True, pattern=r"^.delpfp(?: |$)(\d*)")
 async def delpfp(event):
     match = event.pattern_match.group(1)
-    lim = int(match) if match else 0
-    total = (await get_user_profile_pics("self", lim)).photos
     if not match:
-        count = len(total)
-        await event.edit(f"You currently have {count} profile pictures.")
+        count = (await get_user_profile_pics("self", 0))[0]
+        amount = "one profile picture." if count is 1 else f"{count} profile pictures."
+        await event.edit(f"You currently have {amount}")
         return
 
-    await client(DeletePhotosRequest(total))
-    amount = "current profile picture." if len(total) is 1 else f"{len(total)} profile pictures."
+    await event.edit("__Processing all the profile pictures...__")
+    if int(match) is 0:
+        limit = None
+    else:
+        limit = int(match)
+    photos = await client.get_profile_photos("self", limit)
+    count = photos.total
+    await client(DeletePhotosRequest(photos))
+    amount = "current profile picture." if count is 1 else f"{count} profile pictures."
     text = f"__Successfully deleted {amount}__"
     await event.edit(text)

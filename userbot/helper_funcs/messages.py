@@ -15,21 +15,14 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from io import BytesIO
+
+
 from userbot import client
-from telethon.tl.functions.photos import GetUserPhotosRequest
-from telethon.tl.types.photos import Photos, PhotosSlice
 
-
-async def get_user_profile_pics(user, limit=0):
-    user_photos = await client(GetUserPhotosRequest(
-        user_id=user,
-        offset=0,
-        max_id=0,
-        limit=limit
-    ))
-    photos = user_photos.photos
-    if isinstance(user_photos, Photos):
-        count = len(photos)
-    elif isinstance(user_photos, PhotosSlice):
-        count = user_photos.count
-    return count, photos
+async def limit_exceeded(message, chat, reply_to=None):
+    output = BytesIO(message.strip().encode())
+    output.name = "output.txt"
+    sent = await client.send_file(chat, file=output, reply_to=reply_to)
+    output.close()
+    return sent

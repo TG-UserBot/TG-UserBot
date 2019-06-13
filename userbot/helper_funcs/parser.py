@@ -17,6 +17,7 @@
 
 from userbot.helper_funcs.users import get_user_profile_pics
 
+
 async def parse_full_user(full_user_object):
     user = full_user_object.user
     profile_pic = full_user_object.profile_photo
@@ -37,7 +38,7 @@ async def parse_full_user(full_user_object):
     common_chats_count = full_user_object.common_chats_count
     blocked = full_user_object.blocked
     about = full_user_object.about
-    total_pics = len((await get_user_profile_pics(user_id, 0)).photos)
+    total_pics = (await get_user_profile_pics(user_id))[0]
 
     text = f"__Who is {first_name}?__\n"
     if user_id:

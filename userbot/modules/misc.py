@@ -26,7 +26,6 @@ async def ping(event):
     start = datetime.now()
     await event.edit("**PONG**")
     duration = (datetime.now() - start)
-    seconds = duration.total_seconds()
     milliseconds = duration.microseconds / 1000
     await event.edit(f"**PONG**\n`{milliseconds}ms`")
 
