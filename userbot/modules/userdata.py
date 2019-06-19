@@ -193,7 +193,7 @@ async def pfp(event):
 async def delpfp(event):
     match = event.pattern_match.group(1)
     if not match:
-        count = (await get_user_profile_pics("self", 0))[0]
+        count = (await get_user_profile_pics("self"))[0]
         amount = "one profile picture." if count is 1 else f"{count} profile pictures."
         await event.edit(f"You currently have {amount}")
         return

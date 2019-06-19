@@ -15,7 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from userbot.helper_funcs.users import get_user_profile_pics
+from .users import get_user_profile_pics
 
 
 async def parse_full_user(full_user_object):
@@ -40,21 +40,20 @@ async def parse_full_user(full_user_object):
     about = full_user_object.about
     total_pics = (await get_user_profile_pics(user_id))[0]
 
-    text = f"__Who is {first_name}?__\n"
-    if user_id:
-        text += f"\n**ID:** [{user_id}](tg://user?id={user_id})"
-    if username:
-        text += f"\n**Username:** `@{username}`"
+
+    text = f"**ID:** [{user_id}](tg://user?id={user_id})"
     if first_name:
         text += f"\n**First name:** `{first_name}`"
     if last_name:
         text += f"\n**Last name:** `{last_name}`"
     if about:
-        text += f"\n**Bio:** `{about}`"
-    if dc_id:
-        text += f"\n**DC ID:** `{dc_id}`"
+        text += f"\n**Bio:** `{about.encode().decode('unicode_escape')}`"
+    if username:
+        text += f"\n**Username:** `@{username}`"
     if common_chats_count:
         text += f"\n**Groups in common:** `{common_chats_count}`"
+    if dc_id:
+        text += f"\n**DC ID:** `{dc_id}`"
     if is_self:
         text += f"\n**Self:** `{is_self}`"
     if contact:

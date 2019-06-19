@@ -51,8 +51,7 @@ if platform.startswith('win'):
     from asyncio import ProactorEventLoop
     loop = ProactorEventLoop()
 else:
-    from asyncio import get_event_loop
-    loop = get_event_loop()
+    loop = None
 
 python_version = (version_info[0], version_info[1], version_info[2])
 

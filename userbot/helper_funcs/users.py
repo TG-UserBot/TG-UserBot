@@ -15,12 +15,13 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from userbot import client
+from . import client
+
 from telethon.tl.functions.photos import GetUserPhotosRequest
 from telethon.tl.types.photos import Photos, PhotosSlice
 
 
-async def get_user_profile_pics(user, limit=0):
+async def get_user_profile_pics(user, limit: int = 0):
     user_photos = await client(GetUserPhotosRequest(
         user_id=user,
         offset=0,

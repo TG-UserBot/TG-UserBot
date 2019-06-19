@@ -17,8 +17,8 @@
 
 from io import BytesIO
 
+from . import client
 
-from userbot import client
 
 async def limit_exceeded(message, chat, reply_to=None):
     output = BytesIO(message.strip().encode())

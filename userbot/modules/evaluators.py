@@ -30,33 +30,33 @@ async def evaluate(event):
     expression = event.pattern_match.group(1).strip()
     reply = await event.get_reply_message()
     if not expression:
-        await event.edit("Evaluating the void...")
+        await event.edit("Evaluated the void.")
         return
     
+    await event.edit(f"```{expression}```")
     try:
         result = eval(expression, {'client': client, 'event': event, 'reply': reply})
         if isawaitable(result):
             result = await result
         result = str(result)
         if (len(result)) > 4096:
-            await event.edit("Output was too big, result can be viewed from the file.")
             await limit_exceeded(result, event.chat_id, event)
             return
     except Exception as e:
-        await event.edit(type(e).__name__ + ': ' + str(e))
+        await event.reply(type(e).__name__ + ': ' + str(e))
         return
 
-    await event.edit(result)
+    await event.reply(result)
 
 
 @message(outgoing=True, pattern=r"^.exec(?: |$)([\s\S]*)")
 async def execute(event):
     code = event.pattern_match.group(1).strip()
     if not code:
-        await event.edit("Executing the void...")
+        await event.edit("Executed the void.")
         return
 
-    await event.edit("Executing your code...")
+    await event.edit(f"```{code}```")
     process = await create_subprocess_exec(
         executable, '-c', code,
         stdout=subprocess.PIPE,
@@ -67,28 +67,27 @@ async def execute(event):
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
-        await event.edit(text)
+        await event.reply(text)
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await event.edit("Output was too big, result can be viewed from the file.")
             await limit_exceeded(extras + text, event.chat_id, event)
             return
-        await event.edit(extras + text)
+        await event.reply(extras + text)
     else:
-        await event.edit(extras + "Nice, get off the void.")
+        await event.reply(extras + "Nice, get off the void.")
 
 
 @message(outgoing=True, pattern=r"^.term(?: |$)([\s\S]*)")
 async def terminal(event):
     cmd = event.pattern_match.group(1).strip()
     if not cmd:
-        await event.edit("Executing the void...")
+        await event.edit("Executed the void.")
         return
 
-    await event.edit("Executing your command...")
+    await event.edit(f"```{cmd}```")
     process = await create_subprocess_shell(
         cmd,
         stdout=subprocess.PIPE,
@@ -99,15 +98,14 @@ async def terminal(event):
 
     if stderr:
         text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
-        await event.edit(text)
+        await event.reply(text)
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await event.edit("Output was too big, result can be viewed from the file.")
             await limit_exceeded(extras + text, event.chat_id, event)
             return
-        await event.edit(extras + text)
+        await event.reply(extras + text)
     else:
-        await event.edit(extras + "Nice, get off the void.")
+        await event.reply(extras + "Nice, get off the void.")
