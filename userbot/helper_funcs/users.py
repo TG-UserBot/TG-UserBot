@@ -17,20 +17,25 @@
 
 from . import client
 
-from telethon.tl.functions.photos import GetUserPhotosRequest
-from telethon.tl.types.photos import Photos, PhotosSlice
+
+class ProfilePictures:
+
+    @staticmethod
+    async def iter(user, limit: int = None):
+        file_id_list = []
+        user_photos = client.iter_profile_photos(
+            chat_id=user,
+            limit=limit,
+            offset=0
+        )
+        async for photo in user_photos:
+            file_id_list.append(photo.file_id)
+
+        return file_id_list
 
 
-async def get_user_profile_pics(user, limit: int = 0):
-    user_photos = await client(GetUserPhotosRequest(
-        user_id=user,
-        offset=0,
-        max_id=0,
-        limit=limit
-    ))
-    photos = user_photos.photos
-    if isinstance(user_photos, Photos):
-        count = len(photos)
-    elif isinstance(user_photos, PhotosSlice):
-        count = user_photos.count
-    return count, photos
+    @staticmethod
+    async def count(peer):
+        count = await client.get_profile_photos_count(peer)
+
+        return count

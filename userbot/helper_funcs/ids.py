@@ -15,16 +15,21 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from telethon.tl.types import MessageEntityMention, MessageEntityMentionName
+async def get_user_from_msg(event):
+    user = None
+    match = event.matches[0].group(1)
 
-
-async def get_user_from_entity(event):
-    for entity in event.entities:
-        if isinstance(entity, MessageEntityMentionName):
-            return entity.user_id
-        elif isinstance(entity, MessageEntityMention):
-            offset = entity.offset
-            length = entity.length
-            maxlen = offset + length
-            return event.text[offset:maxlen]
-    return None
+    if event.entities:
+        for entity in event.entities:
+            if entity.type is "text_mention":
+                return entity.user.id
+            elif entity.type is "mention":
+                offset = entity.offset
+                length = entity.length
+                maxlen = offset + length
+                return event.text[offset:maxlen]
+    
+    if match:
+        user = int(match) if match.isdigit() else match.strip()
+    
+    return user

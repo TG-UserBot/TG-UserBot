@@ -15,149 +15,57 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from asyncio import get_event_loop
 from sys import exit
-from inspect import getmembers, isfunction
-from importlib import import_module, invalidate_caches, reload
+from pyrogram import Filters
 
-from userbot import client, __copyright__, LOG, __version__
-from userbot.events import add_event, message, remove_event
-from userbot.modules import ALL_MODULES
+from userbot import client, __copyright__, __license__, LOG, __version__
+from userbot.events import IMPORTED, message_handler
 
 
-IMPORTED = []
-IMPORTED_MODULES = {}
+loop = get_event_loop()
 
-TO_IMPORT = ALL_MODULES[0]
-DIDNT_LOAD = ALL_MODULES[1]
-FAILED = ALL_MODULES[2]
+async def restarter(c, event):
+    await c.restart()
 
-for module, name in list(TO_IMPORT.items()):
-    if module not in IMPORTED:
-        imported_module = import_module(name)
-        IMPORTED_MODULES.update({name: imported_module})
-        IMPORTED.append(module)
+    for handlerObj in IMPORTED:
+        handler, group = handlerObj
+        client.add_handler(handler, group)
+
+    LOG.warning(f"Pyrogram client restarted.")
+    LOG.warning(f"Successfully reloaded {len(IMPORTED)} main functions.")
+    await event.edit("`Successfully restarted the Pyrogram client.`")
+
+
+@message_handler(Filters.outgoing & Filters.regex("^[!.#]restart$"), 0)
+async def restart(c, event):
+    loop.create_task(restarter(c, event))
+
+@message_handler(Filters.outgoing & Filters.regex("^[!.#]shutdown$"), 0)
+async def shutdown(c, event):
+    await event.edit("`Stopping the Pyrogram client and exiting the script.`")
+    loop.create_task(client.stop())
+    print("\nUserBot script exiting.")
+    exit()
+
+
+async def main():
+    await client.start()
+
+    me = await client.get_me()
+    if me.username:
+        user = me.username
     else:
-        LOG.error("Cannot import multiple modules with the same name, quitting.")
-        exit(1)
+        user = me.first_name + " [" + me.id + "]"
 
-print(__copyright__ + "\n")
+    LOG.warning(f"Successfully loaded {len(IMPORTED)} main functions.")
+    print(__copyright__)
+    print("Licensed under the terms of the " + __license__)
+    print(f"You're currently logged in as {user}.")
+    print(f"UserBot v{__version__} is running, test it by sending .ping in any chat.\n")
 
-if FAILED:
-    LOG.error(f"Module(s) which failed to import: {FAILED}")
-if DIDNT_LOAD:
-    LOG.warning(f"Module(s) which wasn't/weren't imported: {DIDNT_LOAD}")
-
-client.start()
-LOG.info(f"Modules which were imported: {sorted(IMPORTED)}")
-LOG.info(f"UserBot v{__version__} is running, test it by sending .ping in any chat.")
-
-#############################################################################
-
-KEEP_ALIVE = ['reloader', 'modules', 'handlers', 'enable', 'disable', 'disabled']
-DISABLED_HANDLERS = {}
+    await client.idle()
 
 
-@message(disable_edited=True, outgoing=True, pattern=r'^.reload (.*)$')
-async def reloader(event):
-    await event.edit("**Reloading...**")
-    to_reload = event.pattern_match.group(1)
-    invalidate_caches()
-    allow = None
-
-    if to_reload != 'all':
-        allow = to_reload if to_reload in IMPORTED_MODULES else None
-    
-    if allow:
-        module = IMPORTED_MODULES[allow]
-        functions = getmembers(module, predicate=isfunction)
-        for function in functions:
-            remove_event(function[1])
-            if function[1] in DISABLED_HANDLERS:
-                del DISABLED_HANDLERS[function[1]]
-        reload(module)
-        text = f"**Successfully reloaded:** __{allow}.__"
-    elif to_reload == 'all':
-        for handler in client.list_event_handlers():
-            name = handler[0].__name__
-            if name not in KEEP_ALIVE:
-                remove_event(handler[0])
-                if handler[0] in DISABLED_HANDLERS:
-                    del DISABLED_HANDLERS[handler[0]]
-        for module in IMPORTED_MODULES.items():
-            reload(module[1])
-            text = "**Successfully reloaded all modules.**"
-    else:
-        text = "Couldn't find the module."
-    await event.edit(text)
-
-
-@message(outgoing=True, pattern='^.modules$')
-async def modules(event):
-    mods = "**Imported modules:**"
-    for mod in IMPORTED_MODULES:
-        mods += "\n`" + mod + "`"
-    await event.edit(mods)
-
-
-@message(outgoing=True, pattern='^.handlers$')
-async def handlers(event):
-    header = "**Active event handler(s) for commands:**\n"
-    text = ""
-    for handler in client.list_event_handlers():
-        text += ("\n" + handler[0].__name__)
-    text_split = sorted(text.split())
-    text = header + "\n".join(sorted(set(text_split), key=text_split.index))
-    await event.edit(text)
-
-
-@message(disable_edited=True, outgoing=True, pattern=r'^.enable (\w+)$')
-async def enable(event):
-    to_enable = event.pattern_match.group(1).lower()
-
-    for handler in DISABLED_HANDLERS:
-        function = handler if handler.__name__ == to_enable else None
-
-    if not function:
-        await event.edit("**Can't enable something that's not disabled.**")
-        return
-    else:
-        for event_type in DISABLED_HANDLERS[function]:
-            add_event(function, event_type)
-        del DISABLED_HANDLERS[function]
-    await event.edit(f"**Successfully enabled {to_enable}.**")
-
-
-@message(disable_edited=True, outgoing=True, pattern=r'^.disable (\w+)$')
-async def disable(event):
-    to_disable = event.pattern_match.group(1).lower()
-    status = 0
-    
-    for function, event_type in client.list_event_handlers():
-        func_name = function.__name__
-        if func_name == to_disable and func_name not in KEEP_ALIVE:
-            if function in DISABLED_HANDLERS:
-                DISABLED_HANDLERS[function].append(event_type)
-            else:
-                DISABLED_HANDLERS.update({function: [event_type]})
-            status = remove_event(function, event_type)
-
-    if status:
-        text = f"**Successfully disabled {to_disable}.**"
-    else:
-        text = "**Couldn't find the specified function, or it's already disabled.**"
-    await event.edit(text)
-
-
-@message(outgoing=True, pattern='^.disabled$')
-async def disabled(event):
-    if DISABLED_HANDLERS:
-        text = "**Disabled functions:**"
-        for handler in DISABLED_HANDLERS:
-            text += ("\n" + handler.__name__)
-    else:
-        text = "**There aren't any disabled event handlers.**"
-    await event.edit(text)
-
-#############################################################################
-
-client.run_until_disconnected()
+if __name__ ==  '__main__':
+    loop.run_until_complete(main())

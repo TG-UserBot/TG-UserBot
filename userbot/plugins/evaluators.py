@@ -17,30 +17,29 @@
 
 from sys import executable
 from inspect import isawaitable
-from asyncio import create_subprocess_exec, create_subprocess_shell,\
-                    subprocess
+from pyrogram import Filters
+from asyncio import (create_subprocess_exec, create_subprocess_shell,
+    subprocess)
 
-from userbot import client
-from userbot.events import message
+from userbot.events import on_message
 from userbot.helper_funcs.messages import limit_exceeded
 
 
-@message(outgoing=True, pattern=r"^.eval(?: |$)([\s\S]*)")
-async def evaluate(event):
-    expression = event.pattern_match.group(1).strip()
-    reply = await event.get_reply_message()
+@on_message(Filters.outgoing & Filters.regex(r"^.eval(?: |$)([\s\S]*)"))
+async def evaluate(client, event):
+    expression = event.matches[0].group(1).strip()
+    reply = event.reply_to_message
     if not expression:
         await event.edit("Evaluated the void.")
         return
     
-    await event.edit(f"```{expression}```")
     try:
         result = eval(expression, {'client': client, 'event': event, 'reply': reply})
         if isawaitable(result):
             result = await result
         result = str(result)
         if (len(result)) > 4096:
-            await limit_exceeded(result, event.chat_id, event)
+            await limit_exceeded(event, result, True)
             return
     except Exception as e:
         await event.reply(type(e).__name__ + ': ' + str(e))
@@ -49,14 +48,13 @@ async def evaluate(event):
     await event.reply(result)
 
 
-@message(outgoing=True, pattern=r"^.exec(?: |$)([\s\S]*)")
-async def execute(event):
-    code = event.pattern_match.group(1).strip()
+@on_message(Filters.outgoing & Filters.regex(r"^.exec(?: |$)([\s\S]*)"))
+async def execute(client, event):
+    code = event.matches[0].group(1).strip()
     if not code:
         await event.edit("Executed the void.")
         return
 
-    await event.edit(f"```{code}```")
     process = await create_subprocess_exec(
         executable, '-c', code,
         stdout=subprocess.PIPE,
@@ -66,28 +64,27 @@ async def execute(event):
     extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
-        text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
+        text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
         await event.reply(text)
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await limit_exceeded(extras + text, event.chat_id, event)
+            await limit_exceeded(event, extras + text, True)
             return
         await event.reply(extras + text)
     else:
         await event.reply(extras + "Nice, get off the void.")
 
 
-@message(outgoing=True, pattern=r"^.term(?: |$)([\s\S]*)")
-async def terminal(event):
-    cmd = event.pattern_match.group(1).strip()
+@on_message(Filters.outgoing & Filters.regex(r"^.term(?: |$)([\s\S]*)"))
+async def terminal(client, event):
+    cmd = event.matches[0].group(1).strip()
     if not cmd:
         await event.edit("Executed the void.")
         return
 
-    await event.edit(f"```{cmd}```")
     process = await create_subprocess_shell(
         cmd,
         stdout=subprocess.PIPE,
@@ -97,14 +94,14 @@ async def terminal(event):
     extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
 
     if stderr:
-        text = ("__You dun goofed up.__" + extras + stderr.decode('UTF-8'))
+        text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
         await event.reply(text)
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
         if (len(text) + len(extras)) > 4096:
-            await limit_exceeded(extras + text, event.chat_id, event)
+            await limit_exceeded(event, extras + text, True)
             return
         await event.reply(extras + text)
     else:

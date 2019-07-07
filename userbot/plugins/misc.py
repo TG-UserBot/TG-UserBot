@@ -16,21 +16,15 @@
 
 
 from datetime import datetime
+from pyrogram import Filters
 
-from userbot import client
-from userbot.events import message
+from userbot.events import on_message
 
 
-@message(outgoing=True, pattern='^.ping$')
-async def ping(event):
+@on_message(Filters.outgoing & Filters.regex("^[!.#]ping$"))
+async def ping(client, event):
     start = datetime.now()
     await event.edit("**PONG**")
     duration = (datetime.now() - start)
     milliseconds = duration.microseconds / 1000
     await event.edit(f"**PONG**\n`{milliseconds}ms`")
-
-
-@message(outgoing=True, pattern='^.disconnect$')
-async def disconnect(event):
-    await event.edit("`Ciao!`")
-    await client.disconnect()

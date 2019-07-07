@@ -13,20 +13,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
-
-
-from telethon.tl.functions.help import GetNearestDcRequest
-
-from userbot import client
-from userbot.events import message
-
-
-@message(outgoing=True, pattern=r"^.dc$")
-async def dc(event):
-    result = await client(GetNearestDcRequest())
-    text = (
-        f"**Country:** __{result.country}__\n" +
-        f"**This DC:** __{result.this_dc}__\n" +
-        f"**Nearest DC:** __{result.nearest_dc}__"
-    )
-    await event.edit(text)

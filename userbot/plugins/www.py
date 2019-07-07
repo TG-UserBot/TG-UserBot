@@ -15,4 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-directory = __file__
+from pyrogram import Filters
+from pyrogram.api.functions.help import GetNearestDc
+
+from userbot.events import on_message
+
+
+@on_message(Filters.outgoing & Filters.command("dc", ["!", "."]))
+async def dc(client, event):
+    result = await client.send(GetNearestDc())
+    text = (
+        f"**Country:** `{result.country}`\n" +
+        f"**This DC:** `{result.this_dc}`\n" +
+        f"**Nearest DC:** `{result.nearest_dc}``"
+    )
+    await event.edit(text)

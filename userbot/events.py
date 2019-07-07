@@ -15,29 +15,21 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from telethon import events
+from pyrogram import Client, MessageHandler
+
 from userbot import client
 
 
-def add_event(callback, event):
-    client.add_event_handler(callback, event)
+IMPORTED = []
+
+on_message = Client.on_message
 
 
-def remove_event(*args, **kwargs):
-    disabled_handler = client.remove_event_handler(*args, **kwargs)
-    return disabled_handler
+def message_handler(filters=None, group : int = 0) -> callable:
 
+    def decorator(func: callable) -> callable:
+        handler = client.add_handler(MessageHandler(func, filters), group)
+        IMPORTED.append(handler)
+        return handler
 
-def message(disable_edited: bool = False, **kwargs):
-    pattern = kwargs.get('pattern', None)
-
-    if pattern:
-        kwargs['pattern'] = '(?i)' + pattern
-
-    def wrapper(function):
-        if not disable_edited:
-            add_event(function, events.MessageEdited(**kwargs))
-        add_event(function, events.NewMessage(**kwargs))
-        return function
-    
-    return wrapper
+    return decorator

@@ -1,10 +1,11 @@
-config.env
+config.ini
 userbot.session
 userbot.session-journal
+unknown_errors.txt
 __pycache__/*
 userbot/__pycache__/*
-userbot/modules/__pycache__/*
-userbot/modules/custom_modules/__pycache__/*
+userbot/plugins/__pycache__/*
 userbot/helper_funcs/__pycache__/*
+.downloads
 .progress
 .vscode/*
