@@ -24,8 +24,13 @@ async def limit_exceeded(event, message, reply : bool = False):
     with open("output.txt", "w+") as f:
         f.write(message.strip())
     if reply:
-        sent = await event.reply_document(document="output.txt")
+        sent = await event.reply_document(
+            document="output.txt"
+        )
     else:
-        sent = await client.send_document(event.chat.id, document="output.txt")
+        sent = await client.send_document(
+            event.chat.id,
+            document="output.txt"
+        )
     remove("output.txt")
     return sent

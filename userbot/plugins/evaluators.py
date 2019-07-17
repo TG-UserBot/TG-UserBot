@@ -17,15 +17,14 @@
 
 from sys import executable
 from inspect import isawaitable
-from pyrogram import Filters
 from asyncio import (create_subprocess_exec, create_subprocess_shell,
     subprocess)
 
-from userbot.events import on_message
+from userbot.events import outgoing
 from userbot.helper_funcs.messages import limit_exceeded
 
 
-@on_message(Filters.outgoing & Filters.regex(r"^.eval(?: |$)([\s\S]*)"))
+@outgoing(pattern=r"eval(?: |$)([\s\S]*)")
 async def evaluate(client, event):
     expression = event.matches[0].group(1).strip()
     reply = event.reply_to_message
@@ -34,7 +33,9 @@ async def evaluate(client, event):
         return
     
     try:
-        result = eval(expression, {'client': client, 'event': event, 'reply': reply})
+        result = eval(
+            expression, {'client': client, 'event': event, 'reply': reply}
+        )
         if isawaitable(result):
             result = await result
         result = str(result)
@@ -48,7 +49,7 @@ async def evaluate(client, event):
     await event.reply(result)
 
 
-@on_message(Filters.outgoing & Filters.regex(r"^.exec(?: |$)([\s\S]*)"))
+@outgoing(pattern=r"exec(?: |$)([\s\S]*)")
 async def execute(client, event):
     code = event.matches[0].group(1).strip()
     if not code:
@@ -61,7 +62,8 @@ async def execute(client, event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
+    extras = (f"[**PID:** `{process.pid}`] "
+        f"[**Return code:** `{process.returncode}`]\n\n")
 
     if stderr:
         text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
@@ -78,7 +80,7 @@ async def execute(client, event):
         await event.reply(extras + "Nice, get off the void.")
 
 
-@on_message(Filters.outgoing & Filters.regex(r"^.term(?: |$)([\s\S]*)"))
+@outgoing(pattern=r"term(?: |$)([\s\S]*)")
 async def terminal(client, event):
     cmd = event.matches[0].group(1).strip()
     if not cmd:
@@ -91,7 +93,8 @@ async def terminal(client, event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = f"[**PID:** `{process.pid}`] [**Return code:** `{process.returncode}`]\n\n"
+    extras = (f"[**PID:** `{process.pid}`] "
+        f"[**Return code:** `{process.returncode}`]\n\n")
 
     if stderr:
         text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))

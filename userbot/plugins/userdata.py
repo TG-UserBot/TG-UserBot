@@ -16,22 +16,22 @@
 
 
 from os import remove
-from pyrogram import Filters
 from pyrogram.api.functions.users import GetFullUser
 from pyrogram.api.functions.messages import GetFullChat
 from pyrogram.api.functions.channels import GetFullChannel
 from pyrogram.api.functions.account import UpdateProfile
 from pyrogram.api.types import InputPeerChannel, InputPeerChat
 from pyrogram.errors import (RPCError, UsernameNotOccupied, FirstnameInvalid,
-    LastnameInvalid, AboutTooLong, UsernameInvalid, UsernameNotModified, UsernameOccupied)
+    LastnameInvalid, AboutTooLong, UsernameInvalid, UsernameNotModified,
+    UsernameOccupied, PeerIdInvalid)
 
-from userbot.events import on_message
+from userbot.events import outgoing
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
 from userbot.helper_funcs.users import ProfilePictures
 
 
-@on_message(Filters.outgoing & Filters.regex("^[!.#](?:who|what)is(?: |$)(.*)$"))
+@outgoing(pattern="(?:who|what)is(?: |$)(.*)$")
 async def whois(client, event):
     match = event.matches[0].group(1)
     reply = event.reply_to_message
@@ -61,6 +61,9 @@ async def whois(client, event):
     except UsernameInvalid:
         await event.edit("`This username is invalid.`")
         return
+    except PeerIdInvalid:
+        await event.edit("`The id/access_hash combination is invalid.`")
+        return
     except KeyError:
         await event.edit("`Peer doesn’t exist in the internal database.`")
         return
@@ -70,13 +73,19 @@ async def whois(client, event):
 
     try:
         if isinstance(input_entity, InputPeerChat):
-            full_chat = await client.send(GetFullChat(chat_id=input_entity))
+            full_chat = await client.send(
+                GetFullChat(chat_id=input_entity)
+            )
             pfp, string = await Parser.parse_full_chat(full_chat)
         elif isinstance(input_entity, InputPeerChannel):
-            full_channel = await client.send(GetFullChannel(channel=input_entity))
+            full_channel = await client.send(
+                GetFullChannel(channel=input_entity)
+            )
             pfp, string = await Parser.parse_full_chat(full_channel)
         else:
-            full_user = await client.send(GetFullUser(id=input_entity))
+            full_user = await client.send(
+                GetFullUser(id=input_entity)
+            )
             pfp, string = await Parser.parse_full_user(full_user)
     except RPCError as RCP:
         await event.edit(RCP)
@@ -85,12 +94,21 @@ async def whois(client, event):
     await event.delete()
     if pfp:
         photo = await client.get_profile_photos(user, limit=1)
-        await client.send_photo(event.chat.id, photo=photo[0].file_id, caption=string, reply_to_message_id=reply_id)
+        await client.send_photo(
+            event.chat.id,
+            photo=photo[0].file_id,
+            caption=string,
+            reply_to_message_id=reply_id
+        )
     else:
-        await client.send_message(event.chat.id, string, reply_to_message_id=reply_id)
+        await client.send_message(
+            event.chat.id,
+            string,
+            reply_to_message_id=reply_id
+        )
 
 
-@on_message(Filters.outgoing & Filters.regex("^[!.#]name(?: |$)(.*)$"))
+@outgoing(pattern="name(?: |$)(.*)$")
 async def name(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -117,7 +135,7 @@ async def name(client, event):
         await event.edit("`The last name is invalid.`")
 
 
-@on_message(Filters.outgoing & Filters.regex("^[!.#]bio(?: |$)(.*)$"))
+@outgoing(pattern="bio(?: |$)(.*)$")
 async def bio(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -136,7 +154,7 @@ async def bio(client, event):
         await event.edit("`The about text is too long.`")
 
 
-@on_message(Filters.outgoing & Filters.regex("^[!.#]username(?: |$)(.*)$"))
+@outgoing(pattern="username(?: |$)(.*)$")
 async def username(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -156,7 +174,7 @@ async def username(client, event):
     except UsernameInvalid:
         await event.edit("`The username is invalid.`")
 
-@on_message(Filters.outgoing & Filters.regex("^[!.#]pfp$"))
+@outgoing(pattern="pfp$")
 async def pfp(client, event):
     reply = event.reply_to_message
     if not reply:
@@ -171,7 +189,9 @@ async def pfp(client, event):
         return
 
     if not reply.media:
-        await event.edit("`What do I use to update the profile picture, a text?`")
+        await event.edit(
+            "`What do I use to update the profile picture, a text?`"
+        )
         return
 
     if reply.photo or reply.document:
@@ -195,19 +215,21 @@ async def pfp(client, event):
         await event.edit(RPCError)
 
 
-@on_message(Filters.outgoing & Filters.regex(r"^[!.#]delpfp(?: |$)(\d*)"))
+@outgoing(pattern=r"delpfp(?: |$)(\d*)$")
 async def delpfp(client, event):
     match = event.matches[0].group(1)
     if not match:
         count = await ProfilePictures.count("self")
-        amount = "one profile picture." if count is 1 else f"{count} profile pictures."
-        await event.edit(f"`You currently have {amount}``")
+        amount = ("one profile picture." if count is 1 \
+                  else f"{count} profile pictures.")
+        await event.edit(f"`You currently have {amount}`")
         return
 
     await event.edit("`Processing all the profile pictures...`")
     limit = None if int(match) is 0 else int(match)
     photos = await ProfilePictures.iter("self", limit)
     await client.delete_profile_photos(photos)
-    amount = "current profile picture." if len(photos) is 1 else f"{len(photos)} profile pictures."
+    amount = ("current profile picture." if len(photos) is 1 \
+              else f"{len(photos)} profile pictures.")
     text = f"`Successfully deleted {amount}`"
     await event.edit(text)

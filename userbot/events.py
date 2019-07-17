@@ -15,7 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from pyrogram import Client, MessageHandler
+from pyrogram import Client, Filters, MessageHandler
 
 from userbot import client
 
@@ -25,10 +25,31 @@ IMPORTED = []
 on_message = Client.on_message
 
 
+def outgoing(pattern : str) -> callable:
+    return Client.on_message(
+        Filters.outgoing & Filters.regex(f"^[!.#]{pattern}")
+    )
+
+
 def message_handler(filters=None, group : int = 0) -> callable:
 
     def decorator(func: callable) -> callable:
-        handler = client.add_handler(MessageHandler(func, filters), group)
+        handler = client.add_handler(
+            MessageHandler(func, filters), group
+        )
+        IMPORTED.append(handler)
+        return handler
+
+    return decorator
+
+
+def main_handler(command: str) -> callable:
+
+    def decorator(func: callable) -> callable:
+        filters = (Filters.outgoing & \
+                   ~Filters.edited & \
+                   Filters.regex(f"^[!.]{command}$"))
+        handler = client.add_handler(MessageHandler(func, filters), 0)
         IMPORTED.append(handler)
         return handler
 

@@ -18,47 +18,56 @@
 from configparser import ConfigParser
 from os.path import isfile
 from sys import exit, platform, version_info
-from logging import (basicConfig, getLogger, NOTSET, DEBUG,
-    INFO, WARNING, ERROR, CRITICAL)
+from logging import (getLogger, DEBUG, INFO, 
+    ERROR, CRITICAL)
 
 from pyrogram import Client
 
 
-if not version_info >= (3, 7, 3):
-    print("Please run this script with Python 3.7.3 or above.")
+if not version_info >= (3, 6):
+    print(
+        "Please run this script with Python 3.6 or above."
+        "\nExiting the script."
+    )
     exit(1)
 elif not isfile('config.ini'):
-    print("Please make sure you have a proper config.ini in this directory.\nExiting.")
+    print(
+        "Please make sure you have a proper config.ini in this directory."
+        "\nExiting the script."
+    )
     exit(1)
 
 
-LOG = getLogger(__name__)
+ROOT_LOGGER = getLogger()
+LOGGER = getLogger(__name__)
 
 configparser = ConfigParser()
 configparser.read('config.ini')
 LOGGER_CHAT_ID = configparser['userbot'].getint('LOGGER_CHAT_ID', 0)
 CONSOLE_LOGGER = configparser['userbot'].get('CONSOLE_LOGGER', 'WARNING')
 USERBOT_LOGGER = True if LOGGER_CHAT_ID else False
+WORKERS = configparser['userbot'].getint('WORKERS', 4)
 
-CONSOLE_LOGGER_FORMAT = "[%(levelname)s / %(asctime)s] %(name)s: %(message)s"
-
-LEVELS = {'NOTSET': NOTSET, 'DEBUG': DEBUG, 'INFO': INFO,\
-          'WARNING': WARNING, 'ERROR': ERROR, 'CRITICAL': CRITICAL}
+LEVELS = {'DEBUG': DEBUG, 'INFO': INFO, \
+    'ERROR': ERROR, 'CRITICAL': CRITICAL}
 
 
 if CONSOLE_LOGGER.upper() in LEVELS:
     level = LEVELS[CONSOLE_LOGGER.upper()]
-    basicConfig(format=CONSOLE_LOGGER_FORMAT, datefmt="%x - %X %p", level=level)
-else:
-    basicConfig(format=CONSOLE_LOGGER_FORMAT, datefmt="%x - %X %p" , level=WARNING)
+    ROOT_LOGGER.setLevel(level)
+    LOGGER.setLevel(level)
+
 
 if platform.startswith('win'):
     from asyncio import ProactorEventLoop, set_event_loop
+    from os import system
     set_event_loop(ProactorEventLoop())
+    system('color')
 
 
 __version__ =  "0.2"
 __license__ = "GNU General Public License v3.0"
-__copyright__ = "TG-UserBot  Copyright (C) 2019  Kandarp <https://github.com/kandnub>"
+__copyright__ = ("TG-UserBot  Copyright (C) 2019  Kandarp"
+                 " <https://github.com/kandnub>")
 
-client = Client("userbot", app_version=__version__)
+client = Client("userbot", app_version=__version__, workers=WORKERS)

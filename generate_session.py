@@ -3,11 +3,26 @@ from configparser import ConfigParser
 from os.path import isfile
 from sys import exit
 
-from pyrogram import Client
+try:
+    from pyrogram import Client
+except ModuleNotFoundError:
+    print(
+        "Install Pyrogram(asyncio-dev) via pip with: pip install -U "
+        "git+https://github.com/pyrogram/pyrogram.git@asyncio-dev "
+        "before running this script. Exiting."
+    )
+    exit(1)
 
 
 if not isfile('config.ini'):
-    print("Please make sure you have a config.")
+    print("Please make sure you have a config and re-run the script.")
+    exit(1)
+
+if isfile('userbot.session'):
+    print(
+        "You already have a session in the current directory, "
+        "delete it if it's expired and re-run the script."
+    )
     exit(1)
 
 client = Client("userbot")

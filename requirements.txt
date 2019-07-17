@@ -1,7 +1,6 @@
 aiohttp>=3.5.4
 hachoir3>=3.0a2
-https://github.com/pyrogram/pyrogram/archive/asyncio-dev.zip
+git+https://github.com/pyrogram/pyrogram.git@asyncio-dev
 Pillow>=6.0.0
-python-dotenv>=0.10.3
 requests>=2.22.0
 tgcrypto
