@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -56,7 +56,7 @@ class Parser:
         if about:
             text += f"\n**Bio:** `{about}`"
         if username:
-            text += f"\n**Username:** `@{username}`"
+            text += f"\n**Username:** @{username}"
         if common_chats_count:
             text += f"\n**Groups in common:** `{common_chats_count}`"
         if dc_id:
@@ -114,6 +114,7 @@ class Parser:
         username = chats.username
         dc_id = profile_pic.dc_id if hasattr(profile_pic, "dc_id") else None
         about = full_chat.about
+        bots = len(full_chat.bot_info)
 
 
         text = f"**[{obj_type}]**\n\n"
@@ -123,7 +124,7 @@ class Parser:
         if about:
             text += f"\n**About:** `{about}`"
         if username:
-            text += f"\n**Username:** `@{username}`"
+            text += f"\n**Username:** @{username}"
         if participants:
             text += f"\n**Total participants:** `{participants}`"
         if creator:
@@ -132,6 +133,8 @@ class Parser:
             text += f"\n**Left:** `{left}`"
         if dc_id:
             text += f"\n**DC ID:** `{dc_id}`"
+        if bots:
+            text += f"\n**Total bots:** `{bots}`"
 
         if obj_type is "Channel":
             if admins:

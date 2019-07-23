@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -18,15 +18,16 @@
 from configparser import ConfigParser
 from os.path import isfile
 from sys import exit, platform, version_info
-from logging import (getLogger, DEBUG, INFO, 
-    ERROR, CRITICAL)
+from logging import (
+    getLogger, DEBUG, INFO, ERROR, CRITICAL
+)
 
 from pyrogram import Client
 
 
-if not version_info >= (3, 6):
+if not version_info >= (3, 7):
     print(
-        "Please run this script with Python 3.6 or above."
+        "Please run this script with Python 3.7 or above."
         "\nExiting the script."
     )
     exit(1)
@@ -48,8 +49,10 @@ CONSOLE_LOGGER = configparser['userbot'].get('CONSOLE_LOGGER', 'WARNING')
 USERBOT_LOGGER = True if LOGGER_CHAT_ID else False
 WORKERS = configparser['userbot'].getint('WORKERS', 4)
 
-LEVELS = {'DEBUG': DEBUG, 'INFO': INFO, \
-    'ERROR': ERROR, 'CRITICAL': CRITICAL}
+LEVELS = {
+    'DEBUG': DEBUG, 'INFO': INFO,
+    'ERROR': ERROR, 'CRITICAL': CRITICAL
+}
 
 
 if CONSOLE_LOGGER.upper() in LEVELS:
@@ -61,13 +64,16 @@ if CONSOLE_LOGGER.upper() in LEVELS:
 if platform.startswith('win'):
     from asyncio import ProactorEventLoop, set_event_loop
     from os import system
+
     set_event_loop(ProactorEventLoop())
     system('color')
 
 
 __version__ =  "0.2"
 __license__ = "GNU General Public License v3.0"
-__copyright__ = ("TG-UserBot  Copyright (C) 2019  Kandarp"
-                 " <https://github.com/kandnub>")
+__author__ = 'Kandarp <https://github.com/kandnub>'
+__copyright__ = (
+    "TG-UserBot  Copyright (C) 2019  Kandarp <https://github.com/kandnub>"
+)
 
 client = Client("userbot", app_version=__version__, workers=WORKERS)

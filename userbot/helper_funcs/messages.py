@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -20,7 +20,11 @@ from os import remove
 from . import client
 
 
-async def limit_exceeded(event, message, reply : bool = False):
+async def limit_exceeded(
+    event,
+    message,
+    reply : bool = False
+):
     with open("output.txt", "w+") as f:
         f.write(message.strip())
     if reply:

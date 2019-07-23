@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python. 
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -18,6 +18,9 @@
 async def get_user_from_msg(event):
     user = None
     match = event.matches[0].group(1)
+
+    if match == "this":
+        match = str(event.chat.id)
 
     if event.entities:
         for entity in event.entities:

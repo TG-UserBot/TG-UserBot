@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -21,7 +21,10 @@ from . import client
 class ProfilePictures:
 
     @staticmethod
-    async def iter(user, limit: int = None):
+    async def iter(
+        user,
+        limit: int = None
+    ):
         file_id_list = []
         user_photos = client.iter_profile_photos(
             chat_id=user,

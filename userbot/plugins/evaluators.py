@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -17,8 +17,9 @@
 
 from sys import executable
 from inspect import isawaitable
-from asyncio import (create_subprocess_exec, create_subprocess_shell,
-    subprocess)
+from asyncio import (
+    create_subprocess_exec, create_subprocess_shell, subprocess
+)
 
 from userbot.events import outgoing
 from userbot.helper_funcs.messages import limit_exceeded

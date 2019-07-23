@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -21,9 +21,11 @@ from pyrogram.api.functions.messages import GetFullChat
 from pyrogram.api.functions.channels import GetFullChannel
 from pyrogram.api.functions.account import UpdateProfile
 from pyrogram.api.types import InputPeerChannel, InputPeerChat
-from pyrogram.errors import (RPCError, UsernameNotOccupied, FirstnameInvalid,
-    LastnameInvalid, AboutTooLong, UsernameInvalid, UsernameNotModified,
-    UsernameOccupied, PeerIdInvalid)
+from pyrogram.errors import (
+    RPCError, UsernameNotOccupied, FirstnameInvalid, LastnameInvalid,
+    AboutTooLong, UsernameInvalid, UsernameNotModified, UsernameOccupied,
+    PeerIdInvalid
+)
 
 from userbot.events import outgoing
 from userbot.helper_funcs.ids import get_user_from_msg

@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot for Python3.6+. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -25,19 +25,28 @@ IMPORTED = []
 on_message = Client.on_message
 
 
-def outgoing(pattern : str) -> callable:
+def outgoing(
+    pattern : str,
+    prefix : (str, None) = "^[!.#]",
+    cs : bool = False
+) -> callable:
+
+    regex = prefix + pattern if prefix else pattern
+    regexp = '(?i)' + regex if not cs else regex
+
     return Client.on_message(
-        Filters.outgoing & Filters.regex(f"^[!.#]{pattern}")
+        Filters.outgoing & Filters.regex(regexp)
     )
 
 
 def message_handler(filters=None, group : int = 0) -> callable:
 
-    def decorator(func: callable) -> callable:
+    def decorator(callback: callable) -> callable:
         handler = client.add_handler(
-            MessageHandler(func, filters), group
+            MessageHandler(callback, filters), group
         )
         IMPORTED.append(handler)
+
         return handler
 
     return decorator
@@ -45,12 +54,17 @@ def message_handler(filters=None, group : int = 0) -> callable:
 
 def main_handler(command: str) -> callable:
 
-    def decorator(func: callable) -> callable:
-        filters = (Filters.outgoing & \
-                   ~Filters.edited & \
-                   Filters.regex(f"^[!.]{command}$"))
-        handler = client.add_handler(MessageHandler(func, filters), 0)
+    def decorator(callback: callable) -> callable:
+        filters = (
+            Filters.outgoing & \
+            ~Filters.edited & \
+            Filters.regex(f"^[!.]{command}$")
+        )
+        handler = client.add_handler(
+            MessageHandler(callback, filters), 0
+        )
         IMPORTED.append(handler)
+
         return handler
 
     return decorator
