@@ -43,9 +43,10 @@ async def remindme(c, event):
         create_task(
             reminderTask(seconds, text)
         )
-        await event.edit(
-            f"`Reminder will be sent in Saved Messages after {time}.`"
-        )
+        text = f"`Reminder will be sent in Saved Messages after {time}.`"
+        if seconds >= 86400:
+            text += "`\nThis may not work as expected, not fully certain though.`"
+        await event.edit(text)
     else:
         await event.edit("`No kan do. ma'am.`")
 

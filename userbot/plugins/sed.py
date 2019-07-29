@@ -29,22 +29,22 @@ from userbot.events import outgoing
 pattern = r'^(\d+?)?(?:s|sed)/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?'
 
 async def matchSplitter(match):
+    li = match.group(1)
     fr = match.group(2)
     to = match.group(3)
     to = re.sub(r'\\/', '/', to)
     to = re.sub(r'\\0', r'\g<0>', to)
     fl = match.group(4)[1:] if match.group(4) else ''
 
-    return fr, to, fl
+    return li, fr, to, fl
 
 
 @outgoing(pattern=pattern, prefix=None)
 async def sed(client, event):
     match = event.matches[0]
-    line = match.group(1)
     reply = event.reply_to_message
 
-    fr, to, fl = await matchSplitter(match)
+    line, fr, to, fl = await matchSplitter(match)
     count = 1
     flags = 0
 
@@ -66,14 +66,28 @@ async def sed(client, event):
         elif f == 'g':
             count = 0
         else:
-            await event.edit('Unknown flag: ' + f)
+            await event.edit('Unknown flag: `' + f + '`')
             return
 
     async def substitute(original):
-            s, i = re.subn(fr, to, original, count=count, flags=flags)
-            if i > 0:
-                return s
-            return None
+        s, i = re.subn(fr, to, original, count=count, flags=flags)
+        if i > 0:
+            return s
+        return
+
+    async def substitute_line(line : int, original: str):
+        lines = original.splitlines()
+        if len(lines) < line:
+            return
+
+        newLine = await substitute(lines[line - 1])
+        lines[line - 1] = newLine
+        newStr = '\n'.join(lines)
+
+        if newLine:
+            return newStr
+        else:
+            return
 
     try:
         if reply:
@@ -81,30 +95,40 @@ async def sed(client, event):
             if not original:
                 return
 
+            if line:
+                newStr = await substitute_line(int(line), original)
+            else:
+                newStr = await substitute(original)
+
+            if newStr:
+                await event.edit(newStr) 
+
         else:
-            original = None
-            async for msg in client.iter_history(event.chat.id, offset=1):
+            count = 0
+            async for msg in client.iter_history(
+                event.chat.id,
+                offset_id=event.message_id
+            ):
                 if msg.text:
                     original = msg.text
-                    break
+                    count += 1
                 elif msg.caption:
                     original = msg.caption
+                    count += 1
+                else:
+                    continue
+
+                if line:
+                    newStr = await substitute_line(int(line), original)
+                else:
+                    newStr = await substitute(original)
+
+                if newStr:
+                    await event.edit(newStr)
                     break
 
-        if line:
-            line = int(line)
-            lines = original.splitlines()
-            if len(lines) < line:
-                await event.edit("What line? Heh.")
-                return
-
-            newLine = await substitute(lines[line - 1])
-            lines[line - 1] = newLine
-            newStr = '\n'.join(lines)
-        else:
-            newStr = await substitute(original)
-
-        await event.edit(newStr)
+                if count >= 10:
+                    break
 
     except Exception as e:
-        await event.edit('Like regexbox says, fuck me.\n' + str(e))
+        await event.edit('Like regexbox says, fuck me.\n`' + str(e) + '`')
