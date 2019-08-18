@@ -1,5 +1,5 @@
 aiohttp>=3.5.4
-hachoir3
+hachoir>=3.0a5
 git+https://github.com/pyrogram/pyrogram.git@asyncio-dev
 Pillow>=6.0.0
 requests>=2.22.0
