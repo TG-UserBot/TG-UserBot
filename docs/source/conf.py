@@ -19,6 +19,7 @@ import os
 import sys
 import sphinx_rtd_theme  # noqa: F401
 from time import strftime
+from pygments.styles import stata_dark
 
 sys.path.insert(0, os.path.abspath('../..'))
 
@@ -47,7 +48,8 @@ exclude_patterns = [
 
 autosummary_generate = True
 napoleon_use_rtype = False
-pygments_style = "stata-dark"
+pygments_style = "stata_dark"
+stata_dark.Stata_DarkStyle = stata_dark.StataDarkStyle
 pagename = "TG-UserBot Documentation"
 html_title = "TG-UserBot Documentation"
 html_short_title = "TG-UserBot"
