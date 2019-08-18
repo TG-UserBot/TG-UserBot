@@ -16,7 +16,7 @@
 
 
 from configparser import ConfigParser
-from os.path import dirname, isfile, join
+from os.path import abspath, basename, dirname, isfile, join
 from packaging.version import parse
 from sys import exit, platform, version_info
 from logging import (
@@ -36,11 +36,14 @@ if parse(pyversion) < parse('3.7'):
     )
     exit(1)
 elif not isfile(config):
-    print(
-        "Please make sure you have a proper config.ini in this directory."
-        "\nExiting the script."
-    )
-    exit(1)
+    if basename(abspath('.')) == 'source':
+        config = join(dirname(dirname(__file__)), 'sample_config.ini')
+    else:
+        print(
+            "Please make sure you have a proper config.ini in this directory."
+            "\nExiting the script."
+        )
+        exit(1)
 
 ROOT_LOGGER = getLogger()
 LOGGER = getLogger(__name__)

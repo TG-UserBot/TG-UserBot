@@ -99,12 +99,5 @@ html_context = {
 }
 
 
-def skip(app, what, name, obj, skip, options):
-    if name == "__init__" or name == '__main__':
-        return True
-    return skip
-
-
 def setup(app):
     app.add_stylesheet("css/lights_out.css")
-    app.connect("autodoc-skip-member", skip)
