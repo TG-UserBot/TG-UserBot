@@ -30,8 +30,22 @@ CUSR = '\033[38;5;118m'
 
 
 class CustomFormatter(Formatter):
+    """Convert a :obj:`LogRecord<logging.LogRecord>` to a string.
 
-    def format(self, record):
+    Uses ANSI escape codes to colour some specific strings.
+    """
+
+    def format(self, record) -> str:
+        """Format the record dictionary to a readable string.
+
+        Args:
+            record (``dict``):
+                The attribute dictionary.
+
+        Returns:
+            ``str``:
+                Formatted string for userbot and pyrogram logs.
+        """
         first_half = "[%(asctime)s / %(levelname)s]"
 
         if record.name.startswith('userbot'):
@@ -51,9 +65,10 @@ class CustomFormatter(Formatter):
             WARNING: CWAR + first_half + CEND + second_half,
             INFO: CINF + first_half + CEND + second_half,
             DEBUG: CDEB + first_half + CEND + second_half,
-            'DEFAULT':  first_half + second_half
+            'DEFAULT': first_half + second_half
         }
 
         log_fmt = FORMATS.get(record.levelno, FORMATS['DEFAULT'])
         formatter = Formatter(fmt=log_fmt, datefmt='%X', style='%')
+
         return formatter.format(record)

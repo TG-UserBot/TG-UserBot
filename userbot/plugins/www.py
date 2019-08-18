@@ -17,11 +17,13 @@
 
 from pyrogram.api.functions.help import GetNearestDc
 
-from userbot.events import outgoing
+from userbot.events import basic_command, commands
 
 
-@outgoing(pattern="dc$")
+@commands("dc")
+@basic_command(command="dc$")
 async def dc(client, event):
+    """DC function used to get information for .dc"""
     result = await client.send(GetNearestDc())
     text = (
         f"**Country:** `{result.country}`\n" +

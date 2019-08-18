@@ -19,11 +19,13 @@ from os import remove
 from os.path import isfile
 from PIL import Image
 
-from userbot.events import outgoing
+from userbot.events import basic_command, commands
 
 
-@outgoing(pattern="getsticker$")
+@commands("getsticker")
+@basic_command(command="getsticker$")
 async def getsticker(client, event):
+    """Get sticker function used to convert a sticker for .getsticker"""
     reply = event.reply_to_message
     if not reply:
         await event.edit("`Reply to a sticker first.`")

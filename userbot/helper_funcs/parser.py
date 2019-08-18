@@ -15,15 +15,32 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from pyrogram.api.types import ChatFull
+from typing import Union, Tuple
+from pyrogram.api.types import (
+    ChannelFull, ChatFull, UserFull,
+    Photo, PhotoEmpty
+)
 
-from .users import ProfilePictures
+from .. import client
 
 
 class Parser:
+    """Parse UserFull, ChannelFull and ChatFull objects."""
 
     @staticmethod
-    async def parse_full_user(usr_obj):
+    async def parse_full_user(
+        usr_obj: UserFull
+    ) -> Tuple[Union[Photo, PhotoEmpty], str]:
+        """Parse UserFull object in a proper readable format.
+
+        Args:
+            usr_obj (:obj:`UserFull<pyrogram.api.types>`):
+                UserFull object to parse.
+
+        Returns:
+            ((:obj:`Photo<pyrogram.api.types>` | :obj:`PhotoEmpty<pyrogram.api.types>`), ``str``):
+                Photo or PhotoEmpty object and a formatted string.
+        """
         user = usr_obj.user
         profile_pic = usr_obj.profile_photo
 
@@ -44,8 +61,7 @@ class Parser:
         common_chats_count = usr_obj.common_chats_count
         blocked = usr_obj.blocked
         about = usr_obj.about
-        total_pics = await ProfilePictures.count(user_id)
-
+        total_pics = await client.get_profile_photos_count(user_id)
 
         text = "**[User]**\n\n"
         text += f"**ID:** [{user_id}](tg://user?id={user_id})"
@@ -86,9 +102,20 @@ class Parser:
 
         return profile_pic, text
 
-
     @staticmethod
-    async def parse_full_chat(chat_obj):
+    async def parse_full_chat(
+        chat_obj: (ChatFull, ChannelFull)
+    ) -> Tuple[None, str]:
+        """Parse ChatFull or ChannelFull object in a proper readable format.
+
+        Args:
+            chat_obj (:obj:`ChatFull<pyrogram.api.types>` | :obj:`ChannelFull<pyrogram.api.types>`):
+                ChatFull or ChannelFull object to parse.
+
+        Returns:
+            (``None``, ``str``):
+                None (cannot download the photo) and a formatted string.
+        """
         full_chat = chat_obj.full_chat
         chats = chat_obj.chats[0]
         profile_pic = full_chat.chat_photo
@@ -116,7 +143,6 @@ class Parser:
         about = full_chat.about
         bots = len(full_chat.bot_info)
 
-
         text = f"**[{obj_type}]**\n\n"
         text += f"**ID:** `{chat_id}`"
         if title:
@@ -136,7 +162,7 @@ class Parser:
         if bots:
             text += f"\n**Total bots:** `{bots}`"
 
-        if obj_type is "Channel":
+        if obj_type == "Channel":
             if admins:
                 text += f"\n**Admins:** `{admins}`"
             if kicked:
@@ -152,4 +178,4 @@ class Parser:
             if verified:
                 text += f"\n**Verified:** `{verified}`"
 
-        return False, text
+        return None, text

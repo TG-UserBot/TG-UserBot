@@ -1,6 +1,6 @@
 from asyncio import get_event_loop
 from configparser import ConfigParser
-from os.path import isfile
+from os.path import dirname, isfile, join
 from sys import exit
 
 try:
@@ -14,7 +14,9 @@ except ModuleNotFoundError:
     exit(1)
 
 
-if not isfile('config.ini'):
+config = join(dirname(__file__), 'config.ini')
+
+if not isfile(config):
     print("Please make sure you have a config and re-run the script.")
     exit(1)
 
@@ -28,7 +30,7 @@ if isfile('userbot.session'):
 client = Client("userbot")
 
 configparser = ConfigParser()
-configparser.read('config.ini')
+configparser.read(config)
 api_id = configparser['pyrogram'].getint('api_id', 0)
 api_hash = configparser['pyrogram'].get('api_hash', None)
 
@@ -41,6 +43,8 @@ elif not api_hash:
 
 
 async def main():
+    """Start the client to login and then stop it.
+    """
     await client.start()
     await client.stop()
 

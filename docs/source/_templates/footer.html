@@ -1,0 +1,13 @@
+{% extends "!footer.html" %}
+{% set css_files = css_files + [ "_static/css/lights_out.css" ] %}
+
+
+{% block extrafooter %}
+    <p>
+        <a href="https://www.github.com/kandnub/TG-UserBot">TG-UserBot</a> documentation © Copyright 2019, <a href="https://www.github.com/kandnub">Kandarp</a>
+    </p>
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+    <br>
+    Last updated on {{ l_updated }}.
+    {{ super() }}
+{% endblock %}

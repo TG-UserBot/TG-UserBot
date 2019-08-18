@@ -21,73 +21,35 @@
 # explanation on how we could make it work and what we'd need to check.
 
 
-import re
+from re import match, MULTILINE, IGNORECASE
 
-from userbot.events import outgoing
-
-
-pattern = r'^(\d+?)?(?:s|sed)/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?'
-
-async def matchSplitter(match):
-    li = match.group(1)
-    fr = match.group(2)
-    to = match.group(3)
-    to = re.sub(r'\\/', '/', to)
-    to = re.sub(r'\\0', r'\g<0>', to)
-    fl = match.group(4)[1:] if match.group(4) else ''
-
-    return li, fr, to, fl
+from userbot.events import commands, Filters, on_message
+from userbot.helper_funcs.sed import sub_matches
 
 
-@outgoing(pattern=pattern, prefix=None)
-async def sed(client, event):
-    match = event.matches[0]
-    reply = event.reply_to_message
+pattern = (
+    r'(?:^|;.+?)'  # Ensure that the expression doesn't go blatant
+    r'([1-9]+?)?'  # line: Don't match a 0, sed counts lines from 1
+    r'(?:s)'  # The s command (as in substitute)
+    r'(?:(?P<d>.))'  # Unknown delimiter with a named group d
+    r'((?:(?!(?<![^\\]\\)(?P=d)).)+)'  # regexp
+    r'(?P=d)'  # Unknown delimiter
+    r'((?:(?!(?<![^\\]\\)(?P=d)|(?<![^\\]\\);).)*)'  # replacement
+    r'(?:(?=(?P=d)|;).)?'  # Check if it's a delimiter or a semicolon
+    r'((?<!;)\w+)?'  # flags: Don't capture if it starts with a semicolon
+    r'(?=;|$)'  # Ensure it ends with a semicolon for the next match
+)
 
-    line, fr, to, fl = await matchSplitter(match)
-    count = 1
-    flags = 0
 
-    for f in fl.lower():
-        if f == 'a':
-            flags |= re.ASCII
-        elif f == 'i':
-            flags |= re.IGNORECASE
-        elif f == 'l':
-            flags |= re.LOCALE
-        elif f == 'm':
-            flags |= re.MULTILINE
-        elif f == 's':
-            flags |= re.DOTALL
-        elif f == 'u':
-            flags |= re.UNICODE
-        elif f == 'x':
-            flags |= re.VERBOSE
-        elif f == 'g':
-            count = 0
-        else:
-            await event.edit('Unknown flag: `' + f + '`')
-            return
-
-    async def substitute(original):
-        s, i = re.subn(fr, to, original, count=count, flags=flags)
-        if i > 0:
-            return s
+@commands("sed")
+@on_message(Filters.outgoing & Filters.regex(pattern, MULTILINE | IGNORECASE))
+async def sed_substitute(client, event):
+    """SED function used to substitution texts for s command"""
+    if not match(r"(?i)^(?:s|[1-9]+s)", event.text):
         return
 
-    async def substitute_line(line : int, original: str):
-        lines = original.splitlines()
-        if len(lines) < line:
-            return
-
-        newLine = await substitute(lines[line - 1])
-        lines[line - 1] = newLine
-        newStr = '\n'.join(lines)
-
-        if newLine:
-            return newStr
-        else:
-            return
+    matches = event.matches
+    reply = event.reply_to_message
 
     try:
         if reply:
@@ -95,40 +57,41 @@ async def sed(client, event):
             if not original:
                 return
 
-            if line:
-                newStr = await substitute_line(int(line), original)
-            else:
-                newStr = await substitute(original)
-
+            newStr = await sub_matches(matches, original)
             if newStr:
-                await event.edit(newStr) 
-
+                await event.edit(newStr)
         else:
-            count = 0
+            total_messages = []  # Append messages to avoid timeouts
+            count = 0  # Don't fetch more than ten texts/captions
+
             async for msg in client.iter_history(
                 event.chat.id,
                 offset_id=event.message_id
             ):
                 if msg.text:
-                    original = msg.text
+                    total_messages.append(msg.text)
                     count += 1
                 elif msg.caption:
-                    original = msg.caption
+                    total_messages.append(msg.caption)
                     count += 1
                 else:
                     continue
-
-                if line:
-                    newStr = await substitute_line(int(line), original)
-                else:
-                    newStr = await substitute(original)
-
-                if newStr:
-                    await event.edit(newStr)
-                    break
-
                 if count >= 10:
                     break
 
+            for message in total_messages:
+                newStr = await sub_matches(matches, message)
+                if newStr:
+                    await event.edit(newStr)
+                    break
     except Exception as e:
-        await event.edit('Like regexbox says, fuck me.\n`' + str(e) + '`')
+        await event.edit((
+            f"{event.text}"
+            '\n\n'
+            'Like regexbox says, fuck me.\n'
+            '`'
+            f"{str(type(e))}"
+            ':` `'
+            f"{str(e)}"
+            '`'
+        ))

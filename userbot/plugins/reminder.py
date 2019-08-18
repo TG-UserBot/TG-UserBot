@@ -16,15 +16,15 @@
 
 
 from asyncio import sleep, create_task
-from pyrogram import Filters
 from pyrogram.api.functions.messages import ToggleDialogPin
 
 from userbot import client
-from userbot.events import on_message, outgoing
+from userbot.events import basic_command, commands, Filters, on_message
 from userbot.helper_funcs.time import string_to_secs
 
 
 async def reminderTask(delay, string):
+    """Reminder task function used to send the reminder after sleep."""
     await sleep(delay)
     peer = await client.resolve_peer('self')
     await client.send(
@@ -33,8 +33,10 @@ async def reminderTask(delay, string):
     await client.send_message('self', string)
 
 
-@outgoing(pattern=r"remindme (\w+) ([\s\S]*)")
+@commands("remindme")
+@basic_command(command=r"remindme (\w+) ([\s\S]*)")
 async def remindme(c, event):
+    """Remind me function used to create a reminder for .remindme"""
     time = event.matches[0].group(1)
     text = event.matches[0].group(2)
     seconds = await string_to_secs(time)
@@ -45,14 +47,18 @@ async def remindme(c, event):
         )
         text = f"`Reminder will be sent in Saved Messages after {time}.`"
         if seconds >= 86400:
-            text += "`\nThis may not work as expected, not fully certain though.`"
+            text += (
+                "`\nThis may not work as expected, not fully certain though.`"
+            )
         await event.edit(text)
     else:
         await event.edit("`No kan do. ma'am.`")
 
 
-@on_message(Filters.me & Filters.incoming & Filters.regex("(?i)^dismiss$"))
+@commands("dismiss")
+@on_message(Filters.incoming & Filters.me & Filters.regex("(?i)^dismiss$"))
 async def dismiss(c, event):
+    """Dismiss function used to delete and unpin dialogs for dismiss"""
     reply = event.reply_to_message
     if reply:
         await reply.delete()

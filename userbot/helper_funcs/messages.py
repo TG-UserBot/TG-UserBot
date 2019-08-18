@@ -16,15 +16,35 @@
 
 
 from os import remove
+from typing import Union
 
-from . import client
+from .. import client
+from pyrogram import Message
 
 
 async def limit_exceeded(
-    event,
-    message,
-    reply : bool = False
-):
+    event: Message,
+    message: str,
+    reply: bool = False
+) -> Union[Message, None]:
+    """Send text as a .txt file if it's length exceeds TG limit.
+
+    Args:
+        event (:obj:`Message<pyrogram.Message>`):
+            Pyrogram's Message object.
+        message (``str``):
+            The text string to send.
+        reply (``bool``, optional):
+            If you want the send the document as a reply. Defaults to False.
+
+    Returns:
+        :obj:`Message<pyrogram.Message>` | ``None``:
+            Sent document's Message object if successfull, None otherwise.
+
+    Raises:
+        `RPCError`:
+            In case of a Telegram RPC error.
+    """
     with open("output.txt", "w+") as f:
         f.write(message.strip())
     if reply:

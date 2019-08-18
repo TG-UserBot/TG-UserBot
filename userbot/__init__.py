@@ -16,7 +16,8 @@
 
 
 from configparser import ConfigParser
-from os.path import isfile
+from os.path import dirname, isfile, join
+from packaging.version import parse
 from sys import exit, platform, version_info
 from logging import (
     getLogger, DEBUG, INFO, ERROR, CRITICAL
@@ -25,33 +26,37 @@ from logging import (
 from pyrogram import Client
 
 
-if not version_info >= (3, 7):
+config = join(dirname(dirname(__file__)), 'config.ini')
+pyversion = ".".join(str(num) for num in version_info if isinstance(num, int))
+
+if parse(pyversion) < parse('3.7'):
     print(
         "Please run this script with Python 3.7 or above."
         "\nExiting the script."
     )
     exit(1)
-elif not isfile('config.ini'):
+elif not isfile(config):
     print(
         "Please make sure you have a proper config.ini in this directory."
         "\nExiting the script."
     )
     exit(1)
 
-
 ROOT_LOGGER = getLogger()
 LOGGER = getLogger(__name__)
 
 configparser = ConfigParser()
-configparser.read('config.ini')
+configparser.read(config)
 LOGGER_CHAT_ID = configparser['userbot'].getint('LOGGER_CHAT_ID', 0)
 CONSOLE_LOGGER = configparser['userbot'].get('CONSOLE_LOGGER', 'WARNING')
 USERBOT_LOGGER = True if LOGGER_CHAT_ID else False
 WORKERS = configparser['userbot'].getint('WORKERS', 4)
 
 LEVELS = {
-    'DEBUG': DEBUG, 'INFO': INFO,
-    'ERROR': ERROR, 'CRITICAL': CRITICAL
+    'DEBUG': DEBUG,
+    'INFO': INFO,
+    'ERROR': ERROR,
+    'CRITICAL': CRITICAL
 }
 
 
@@ -69,7 +74,7 @@ if platform.startswith('win'):
     system('color')
 
 
-__version__ =  "0.2"
+__version__ = "0.3"
 __license__ = "GNU General Public License v3.0"
 __author__ = 'Kandarp <https://github.com/kandnub>'
 __copyright__ = (
@@ -77,3 +82,9 @@ __copyright__ = (
 )
 
 client = Client("userbot", app_version=__version__, workers=WORKERS)
+
+
+__all__ = [
+    "client", "LOGGER", "ROOT_LOGGER", "LOGGER_CHAT_ID", "CONSOLE_LOGGER",
+    "WORKERS", "__version__", "__copyright__"
+]

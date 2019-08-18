@@ -27,13 +27,13 @@ from pyrogram.errors import (
     PeerIdInvalid
 )
 
-from userbot.events import outgoing
+from userbot.events import basic_command, commands
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
-from userbot.helper_funcs.users import ProfilePictures
 
 
-@outgoing(pattern="(?:who|what)is(?: |$)(.*)$")
+@commands("whois")
+@basic_command(command=r"(?:who|what)is(?: |$)(.*)$")
 async def whois(client, event):
     match = event.matches[0].group(1)
     reply = event.reply_to_message
@@ -110,7 +110,8 @@ async def whois(client, event):
         )
 
 
-@outgoing(pattern="name(?: |$)(.*)$")
+@commands("name")
+@basic_command(command="name(?: |$)(.*)$")
 async def name(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -123,7 +124,7 @@ async def name(client, event):
 
     split = match.split("last=")
     first = split[0] if split[0] else None
-    last = split[1] if len(split) is 2 else None
+    last = split[1] if len(split) == 2 else None
 
     try:
         await client.send(UpdateProfile(
@@ -137,7 +138,8 @@ async def name(client, event):
         await event.edit("`The last name is invalid.`")
 
 
-@outgoing(pattern="bio(?: |$)(.*)$")
+@commands("bio")
+@basic_command(command="bio(?: |$)(.*)$")
 async def bio(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -156,7 +158,8 @@ async def bio(client, event):
         await event.edit("`The about text is too long.`")
 
 
-@outgoing(pattern="username(?: |$)(.*)$")
+@commands("username")
+@basic_command(command="username(?: |$)(.*)$")
 async def username(client, event):
     match = event.matches[0].group(1)
     if not match:
@@ -176,7 +179,9 @@ async def username(client, event):
     except UsernameInvalid:
         await event.edit("`The username is invalid.`")
 
-@outgoing(pattern="pfp$")
+
+@commands("pfp")
+@basic_command(command="pfp$")
 async def pfp(client, event):
     reply = event.reply_to_message
     if not reply:
@@ -217,21 +222,27 @@ async def pfp(client, event):
         await event.edit(RPCError)
 
 
-@outgoing(pattern=r"delpfp(?: |$)(\d*)$")
+@commands("delpfp")
+@basic_command(command=r"delpfp(?: |$)(\d*)$")
 async def delpfp(client, event):
     match = event.matches[0].group(1)
     if not match:
-        count = await ProfilePictures.count("self")
-        amount = ("one profile picture." if count is 1 \
+        count = await client.get_profile_photos_count("self", None)
+        amount = ("one profile picture." if count == 1
                   else f"{count} profile pictures.")
         await event.edit(f"`You currently have {amount}`")
         return
 
     await event.edit("`Processing all the profile pictures...`")
-    limit = None if int(match) is 0 else int(match)
-    photos = await ProfilePictures.iter("self", limit)
-    await client.delete_profile_photos(photos)
-    amount = ("current profile picture." if len(photos) is 1 \
+    limit = None if int(match) == 0 else int(match)
+    photos = client.iter_profile_photos(
+        chat_id="self",
+        limit=limit,
+        offset=0
+    )
+    total_photos = [photo async for photo in photos]
+    await client.delete_profile_photos(total_photos)
+    amount = ("current profile picture." if len(photos) == 1
               else f"{len(photos)} profile pictures.")
     text = f"`Successfully deleted {amount}`"
     await event.edit(text)

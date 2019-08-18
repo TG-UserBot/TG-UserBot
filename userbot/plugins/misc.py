@@ -20,15 +20,22 @@ from datetime import datetime
 from sys import platform
 from pyrogram.api.functions.help import GetNearestDc
 
-from userbot.events import outgoing
+from userbot.events import basic_command, commands
 
 
-DCs = {1: "149.154.175.50", 2: "149.154.167.51",
-    3: "149.154.175.100", 4: "149.154.167.91", 5: "91.108.56.149"}
+DCs = {
+    1: "149.154.175.50",
+    2: "149.154.167.51",
+    3: "149.154.175.100",
+    4: "149.154.167.91",
+    5: "91.108.56.149"
+}
 
 
-@outgoing(pattern="ping$")
+@commands("ping")
+@basic_command(command="ping$")
 async def ping(client, event):
+    """Ping function used to edit the message for .ping"""
     start = datetime.now()
     await event.edit("**PONG**")
     duration = (datetime.now() - start)
@@ -36,8 +43,10 @@ async def ping(client, event):
     await event.edit(f"**PONG**\n`{milliseconds}ms`")
 
 
-@outgoing(pattern=r"pingdc(?: |$)(\d+)?")
+@commands("pingdc")
+@basic_command(command=r"pingdc(?: |$)(\d+)?")
 async def pingdc(client, event):
+    """Ping DC function used to ping DC via shell for .pingdc"""
     if event.matches[0].group(1) in ("1", "2", "3", "4", "5"):
         dc = int(event.matches[0].group(1))
     else:

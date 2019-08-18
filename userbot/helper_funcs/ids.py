@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot script for Python. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -15,7 +15,22 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-async def get_user_from_msg(event):
+from typing import Union
+
+from pyrogram import Message
+
+
+async def get_user_from_msg(event: Message) -> Union[int, str, None]:
+    """Get a peer from a message’s text or entities.
+
+    Args:
+        event (:obj:`Message <pyrogram.Message>`):
+            Pyrogram’s Message object.
+
+    Returns:
+        ``int`` | ``str`` | ``None``:
+            ID or username if successful, None otherwise.
+    """
     user = None
     match = event.matches[0].group(1)
 
@@ -24,15 +39,13 @@ async def get_user_from_msg(event):
 
     if event.entities:
         for entity in event.entities:
-            if entity.type is "text_mention":
+            if entity.type == "text_mention":
                 return entity.user.id
-            elif entity.type is "mention":
+            elif entity.type == "mention":
                 offset = entity.offset
                 length = entity.length
                 maxlen = offset + length
                 return event.text[offset:maxlen]
-    
     if match:
         user = int(match) if match.isdigit() else match.strip()
-    
     return user

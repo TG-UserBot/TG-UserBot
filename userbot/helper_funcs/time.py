@@ -1,4 +1,4 @@
-# TG-UserBot - A modular Telegram UserBot script for Python. 
+# TG-UserBot - A modular Telegram UserBot script for Python.
 # Copyright (C) 2019  Kandarp <https://github.com/kandnub>
 #
 # TG-UserBot is free software: you can redistribute it and/or modify
@@ -21,7 +21,22 @@ from re import compile as reCompile
 regexp = reCompile(r"(\d+)(w|d|h|m|s)?")
 
 
-async def amount_to_secs(amount):
+async def amount_to_secs(amount: tuple) -> int:
+    """Resolves one unit to total seconds.
+
+    Args:
+        amount (``int``, ``str``):
+            Tuple where str is the unit.
+
+    Returns:
+        ``int``:
+            Total seconds of the unit on success.
+
+    Example:
+        >>> await amount_to_secs(("1", "m"))
+        60
+
+    """
     num, unit = amount
 
     num = int(num)
@@ -31,18 +46,33 @@ async def amount_to_secs(amount):
     if unit == 's':
         return num
     elif unit == 'm':
-        return num*60
+        return num * 60
     elif unit == 'h':
-        return num*60*60
+        return num * 60 * 60
     elif unit == 'd':
-        return num*60*60*24
+        return num * 60 * 60 * 24
     elif unit == 'w':
-        return num*60*60*24*7
+        return num * 60 * 60 * 24 * 7
     else:
         return 0
 
 
-async def string_to_secs(string):
+async def string_to_secs(string: str) -> int:
+    """Converts a time string to total seconds.
+
+    Args:
+        string (``str``):
+            String conatining the time.
+
+    Returns:
+        ``int``:
+            Total seconds of all the units.
+
+    Example:
+        >>> await string_to_sec("6h20m")
+        22800
+
+    """
     values = regexp.findall(string)
 
     totalValues = len(values)

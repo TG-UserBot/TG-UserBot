@@ -13,3 +13,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
+
+
+from os import listdir
+from os.path import dirname
+
+__all__ = [
+    helper[:-3] for helper in listdir(dirname(__file__))
+    if not helper.startswith("__") and helper[-3:] == ".py"
+]

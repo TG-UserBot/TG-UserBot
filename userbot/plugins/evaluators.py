@@ -21,18 +21,20 @@ from asyncio import (
     create_subprocess_exec, create_subprocess_shell, subprocess
 )
 
-from userbot.events import outgoing
+from userbot.events import basic_command, commands
 from userbot.helper_funcs.messages import limit_exceeded
 
 
-@outgoing(pattern=r"eval(?: |$)([\s\S]*)")
+@commands("eval")
+@basic_command(command=r"eval(?: |$)([\s\S]*)")
 async def evaluate(client, event):
+    """Evaluator function used to evaluate for .eval"""
     expression = event.matches[0].group(1).strip()
     reply = event.reply_to_message
     if not expression:
         await event.edit("Evaluated the void.")
         return
-    
+
     try:
         result = eval(
             expression, {'client': client, 'event': event, 'reply': reply}
@@ -50,8 +52,10 @@ async def evaluate(client, event):
     await event.reply(result)
 
 
-@outgoing(pattern=r"exec(?: |$)([\s\S]*)")
+@commands("exec")
+@basic_command(command=r"exec(?: |$)([\s\S]*)")
 async def execute(client, event):
+    """Executor function used to execute Python code for .exec"""
     code = event.matches[0].group(1).strip()
     if not code:
         await event.edit("Executed the void.")
@@ -63,8 +67,10 @@ async def execute(client, event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = (f"[**PID:** `{process.pid}`] "
-        f"[**Return code:** `{process.returncode}`]\n\n")
+    extras = (
+        f"[**PID:** `{process.pid}`] "
+        f"[**Return code:** `{process.returncode}`]\n\n"
+    )
 
     if stderr:
         text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
@@ -81,8 +87,10 @@ async def execute(client, event):
         await event.reply(extras + "Nice, get off the void.")
 
 
-@outgoing(pattern=r"term(?: |$)([\s\S]*)")
+@commands("term")
+@basic_command(command=r"term(?: |$)([\s\S]*)")
 async def terminal(client, event):
+    """Terminal function used to execute shell commands for .term"""
     cmd = event.matches[0].group(1).strip()
     if not cmd:
         await event.edit("Executed the void.")
@@ -94,8 +102,10 @@ async def terminal(client, event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = (f"[**PID:** `{process.pid}`] "
-        f"[**Return code:** `{process.returncode}`]\n\n")
+    extras = (
+        f"[**PID:** `{process.pid}`] "
+        f"[**Return code:** `{process.returncode}`]\n\n"
+    )
 
     if stderr:
         text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
