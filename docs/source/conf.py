@@ -76,7 +76,7 @@ autodoc_default_options = {
 }
 
 html_theme_options = {
-    'canonical_url': '',
+    'canonical_url': 'tg-userbot.readthedocs.io',
     'logo_only': False,
     'display_version': True,
     'collapse_navigation': True,

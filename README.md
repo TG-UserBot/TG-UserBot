@@ -64,5 +64,5 @@ Either submit pull requests or create an issue on here, if not, you can join the
 [//]: # (Comment)
    [pyrogram]: <https://github.com/pyrogram/pyrogram/>
    [tg-apps]: <https://my.telegram.org/apps>
-   [docs]: <>
+   [docs]: <tg-userbot.readthedocs.io>
    [support]: <https://t.me/tg_userbot_support>
