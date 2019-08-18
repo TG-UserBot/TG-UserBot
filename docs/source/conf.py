@@ -45,6 +45,7 @@ exclude_patterns = [
     '*__main__.py'
 ]
 
+master_doc = 'index'
 autosummary_generate = True
 napoleon_use_rtype = False
 pygments_style = "monokai"
