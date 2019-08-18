@@ -40,7 +40,9 @@ extensions = [
 ]
 
 exclude_patterns = [
-    '*generate_session.py'
+    '*generate_session.py',
+    '*__init__.py',
+    '*__main__.py'
 ]
 
 autosummary_generate = True
@@ -71,7 +73,7 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'undoc-members': True,
     'show-inheritance': True,
-    'exclude-members': '__init__',
+    'exclude-members': '__init__, __main__',
     'ignore-module-all': True
 }
 
@@ -97,5 +99,12 @@ html_context = {
 }
 
 
+def skip(app, what, name, obj, skip, options):
+    if name == "__init__" or name == '__main__':
+        return True
+    return skip
+
+
 def setup(app):
     app.add_stylesheet("css/lights_out.css")
+    app.connect("autodoc-skip-member", skip)
