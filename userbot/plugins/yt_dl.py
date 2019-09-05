@@ -57,6 +57,15 @@ params = {
     'quiet': True
 }
 
+try:
+    subprocess.Popen(
+        ['ffmpeg'],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
+    ffmpeg = True
+except OSError:
+    ffmpeg = False
+
 
 @commands("ytdl")
 @basic_command(command=r"yt_dl (.+?)(?: |$)(.+)?$")
@@ -65,15 +74,6 @@ async def yt_dl(client, event):
     match = event.matches[0]
     url = match.group(2)
     fmt = match.group(1)
-
-    try:
-        subprocess.Popen(
-            ['ffmpesg'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
-        ffmpeg = True
-    except OSError:
-        ffmpeg = False
 
     if fmt:
         fmt = fmt.strip()
