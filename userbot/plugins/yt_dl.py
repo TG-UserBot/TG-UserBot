@@ -72,8 +72,8 @@ except OSError:
 async def yt_dl(client, event):
     """YouTube-DL function used to download videos for .yt_dl"""
     match = event.matches[0]
-    url = match.group(2)
-    fmt = match.group(1)
+    url = match.group(1)
+    fmt = match.group(2)
 
     if fmt:
         fmt = fmt.strip()

@@ -32,7 +32,7 @@ $ mv sample_config.ini config.ini
 Install all the requirements using pip.
 
 ```sh
-$ pip3 install -r requirements.txt
+$ pip3 install --user -r requirements.txt
 ```
 
 Generate a session. The API ID and hash will be fetched from the config itself, but, you will be asked to enter your phone number and the verification code you recieve to successfully login.

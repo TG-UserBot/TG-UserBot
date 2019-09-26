@@ -183,9 +183,9 @@ YouTube-DL (*yt_dl*)
 --------------------
 Download videos from supported sites in your choice of format.
 
-**Usage:** ``.yt_dl listformats https://youtu.be/dWhyFfsb74g``
-or ``.yt_dl bestaudio+bestvideo https://youtu.be/dWhyFfsb74g``
-*Format: .yt_dl format url*
+**Usage:** ``.yt_dl https://youtu.be/dWhyFfsb74g listformats``
+or ``.yt_dl https://youtu.be/dWhyFfsb74g bestaudio+bestvideo``
+*Format: .yt_dl url format*
 
     Have a look at YouTube-DL's `format selection`_ for more information
     on formats and merging.
