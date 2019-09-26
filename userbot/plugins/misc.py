@@ -60,7 +60,7 @@ async def pingdc(client, event):
         average = out.split("Average = ")[1]
     else:
         out, err = await sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
-        average = (out + "ms")
+        average = (out.strip() + "ms")
     if err:
         await event.edit(err)
         return
