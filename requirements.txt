@@ -1,6 +1,7 @@
 aiohttp>=3.5.4
 hachoir>=3.0a5
 git+https://github.com/pyrogram/pyrogram.git@asyncio-dev
+packaging>=19.2
 Pillow>=6.0.0
 requests>=2.22.0
 tgcrypto
