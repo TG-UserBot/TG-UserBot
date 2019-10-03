@@ -56,7 +56,7 @@ Either submit pull requests or create an issue on here, if not, you can join the
 - Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE)
 
 [//]: # (Comment)
-   [pyrogram]: <https://github.com/LonamiWebs/Telethon/>
+   [telethon]: <https://github.com/LonamiWebs/Telethon/>
    [tg-apps]: <https://my.telegram.org/apps>
    [docs]: <https://tg-userbot.readthedocs.io>
    [support]: <https://t.me/tg_userbot_support>
