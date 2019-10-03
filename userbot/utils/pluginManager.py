@@ -112,9 +112,9 @@ class PluginManager:
                 )
                 exit(1)
         try:
+            path = path.replace('/', '.')
             spec = util.find_spec(path)
             module = util.module_from_spec(spec)
-            # TODO: Try to implement reload if required. import_module is eh.
             spec.loader.exec_module(module)
             # To make plugins impoartable use "sys.modules[path] = module".
             callbacks: List[Callback] = []
