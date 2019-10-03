@@ -99,7 +99,7 @@ class PluginManager:
             for f in Path(self.plugin_path).glob("**/*.py"):
                 if f.name != "__init__.py" and not f.name.startswith('_'):
                     name = f.name[:-3]
-                    path = relpath(f)[:-3].replace("\\", ".")
+                    path = relpath(f)[:-3].replace('\\', '.').replace('/', '.')
                     plugins.append((name, path))
         return plugins
 
@@ -112,7 +112,6 @@ class PluginManager:
                 )
                 exit(1)
         try:
-            path = path.replace('/', '.')
             spec = util.find_spec(path)
             module = util.module_from_spec(spec)
             spec.loader.exec_module(module)
