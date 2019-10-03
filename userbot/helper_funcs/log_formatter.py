@@ -48,11 +48,11 @@ class CustomFormatter(Formatter):
         """
         first_half = "[%(asctime)s / %(levelname)s]"
 
-        if record.name.startswith('userbot'):
+        if record.name.startswith('telethon'):
             second_half = (
                 " {0};1m%(name)s:{1} %(message)s".format(CBOT, CEND)
             )
-        elif record.name.startswith('pyrogram'):
+        elif record.name.startswith('userbot'):
             second_half = (
                 " {0}%(name)s:{1} %(message)s".format(CPYR, CEND)
             )

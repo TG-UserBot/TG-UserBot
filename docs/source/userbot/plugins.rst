@@ -2,7 +2,7 @@
 
 
 =================
-Available modules
+Available Modules
 =================
 
 All the available modules/smart plugins in the UserBot are

@@ -17,12 +17,7 @@
 
 from asyncio import get_event_loop
 from concurrent.futures import Executor
-from youtube_dl import YoutubeDL, render_table
-from youtube_dl.utils import (
-    DownloadError, ContentTooShortError, ExtractorError, GeoRestrictedError,
-    MaxDownloadsReached, PostProcessingError, UnavailableVideoError,
-    XAttrMetadataError
-)
+import youtube_dl
 
 from .. import LOGGER
 
@@ -94,7 +89,7 @@ async def list_formats(info_dict: dict) -> str:
     """
     formats = info_dict.get('formats', [info_dict])
     table = [
-        [f['format_id'], f['ext'], YoutubeDL.format_resolution(f)]
+        [f['format_id'], f['ext'], youtube_dl.YoutubeDL.format_resolution(f)]
         for f in formats
         if f.get('preference') is None or f['preference'] >= -1000]
     if len(formats) > 1:
@@ -103,7 +98,7 @@ async def list_formats(info_dict: dict) -> str:
     header_line = ['format code', 'extension', 'resolution']
     fmtStr = (
         '`Available formats for %s:`\n`%s`' %
-        (info_dict['title'], render_table(header_line, table))
+        (info_dict['title'], youtube_dl.render_table(header_line, table))
     )
     return fmtStr
 
@@ -131,29 +126,29 @@ async def extract_info(
             Successfull string or info_dict on success or an exception's
             string if any occur.
     """
-    ytdl = YoutubeDL(params)
+    ytdl = youtube_dl.YoutubeDL(params)
 
     def downloader(download):
         try:
             info_dict = ytdl.extract_info(url, download=download)
-        except DownloadError as DE:
+        except youtube_dl.utilsDownloadError as DE:
             return ("`" + str(DE) + "`")
-        except ContentTooShortError:
+        except youtube_dl.utilsContentTooShortError:
             return "`There download content was too short.`"
-        except GeoRestrictedError:
+        except youtube_dl.utilsGeoRestrictedError:
             return (
                 "`Video is not available from your geographic location due "
                 "to geographic restrictions imposed by a website.`"
             )
-        except MaxDownloadsReached:
+        except youtube_dl.utilsMaxDownloadsReached:
             return "`Max-downloads limit has been reached.`"
-        except PostProcessingError:
+        except youtube_dl.utilsPostProcessingError:
             return "`There was an error during post processing.`"
-        except UnavailableVideoError:
+        except youtube_dl.utilsUnavailableVideoError:
             return "`Video is not available in the requested format.`"
-        except XAttrMetadataError as XAME:
+        except youtube_dl.utilsXAttrMetadataError as XAME:
             return f"`{XAME.code}: {XAME.msg}\n{XAME.reason}`"
-        except ExtractorError:
+        except youtube_dl.utilsExtractorError:
             return "`There was an error during info extraction.`"
         except Exception as e:
             eStr = str(type(e)) + ": " + str(e)
@@ -171,6 +166,6 @@ async def extract_info(
     try:
         result = fut.result()
     except Exception as exc:
-        LOGGER.warning(exc)
+        LOGGER.exception(exc)
     finally:
         return result

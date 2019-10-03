@@ -2,7 +2,7 @@
 
 
 ===================
-Available commands
+Available Commands
 ===================
 
 You will find all the commands available in the UserBot including their
@@ -10,8 +10,9 @@ description, how to use them correctly and what they return.
 
 
 .. note::
-    ``.`` is the prefix used on here but you can also use ``/`` or ``#`` instead
-    for normal commands, main commands can't be executed with ``#``.
+    ``.`` is the prefix used on here but you can also use ``/``, ``#``, etc.
+    by setting with with ``<prefix>setprefix <newprefix>``. For instance:
+    ``.setprefix /`` changes ``.`` to ``/``.
 
 
 .. contents::
@@ -23,11 +24,20 @@ Main Commands
 
 Commands (*commands*)
 ---------------------
-Lists all the available bot commands (enabled or disabled doesn't matter).
+Lists all the enabled bot commands.
 
 **Usage:** ``.commands``
 
-**Returns:** A list of all the bot commands.
+**Returns:** A list of all the enabled bot commands.
+
+
+Set Prefix (*setprefix*)
+------------------------
+Change the default prefix for all the commands.
+
+**Usage:** ``.setprefix !``
+
+**Returns:** The new prefix and how to reset to old prefix.
 
 
 Disable (*disable*)
@@ -60,7 +70,7 @@ Enable any disabled bot commands with it's name.
 
 Restart (*restart*)
 -------------------
-Restarts the Pyrogram client. This reloads all the modules (smart plugins)
+Restarts the Telethon client. This reloads all the modules (smart plugins)
 with it.
 
 **Usage:** ``.restart``
@@ -68,7 +78,7 @@ with it.
 
 Shutdown (*shutdown*)
 ---------------------
-Stops the Pyrogram client and exits the main script completely.
+Stops the Telethon client and exits the main script completely.
 
 **Usage:** ``.shutdown``
 
@@ -161,6 +171,19 @@ no replied to messages, then the last 10 messages will be used as source and
 the one which has a match will be used for replacement.
 
 
+Regex Ninja (*regexninja*)
+--------------------------
+Automatically deletes sed commands for regexbot.
+
+**Usage:** ``regexninja on`` or ``regexninja off`` or
+``regexninja``
+
+    * on or off are used to set the mode. Without it, it'll return the current
+      value.
+
+**Returns:** New or current mode for Regex Ninja.
+
+
 Get sticker (*getsticker*)
 --------------------------
 Convert a sticker to a png format.
@@ -170,11 +193,11 @@ Convert a sticker to a png format.
 **Returns:** Sends the replied to sticker in a png format.
 
 
-DC (*dc*)
----------
-Get DC and country information of account.
+Nearest DC (*nearestdc*)
+------------------------
+Get your current DC, nearest DC and country information of account.
 
-**Usage:** ``.dc``
+**Usage:** ``.nearestdc``
 
 **Returns:** Your current DC, nearest DC and current country.
 

@@ -15,40 +15,39 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from os import remove
-from os.path import isfile
+from io import BytesIO
 from PIL import Image
 
-from userbot.events import basic_command, commands
+from userbot import client
 
 
-@commands("getsticker")
-@basic_command(command="getsticker$")
-async def getsticker(client, event):
+@client.onMessage(
+    command="getsticker", info="Get a stickers PNG or JPG",
+    outgoing=True, regex="getsticker$"
+)
+async def getsticker(event):
     """Get sticker function used to convert a sticker for .getsticker"""
-    reply = event.reply_to_message
-    if not reply:
+    if not event.reply_to_msg_id:
         await event.edit("`Reply to a sticker first.`")
         return
 
+    reply = await event.get_reply_message()
     sticker = reply.sticker
     if not sticker:
         await event.edit("`This isn't a sticker, smh.`")
         return
 
-    if isfile("sticker.png"):
-        remove("sticker.png")
-
     if sticker.mime_type == "application/x-tgsticker":
         await event.edit("`No point in uploading animated stickers.`")
         return
     else:
-        webp = await client.download_media(reply)
-        pilImg = Image.open(webp)
-        pilImg.save("sticker.png", format="PNG")
+        sticker = BytesIO()
+        await client.download_media(reply, sticker)
+        pilImg = Image.open(sticker)
+        pilImg.save(sticker, format="PNG")
         pilImg.close()
-        await reply.reply_document("sticker.png")
-        remove(webp)
-        remove("sticker.png")
+        sticker.seek(0)
+        sticker.name = "sticcer.png"
+        await reply.reply(file=sticker)
 
     await event.delete()

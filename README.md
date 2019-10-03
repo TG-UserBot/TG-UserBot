@@ -1,6 +1,6 @@
 # TG-UserBot
 
-A modular Telegram UserBot for Python which uses the [Pyrogram][pyrogram] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
+A modular Telegram UserBot for Python which uses the [Telethon][telethon] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
 
 ### Requirements
 
@@ -35,13 +35,7 @@ Install all the requirements using pip.
 $ pip3 install --user -r requirements.txt
 ```
 
-Generate a session. The API ID and hash will be fetched from the config itself, but, you will be asked to enter your phone number and the verification code you recieve to successfully login.
-
-```sh
-$ python3 generate_session.py
-```
-
-Run the UserBot once you have a valid session and configuration file.
+Run the UserBot once you have a valid configuration file.
 
 ```sh
 $ python3 -m userbot
@@ -62,7 +56,7 @@ Either submit pull requests or create an issue on here, if not, you can join the
 - Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE)
 
 [//]: # (Comment)
-   [pyrogram]: <https://github.com/pyrogram/pyrogram/>
+   [pyrogram]: <https://github.com/LonamiWebs/Telethon/>
    [tg-apps]: <https://my.telegram.org/apps>
    [docs]: <https://tg-userbot.readthedocs.io>
    [support]: <https://t.me/tg_userbot_support>

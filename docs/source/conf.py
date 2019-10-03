@@ -66,8 +66,7 @@ show_authors = True
 
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'pyrogram': ('https://docs.pyrogram.org/dev/', None)
+    'python': ('https://docs.python.org/3', None)
 }
 
 autodoc_default_options = {

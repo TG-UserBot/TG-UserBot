@@ -15,34 +15,17 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Union, Tuple
-from pyrogram.api.types import (
-    ChannelFull, ChatFull, UserFull,
-    Photo, PhotoEmpty
+from telethon.tl.types import (
+    ChannelFull, ChatFull, UserFull
 )
-
-from .. import client
 
 
 class Parser:
     """Parse UserFull, ChannelFull and ChatFull objects."""
 
     @staticmethod
-    async def parse_full_user(
-        usr_obj: UserFull
-    ) -> Tuple[Union[Photo, PhotoEmpty], str]:
-        """Parse UserFull object in a proper readable format.
-
-        Args:
-            usr_obj (:obj:`UserFull<pyrogram.api.types>`):
-                UserFull object to parse.
-
-        Returns:
-            ((:obj:`Photo<pyrogram.api.types>` | :obj:`PhotoEmpty<pyrogram.api.types>`), ``str``):
-                Photo or PhotoEmpty object and a formatted string.
-        """
+    async def parse_full_user(usr_obj: UserFull, event) -> str:
         user = usr_obj.user
-        profile_pic = usr_obj.profile_photo
 
         user_id = user.id
         is_self = user.is_self
@@ -61,9 +44,9 @@ class Parser:
         common_chats_count = usr_obj.common_chats_count
         blocked = usr_obj.blocked
         about = usr_obj.about
-        total_pics = await client.get_profile_photos_count(user_id)
+        total_pics = (await event.client.get_profile_photos(user_id)).total
 
-        text = "**[User]**\n\n"
+        text = "**USER**\n\n"
         text += f"**ID:** [{user_id}](tg://user?id={user_id})"
         if first_name:
             text += f"\n**First name:** `{first_name}`"
@@ -97,34 +80,22 @@ class Parser:
             text += f"\n**Blocked:** `{blocked}`"
         if scam:
             text += f"\n**Scam:** `{scam}`"
-        if total_pics and total_pics > 1:
+        if total_pics:
             text += f"\n**Total profile pictures:** `{total_pics}`"
 
-        return profile_pic, text
+        return text
 
     @staticmethod
-    async def parse_full_chat(
-        chat_obj: (ChatFull, ChannelFull)
-    ) -> Tuple[None, str]:
-        """Parse ChatFull or ChannelFull object in a proper readable format.
-
-        Args:
-            chat_obj (:obj:`ChatFull<pyrogram.api.types>` | :obj:`ChannelFull<pyrogram.api.types>`):
-                ChatFull or ChannelFull object to parse.
-
-        Returns:
-            (``None``, ``str``):
-                None (cannot download the photo) and a formatted string.
-        """
+    async def parse_full_chat(chat_obj: (ChatFull, ChannelFull), event) -> str:
         full_chat = chat_obj.full_chat
         chats = chat_obj.chats[0]
         profile_pic = full_chat.chat_photo
 
         if isinstance(full_chat, ChatFull):
-            obj_type = "Chat"
-            participants = chats.participants_count
+            obj_type = "CHAT"
+            participants = len(chats.participants)
         else:
-            obj_type = "Channel"
+            obj_type = "CHANNEL"
             participants = full_chat.participants_count
             broadcast = chats.broadcast
             megagroup = chats.megagroup
@@ -142,8 +113,9 @@ class Parser:
         dc_id = profile_pic.dc_id if hasattr(profile_pic, "dc_id") else None
         about = full_chat.about
         bots = len(full_chat.bot_info)
+        total_pics = (await event.client.get_profile_photos(chat_id)).total
 
-        text = f"**[{obj_type}]**\n\n"
+        text = f"**{obj_type}**\n\n"
         text += f"**ID:** `{chat_id}`"
         if title:
             text += f"\n**Title:** `{title}`"
@@ -178,4 +150,7 @@ class Parser:
             if verified:
                 text += f"\n**Verified:** `{verified}`"
 
-        return None, text
+        if total_pics:
+            text += f"\n**Total profile pictures:** `{total_pics}`"
+
+        return text

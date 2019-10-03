@@ -1,7 +1,7 @@
 .. _create:
 
 =================
-Creating commands
+Creating Commands
 =================
 
 To create a command you need to make an async function with a Pyrogram
@@ -28,11 +28,10 @@ For instance, you say "xyz", it will reply to your text with
 
 .. code-block:: python
 
-    from userbot.events import commands, Filters, on_message
+    from userbot import client
 
-    @commands("echo")
-    @on_message(Filters.me & Filters.text)
-    async def echo(client, event):
+    @client.onMessage(from_users="me")
+    async def echo(event):
         text = "You said __{}__!".format(event.text)
         await event.reply(text)
 
@@ -41,9 +40,8 @@ To create function which edits your "hi" text to a "hello".
 
 .. code-block:: python
 
-    from userbot.events import commands, Filters, on_message
+    from userbot import client
 
-    @commands("hi")
-    @on_message(Filters.me & Filters.regex("(?i)^hi$")
-    async def hello(client, event):
+    @client.onMessage(from_users="me" regex="(?i)^hi$)
+    async def hello(event):
         await event.edit("hello")

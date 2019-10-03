@@ -21,16 +21,18 @@ from asyncio import (
     create_subprocess_exec, create_subprocess_shell, subprocess
 )
 
-from userbot.events import basic_command, commands
+from userbot import client
 from userbot.helper_funcs.messages import limit_exceeded
 
 
-@commands("eval")
-@basic_command(command=r"eval(?: |$)([\s\S]*)")
-async def evaluate(client, event):
+@client.onMessage(
+    command="eval", info="Evaluate something",
+    outgoing=True, regex=r"eval(?: |$)([\s\S]*)"
+)
+async def evaluate(event):
     """Evaluator function used to evaluate for .eval"""
     expression = event.matches[0].group(1).strip()
-    reply = event.reply_to_message
+    reply = await event.get_reply_message()
     if not expression:
         await event.edit("Evaluated the void.")
         return
@@ -52,9 +54,11 @@ async def evaluate(client, event):
     await event.reply(result)
 
 
-@commands("exec")
-@basic_command(command=r"exec(?: |$)([\s\S]*)")
-async def execute(client, event):
+@client.onMessage(
+    command="exec", info="Excecute something",
+    outgoing=True, regex=r"exec(?: |$)([\s\S]*)"
+)
+async def execute(event):
     """Executor function used to execute Python code for .exec"""
     code = event.matches[0].group(1).strip()
     if not code:
@@ -87,9 +91,11 @@ async def execute(client, event):
         await event.reply(extras + "Nice, get off the void.")
 
 
-@commands("term")
-@basic_command(command=r"term(?: |$)([\s\S]*)")
-async def terminal(client, event):
+@client.onMessage(
+    command="term", info="Execute something in the terminal",
+    outgoing=True, regex=r"term(?: |$)([\s\S]*)"
+)
+async def terminal(event):
     """Terminal function used to execute shell commands for .term"""
     cmd = event.matches[0].group(1).strip()
     if not cmd:

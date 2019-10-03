@@ -15,16 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from pyrogram.api.functions.help import GetNearestDc
+from telethon.tl.functions.help import GetNearestDcRequest
 
-from userbot.events import basic_command, commands
+from userbot import client
 
 
-@commands("dc")
-@basic_command(command="dc$")
-async def dc(client, event):
+@client.onMessage(
+    command="nearestdc", info="Get your DC information",
+    outgoing=True, regex="nearestdc$"
+)
+async def nearestdc(event):
     """DC function used to get information for .dc"""
-    result = await client.send(GetNearestDc())
+    result = await client(GetNearestDcRequest())
     text = (
         f"**Country:** `{result.country}`\n" +
         f"**This DC:** `{result.this_dc}`\n" +

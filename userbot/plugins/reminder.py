@@ -16,26 +16,26 @@
 
 
 from asyncio import sleep, create_task
-from pyrogram.api.functions.messages import ToggleDialogPin
+from telethon.tl.functions.messages import ToggleDialogPinRequest
 
 from userbot import client
-from userbot.events import basic_command, commands, Filters, on_message
 from userbot.helper_funcs.time import string_to_secs
 
 
 async def reminderTask(delay, string):
     """Reminder task function used to send the reminder after sleep."""
     await sleep(delay)
-    peer = await client.resolve_peer('self')
-    await client.send(
-        ToggleDialogPin(peer=peer, pinned=True)
+    await client(
+        ToggleDialogPinRequest(peer="self", pinned=True)
     )
-    await client.send_message('self', string)
+    await client.send_message("self", string)
 
 
-@commands("remindme")
-@basic_command(command=r"remindme (\w+) ([\s\S]*)")
-async def remindme(c, event):
+@client.onMessage(
+    command="remindme", info="Recieve a reminder in your saved messages",
+    outgoing=True, regex=r"remindme (\w+) ([\s\S]*)"
+)
+async def remindme(event):
     """Remind me function used to create a reminder for .remindme"""
     time = event.matches[0].group(1)
     text = event.matches[0].group(2)
@@ -55,16 +55,17 @@ async def remindme(c, event):
         await event.edit("`No kan do. ma'am.`")
 
 
-@commands("dismiss")
-@on_message(Filters.incoming & Filters.me & Filters.regex("(?i)^dismiss$"))
-async def dismiss(c, event):
+@client.onMessage(
+    command="dismiss", info="Dismiss the reminder in your saved messages",
+    outgoing=True, regex=r"(?i)^dismiss$", disable_prefix=True
+)
+async def dismiss(event):
     """Dismiss function used to delete and unpin dialogs for dismiss"""
-    reply = event.reply_to_message
+    reply = await event.get_reply_message()
     if reply:
         await reply.delete()
     await event.delete()
 
-    peer = await client.resolve_peer('self')
-    await client.send(
-        ToggleDialogPin(peer=peer, pinned=None)
+    await client(
+        ToggleDialogPinRequest(peer="self", pinned=None)
     )

@@ -15,26 +15,21 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from io import BytesIO
-from typing import Union
+from telethon.tl.types import User
+from telethon.utils import get_display_name
 
-from telethon.tl.types import Message
+from userbot.helper_funcs.log_formatter import CUSR, CEND
 
 
-async def limit_exceeded(
-    event: Message,
-    message: str,
-    reply: bool = False
-) -> Union[Message, None]:
-    output = BytesIO(message.strip().encode())
-    output.name = "output.txt"
-    if reply:
-        sent = await event.client.send_file(
-            event.chat.id, file=output, reply_to=event
-        )
-    else:
-        sent = await event.client.send_file(
-            event.chat.id, file=output
-        )
-    output.close()
-    return sent
+def printUser(entity: User) -> None:
+    user = get_display_name(entity)
+    print(
+        "\nSuccessfully logged in as {0}{2}{1}".format(CUSR, CEND, user)
+    )
+
+
+def printVersion(version: int, prefix: str) -> None:
+    print(
+        "{0}UserBot v{2}{1} is running, test it by sending {3}ping in"
+        " any chat.\n".format(CUSR, CEND, version, prefix)
+    )

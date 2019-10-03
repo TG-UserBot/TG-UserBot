@@ -6,7 +6,7 @@ Welcome to TG-UserBot's documentation
 What is this?
 -------------
 **TG-UserBot** is a modular Python script for Telegram_ which uses the
-Pyrogram_ library. It is made to help you do your usual client tasks without
+Telethon_ library. It is made to help you do your usual client tasks without
 the hassle and also has some additional useful features. If a command is
 documented, it will be on the :doc:`Available commands<userbot/commands>` page
 including it's description with an example if any.
@@ -40,8 +40,8 @@ buttons at the end of the page. Main topics are listed below accordingly.
   their functions can be found here with their descriptions.
 * :doc:`Helper functions<userbot/helper_funcs>`: All the functions used
   to reduce bloat in multiple modules can be found here with their examples.
-* :doc:`Decorators and events<userbot/events>`: Functions used to register
-  functions to their message handlers and decorators.
+* :doc:`Utilities<userbot/utils>`: Utilities used to keep the bot organized
+  and clean.
 * :doc:`Creating your own command<userbot/create>`: Examples to create your
   own commands can be found here.
 
@@ -51,7 +51,7 @@ discuss something then you may join the `support group`_ on Telegram.
 
 .. _FFMPEG: https://www.ffmpeg.org
 .. _Git: https://git-scm.com
-.. _Pyrogram: https://docs.pyrogram.org/dev/
+.. _Telethon: https://telethon.readthedocs.io/en/latest/
 .. _Python: https://www.python.org
 .. _support group: https://t.me/tg_userbot_support
 .. _Telegram: https://telegram.org
@@ -73,6 +73,6 @@ discuss something then you may join the `support group`_ on Telegram.
 
    userbot/commands
    userbot/plugins
-   userbot/events
    userbot/helper_funcs
+   userbot/utils
    userbot/create

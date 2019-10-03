@@ -57,29 +57,6 @@ proceeding any further.
     $ pip3 install --user -r requirements.txt
 
 
-Generating a session
---------------------
-.. note::
-    You will need to enter your phone number and enter the recieved
-    verification code in terminal to login.
-
-    If the code is correct and it doesn't work (invalid) then Telegram
-    has detected the code being sent to others. There's nothing you
-    can do about this so try again later.
-
-    If there's an existing ``userbot.session`` in the directory,
-    script will exit to prevent logging in using that
-    (terminated / corrupted) session.
-
-Now that you have a proper configuration and all the requirements installed.
-You need to generate a session in order to connect to Telegram and run the
-UserBot script.
-
-.. code:: sh
-
-    $ python3 generate_session.py
-
-
 Running the UserBot
 -------------------
 That's it. You're all done with the jarring work, you can now run the main

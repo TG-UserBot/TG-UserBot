@@ -18,7 +18,7 @@
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from userbot.events import basic_command, commands
+from userbot import client
 from userbot.helper_funcs.yt_dl import (
     extract_info, hook, list_formats, YTdlLogger
 )
@@ -67,13 +67,14 @@ except OSError:
     ffmpeg = False
 
 
-@commands("ytdl")
-@basic_command(command=r"yt_dl (.+?)(?: |$)(.+)?$")
-async def yt_dl(client, event):
+@client.onMessage(
+    command="yt_dl", info="YouTube-Dl to download videos via TG",
+    outgoing=True, regex=r"yt_dl (.+?)(?: |$)(.+)?$"
+)
+async def yt_dl(event):
     """YouTube-DL function used to download videos for .yt_dl"""
-    match = event.matches[0]
-    url = match.group(1)
-    fmt = match.group(2)
+    url = event.matches[0].group(1)
+    fmt = event.matches[0].group(2)
 
     if fmt:
         fmt = fmt.strip()

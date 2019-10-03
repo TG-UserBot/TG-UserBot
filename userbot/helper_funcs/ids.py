@@ -15,37 +15,34 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from telethon.tl.types import (
+    Message, MessageEntityMention, MessageEntityMentionName
+)
 from typing import Union
-
-from pyrogram import Message
 
 
 async def get_user_from_msg(event: Message) -> Union[int, str, None]:
-    """Get a peer from a message’s text or entities.
-
-    Args:
-        event (:obj:`Message <pyrogram.Message>`):
-            Pyrogram’s Message object.
-
-    Returns:
-        ``int`` | ``str`` | ``None``:
-            ID or username if successful, None otherwise.
-    """
     user = None
     match = event.matches[0].group(1)
 
     if match == "this":
-        match = str(event.chat.id)
+        match = event.chat_id
 
     if event.entities:
         for entity in event.entities:
-            if entity.type == "text_mention":
-                return entity.user.id
-            elif entity.type == "mention":
+            if isinstance(entity, MessageEntityMentionName):
+                return entity.user_id
+            elif isinstance(entity, MessageEntityMention):
                 offset = entity.offset
                 length = entity.length
                 maxlen = offset + length
                 return event.text[offset:maxlen]
+
     if match:
-        user = int(match) if match.isdigit() else match.strip()
+        if match == str and match.isdigit():
+            user = int(match)
+        elif match == str:
+            user = match.strip()
+        else:
+            user = match
     return user

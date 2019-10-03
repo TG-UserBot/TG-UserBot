@@ -15,28 +15,36 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from os import remove
-from pyrogram.api.functions.users import GetFullUser
-from pyrogram.api.functions.messages import GetFullChat
-from pyrogram.api.functions.channels import GetFullChannel
-from pyrogram.api.functions.account import UpdateProfile
-from pyrogram.api.types import InputPeerChannel, InputPeerChat
-from pyrogram.errors import (
-    RPCError, UsernameNotOccupied, FirstnameInvalid, LastnameInvalid,
-    AboutTooLong, UsernameInvalid, UsernameNotModified, UsernameOccupied,
-    PeerIdInvalid
+from io import BytesIO
+from telethon.tl.functions.users import GetFullUserRequest
+from telethon.tl.functions.channels import GetFullChannelRequest
+from telethon.tl.functions.messages import GetFullChatRequest
+from telethon.tl.functions.account import (
+    UpdateProfileRequest, UpdateUsernameRequest
+)
+from telethon.tl.functions.photos import (
+    DeletePhotosRequest, UploadProfilePhotoRequest
+)
+from telethon.tl.types import (
+    InputPeerChat, InputPeerChannel, MessageMediaPhoto, MessageMediaDocument
+)
+from telethon.errors import (
+    AboutTooLongError, FirstNameInvalidError, UsernameInvalidError,
+    UsernameNotModifiedError, UsernameOccupiedError, FilePartsInvalidError,
+    ImageProcessFailedError, PhotoCropSizeSmallError, PhotoExtInvalidError
 )
 
-from userbot.events import basic_command, commands
+from userbot import client
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
 
 
-@commands("whois")
-@basic_command(command=r"(?:who|what)is(?: |$)(.*)$")
-async def whois(client, event):
+@client.onMessage(
+    command="whois", info="Get information about a user or chat",
+    outgoing=True, regex=r"(?:who|what)is(?: |$)(.*)$"
+)
+async def whois(event):
     match = event.matches[0].group(1)
-    reply = event.reply_to_message
     reply_id = None
 
     if event.entities or match:
@@ -47,72 +55,52 @@ async def whois(client, event):
     else:
         user = "self"
 
-    if reply:
-        reply_id = reply.message_id
+    if event.reply_to_msg_id:
+        reply_id = event.reply_to_msg_id
         if not match:
-            if reply.forward_from:
-                user = reply.forward_from.id
-            else:
-                user = reply.from_user.id
+            reply = await event.get_reply_message()
+            if reply.fwd_from:
+                if reply.fwd_from.from_id:
+                    user = reply.fwd_from.from_id
+                else:
+                    user = reply.sender_id
 
     try:
-        input_entity = await client.resolve_peer(user)
-    except UsernameNotOccupied:
-        await event.edit("`This username is not occupied.`")
-        return
-    except UsernameInvalid:
-        await event.edit("`This username is invalid.`")
-        return
-    except PeerIdInvalid:
-        await event.edit("`The id/access_hash combination is invalid.`")
-        return
-    except KeyError:
-        await event.edit("`Peer doesn’t exist in the internal database.`")
-        return
-    except Exception as E:
-        await event.edit(f"`I don't know what the hell happened.`\n\n{E}")
+        input_entity = await client.get_input_entity(user)
+    except Exception as e:
+        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
     try:
         if isinstance(input_entity, InputPeerChat):
-            full_chat = await client.send(
-                GetFullChat(chat_id=input_entity)
+            full_chat = await client(
+                GetFullChatRequest(chat_id=input_entity)
             )
-            pfp, string = await Parser.parse_full_chat(full_chat)
+            string = await Parser.parse_full_chat(full_chat, event)
         elif isinstance(input_entity, InputPeerChannel):
-            full_channel = await client.send(
-                GetFullChannel(channel=input_entity)
+            full_channel = await client(
+                GetFullChannelRequest(channel=input_entity)
             )
-            pfp, string = await Parser.parse_full_chat(full_channel)
+            string = await Parser.parse_full_chat(full_channel, event)
         else:
-            full_user = await client.send(
-                GetFullUser(id=input_entity)
+            full_user = await client(
+                GetFullUserRequest(id=input_entity)
             )
-            pfp, string = await Parser.parse_full_user(full_user)
-    except RPCError as RCP:
-        await event.edit(RCP)
+            string = await Parser.parse_full_user(full_user, event)
+    except Exception as e:
+        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
-    await event.delete()
-    if pfp:
-        photo = await client.get_profile_photos(user, limit=1)
-        await client.send_photo(
-            event.chat.id,
-            photo=photo[0].file_id,
-            caption=string,
-            reply_to_message_id=reply_id
-        )
-    else:
-        await client.send_message(
-            event.chat.id,
-            string,
-            reply_to_message_id=reply_id
-        )
+    if reply_id:
+        await event.delte()
+    await event.respond(string, reply_to=reply_id)
 
 
-@commands("name")
-@basic_command(command="name(?: |$)(.*)$")
-async def name(client, event):
+@client.onMessage(
+    command="name", info="Change your name",
+    outgoing=True, regex="name(?: |$)(.*)$"
+)
+async def name(event):
     match = event.matches[0].group(1)
     if not match:
         me = await client.get_me()
@@ -127,24 +115,25 @@ async def name(client, event):
     last = split[1] if len(split) == 2 else None
 
     try:
-        await client.send(UpdateProfile(
+        await client(UpdateProfileRequest(
             first_name=first,
             last_name=last
         ))
         await event.edit("`Name was successfully changed.`")
-    except FirstnameInvalid:
+    except FirstNameInvalidError:
         await event.edit("`The first name is invalid.`")
-    except LastnameInvalid:
-        await event.edit("`The last name is invalid.`")
+    except Exception as e:
+        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
 
 
-@commands("bio")
-@basic_command(command="bio(?: |$)(.*)$")
-async def bio(client, event):
+@client.onMessage(
+    command="bio", info="Change your bio",
+    outgoing=True, regex="bio(?: |$)(.*)$"
+)
+async def bio(event):
     match = event.matches[0].group(1)
     if not match:
-        entity = await client.resolve_peer("self")
-        about = (await client.send(GetFullUser(id=entity))).about
+        about = (await client(GetFullUserRequest("self"))).about
         if about:
             await event.edit(f"**{about}**")
         else:
@@ -152,45 +141,48 @@ async def bio(client, event):
         return
 
     try:
-        await client.send(UpdateProfile(about=match))
+        await client(UpdateProfileRequest(about=match))
         await event.edit("`Bio was successfully changed.`")
-    except AboutTooLong:
+    except AboutTooLongError:
         await event.edit("`The about text is too long.`")
 
 
-@commands("username")
-@basic_command(command="username(?: |$)(.*)$")
-async def username(client, event):
+@client.onMessage(
+    command="username", info="Change your username",
+    outgoing=True, regex="username(?: |$)(.*)$"
+)
+async def username(event):
     match = event.matches[0].group(1)
     if not match:
-        username = event.from_user.username
+        username = (await client.get_me()).username
         if username:
             await event.edit(f"**{username}**")
         else:
-            await event.edit("No username found.")
+            await event.edit("`You currently have no username.`")
         return
 
     try:
-        await client.update_username(username=match)
-    except UsernameOccupied:
+        await client(UpdateUsernameRequest(username=match))
+        await event.edit(f"`Successfully changed username to {match}`")
+    except UsernameOccupiedError:
         await event.edit("`The username is already in use.`")
-    except UsernameNotModified:
+    except UsernameNotModifiedError:
         await event.edit("`The username was not modified.`")
-    except UsernameInvalid:
+    except UsernameInvalidError:
         await event.edit("`The username is invalid.`")
 
 
-@commands("pfp")
-@basic_command(command="pfp$")
-async def pfp(client, event):
-    reply = event.reply_to_message
+@client.onMessage(
+    command="pfp", info="Change your username",
+    outgoing=True, regex="pfp$"
+)
+async def pfp(event):
+    reply = await event.get_reply_message()
     if not reply:
-        photo = await client.get_profile_photos("self", limit=1)
+        photo = (await client(GetFullUserRequest("self"))).profile_photo
         if photo:
-            pfp = await client.download_media(photo[0])
             await event.delete()
-            await client.send_photo(event.chat.id, photo=pfp)
-            remove(pfp)
+            await event.respond(file=photo)
         else:
             await event.edit("`You currently have no profile picture.`")
         return
@@ -201,48 +193,54 @@ async def pfp(client, event):
         )
         return
 
-    if reply.photo or reply.document:
+    allowed = [MessageMediaDocument, MessageMediaPhoto]
+    if type(reply.media) in allowed:
         try:
-            temp_file = await client.download_media(reply)
-            if not temp_file:
-                await event.edit("`Couldn't download the media.`")
-                return
-        except RPCError:
-            await event.edit(RPCError)
+            temp_file = BytesIO()
+            await client.download_media(reply, temp_file)
+        except Exception as e:
+            await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+            temp_file.close()
             return
+        temp_file.seek(0)
+        photo = await client.upload_file(temp_file)
+        temp_file.close()
     else:
         await event.edit("`Invalid media type.`")
         return
 
     try:
-        await client.set_profile_photo(temp_file)
-        remove(temp_file)
+        await client(UploadProfilePhotoRequest(photo))
         await event.edit("`Profile photo was successfully changed.`")
-    except RPCError:
-        await event.edit(RPCError)
+    except FilePartsInvalidError:
+        await event.edit("`The number of file parts is invalid.`")
+    except ImageProcessFailedError:
+        await event.edit("`Failure while processing image.`")
+    except PhotoCropSizeSmallError:
+        await event.edit("`Photo is too small.`")
+    except PhotoExtInvalidError:
+        await event.edit("`The extension of the photo is invalid.`")
 
 
-@commands("delpfp")
-@basic_command(command=r"delpfp(?: |$)(\d*)$")
-async def delpfp(client, event):
+@client.onMessage(
+    command="delpfp", info="Delete your profile pictures",
+    outgoing=True, regex=r"delpfp(?: |$)(\d*|all)$"
+)
+async def delpfp(event):
     match = event.matches[0].group(1)
     if not match:
-        count = await client.get_profile_photos_count("self", None)
+        count = (await client.get_profile_photos("self")).total
         amount = ("one profile picture." if count == 1
                   else f"{count} profile pictures.")
-        await event.edit(f"`You currently have {amount}`")
+        await event.edit(f"`You currently have {amount.total}`")
         return
 
     await event.edit("`Processing all the profile pictures...`")
-    limit = None if int(match) == 0 else int(match)
-    photos = client.iter_profile_photos(
-        chat_id="self",
-        limit=limit,
-        offset=0
-    )
-    total_photos = [photo async for photo in photos]
-    await client.delete_profile_photos(total_photos)
-    amount = ("current profile picture." if len(photos) == 1
-              else f"{len(photos)} profile pictures.")
+    limit = 0 if match == "all" else int(match)
+    photos = await client.get_profile_photos("self", limit)
+    count = len(photos)
+    await client(DeletePhotosRequest(photos))
+    amount = ("current profile picture." if count == 1
+              else f"{count} profile pictures.")
     text = f"`Successfully deleted {amount}`"
     await event.edit(text)
