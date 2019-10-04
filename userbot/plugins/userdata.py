@@ -173,7 +173,7 @@ async def username(event):
 
 
 @client.onMessage(
-    command="pfp", info="Change your username",
+    command="pfp", info="Change your profile picture",
     outgoing=True, regex="pfp$"
 )
 async def pfp(event):
@@ -223,7 +223,7 @@ async def pfp(event):
 
 
 @client.onMessage(
-    command="delpfp", info="Delete your profile pictures",
+    command="delpfp", info="Delete your profile picture(s)",
     outgoing=True, regex=r"delpfp(?: |$)(\d*|all)$"
 )
 async def delpfp(event):
