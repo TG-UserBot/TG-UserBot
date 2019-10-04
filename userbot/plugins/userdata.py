@@ -92,7 +92,7 @@ async def whois(event):
         return
 
     if reply_id:
-        await event.delte()
+        await event.delete()
     await event.respond(string, reply_to=reply_id)
 
 

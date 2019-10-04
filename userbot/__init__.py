@@ -109,12 +109,13 @@ def verifyLoggerGroup(client: UserBotClient) -> None:
             client.get_entity(LOGGER_CHAT_ID)
         )
         if not isinstance(entity, User):
-            if entity.default_banned_rights.send_messages:
-                LOGGER.error(
-                    "Permissions missing to send messages "
-                    "for the specified Logger group."
-                )
-                USERBOT_LOGGER = False
+            if not entity.creator:
+                if entity.default_banned_rights.send_messages:
+                    LOGGER.error(
+                        "Permissions missing to send messages "
+                        "for the specified Logger group."
+                    )
+                    USERBOT_LOGGER = False
     except ValueError:
         LOGGER.error(
             "Logger group ID cannot be found. "

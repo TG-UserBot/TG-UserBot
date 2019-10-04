@@ -79,12 +79,12 @@ class UserBotClient(TelegramClient):
         self.pluginManager.active_plugins = []
         self.commands.clear()
         self.disabled_commands.clear()
-        await self.disconnect()
+        # await self.disconnect() Comment it out for now
         for module in modules:
             # Required to update helper and util file.
             if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
                 reload(modules[module])
-        await self.connect()
+        # await self.connect() Comment it out for now
         await event.edit(
             "`Succesfully removed all the handlers and started "
             "the client again! Adding the new handlers now. BRB..`"

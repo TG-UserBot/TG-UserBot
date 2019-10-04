@@ -81,7 +81,7 @@ class PluginManager:
             for callback in plugin.callbacks:
                 self.client.add_event_handler(callback.callback)
                 LOGGER.debug(
-                    "Added event handler for %s.", callback.__class__.__name__
+                    "Added event handler for %s.", callback.callback.__name__
                 )
 
     def remove_handlers(self):
@@ -90,7 +90,7 @@ class PluginManager:
                 self.client.remove_event_handler(callback.callback)
                 LOGGER.debug(
                     "Removed event handlers for %s.",
-                    callback.__class__.__name__
+                    callback.callback.__name__
                 )
 
     def _list_plugins(self):

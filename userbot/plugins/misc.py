@@ -17,7 +17,7 @@
 
 from asyncio import create_subprocess_shell, subprocess
 from datetime import datetime
-from sys import platform, exit
+from sys import platform
 from telethon.tl.functions.help import GetNearestDcRequest
 
 from userbot import client
@@ -106,7 +106,6 @@ async def shutdown(event):
     """Shutdown userbot."""
     await event.edit("`Disconnecting the client and exiting. Ciao!`")
     await event.client.disconnect()
-    exit(0)
 
 
 @client.onMessage(

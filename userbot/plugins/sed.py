@@ -24,6 +24,8 @@
 from asyncio import sleep
 from re import match, MULTILINE, IGNORECASE
 
+from telethon.tl.types import ChannelParticipantsBots
+
 from userbot import client
 from userbot.helper_funcs.sed import sub_matches
 
@@ -53,6 +55,14 @@ async def sed_substitute(event):
     if not match(r"^(?:[1-9]+(?:sed|s)|(?:sed|s))", event.text, IGNORECASE):
         return
 
+    if event.matches[0].group('d') == '/':
+        #  Ignore if regexbot is in the chat and we use it's delimiter
+        async for bot in event.client.iter_participants(
+            event.chat_id, filter=ChannelParticipantsBots
+        ):
+            if bot.username == "regexbot":
+                return
+
     matches = event.matches
     reply = await event.get_reply_message()
 
@@ -64,7 +74,7 @@ async def sed_substitute(event):
 
             newStr = await sub_matches(matches, original.text)
             if newStr:
-                await original.reply(newStr)
+                await original.reply('[SED]\n\n' + newStr)
         else:
             total_messages = []  # Append messages to avoid timeouts
             count = 0  # Don't fetch more than ten texts/captions
@@ -84,7 +94,7 @@ async def sed_substitute(event):
             for message in total_messages:
                 newStr = await sub_matches(matches, message.text)
                 if newStr:
-                    await message.reply(newStr)
+                    await message.reply('[SED]\n\n' + newStr)
                     break
     except Exception as e:
         await event.reply((
@@ -127,7 +137,8 @@ async def regex_ninja(event):
 
 
 @client.onMessage(
-    outgoing=True, regex=r"(?i)^s/", disable_prefix=True
+    outgoing=True, disable_prefix=True,
+    regex=(r'^s/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?', IGNORECASE)
 )
 async def ninja(event):
     if REGEXNINJA:

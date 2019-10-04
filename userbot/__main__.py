@@ -16,11 +16,10 @@
 
 
 from logging import StreamHandler
-from sys import exit
 
 from userbot import (
     __copyright__, __license__,
-    client, LOGGER, ROOT_LOGGER, verifyLoggerGroup
+    client, ROOT_LOGGER, verifyLoggerGroup
 )
 from userbot.helper_funcs.log_formatter import CustomFormatter
 from userbot.utils.helpers import printUser, printVersion
@@ -46,9 +45,4 @@ if __name__ == "__main__":
     printUser(client.loop.run_until_complete(client.get_me()))
     printVersion(client.version, client.prefix)
 
-    try:
-        client.loop.run_forever()
-    except KeyboardInterrupt:
-        LOGGER.info("Disconnecting the client due to Keyboard interruption.")
-        client.disconnect()
-        exit(0)
+    client.run_until_disconnected()
