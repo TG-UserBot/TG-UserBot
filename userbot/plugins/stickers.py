@@ -15,7 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import emoji
+import re
 from io import BytesIO
 from itertools import chain
 from PIL import Image
@@ -126,14 +126,35 @@ async def kang(event):
     pack, emojis, name, is_animated = await _resolve_messages(
         event, sticker_event
     )
-    match = event.matches[0].group(1)
-    if pack or match:
-        if ':' in match:
-            pack, packnick = await _resolve_pack_name(match, ':', is_animated)
-            new_pack = True
-        elif '=' in match:
-            pack, packnick = await _resolve_pack_name(match, '=', is_animated)
-            new_pack = True
+    if pack:
+        if (':' in pack) or ('=' in pack):
+            text = event.matches[0].group(1)
+
+            pack, packnick, new_emojis = await _resolve_pack_name(
+                text, is_animated
+            )
+            if not pack and not packnick:
+                await event.edit(
+                    "`Are you sure you're using the correct syntax?`\n"
+                    f"`{client.prefix}kang <packName>=<packsShortName>`\n"
+                    "`You can also choose emojis whilst making a new pack.`"
+                )
+                return
+            packs, first_msg = await _list_packs()
+            is_pack = await _verify_cs_name(pack, packs)
+            if is_pack:
+                pack = is_pack
+                new_pack = False
+            else:
+                new_pack = True
+            attribute_emoji = None
+            if sticker_event.sticker:
+                attribute_emoji = (
+                    attribute.alt
+                    for attribute in sticker_event.media.document.attributes
+                    if isinstance(attribute, DocumentAttributeSticker)
+                )
+            emojis = new_emojis or attribute_emoji or default_emoji
         else:
             packs, first_msg = await _list_packs()
             is_pack = await _verify_cs_name(pack, packs)
@@ -148,6 +169,8 @@ async def kang(event):
                 )
                 await _delete_sticker_messages(first_msg)
                 return
+            else:
+                pack = is_pack
     else:
         basic, animated = await _get_default_packs()
         packs, first_msg = await _list_packs()
@@ -387,10 +410,30 @@ async def _verify_cs_name(packname: str or None, packs: list):
     return correct_pack
 
 
-async def _resolve_pack_name(text: str, delimiter: str, is_animated: bool):
+async def _resolve_pack_name(text: str, is_animated: bool):
+    if ':' in text:
+        delimiter = ':'
+    else:
+        delimiter = '='
+
     splits = text.split(delimiter)
-    packname = splits[0]
-    packnickname = ''.join(splits[1:])
+    if ' ' in splits[0].strip():
+        packname = "auto"
+        emojis = ''
+        name_and_emojis = splits[0].split(' ')
+        name_and_emojis = [x for x in name_and_emojis if x]
+        for i in name_and_emojis:
+            if re.match(r"\w+", i):
+                packname += i
+            else:
+                emojis += i
+        packnickname = ''.join(splits[1:]).strip()
+    else:
+        packname = splits[0].strip()
+        name_and_emojis = ''.join(splits[1:]).split(' ')
+        name_and_emojis = [x for x in name_and_emojis if x]
+        packnickname = ' '.join(name_and_emojis[:-1])
+        emojis = ''.join(name_and_emojis[-1:]) or None
 
     if packname == "auto":
         user = (await client.get_me()).id
@@ -399,7 +442,7 @@ async def _resolve_pack_name(text: str, delimiter: str, is_animated: bool):
         else:
             packname = f"u{user}s_kang_pack"
 
-    return packname, packnickname
+    return packname, packnickname, emojis or None
 
 
 async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
@@ -409,10 +452,10 @@ async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
     if w == h:
         size = (512, 512)
     else:
-        if w > 512:
+        if w > h:
             h = int(max(h * 512 / w, 1))
             w = int(512)
-        if h > 512:
+        else:
             w = int(max(w * 512 / h, 1))
             h = int(512)
         size = (w, h)
@@ -439,19 +482,17 @@ async def _list_packs():
 
 
 async def _extract_emojis(string):
-    emojis = ''
-    for e in string:
-        if e in emoji.UNICODE_EMOJI and e not in emojis:
-            emojis += e
+    text_emojis = re.findall(r'[^\w\s,]', string)
+    emojis = []
+    for emoji in text_emojis:
+        if emoji not in emojis:
+            emojis.append(emoji)
 
-    return emojis if len(emojis) > 0 else None
+    return ''.join(emojis) if len(emojis) > 0 else None
 
 
 async def _extract_pack_name(string):
-    name = ''
-    for c in string:
-        if c not in emoji.UNICODE_EMOJI:
-            name += c
+    name = string.encode('ascii', 'ignore').decode('ascii').strip()
 
     return name.strip() if len(name) > 0 else None
 
@@ -460,11 +501,11 @@ async def _resolve_messages(event, sticker_event):
     sticker_name = "sticker.png"
     text = event.matches[0].group(1)
     is_animated = False
-    atrribute_emojis = None
+    attribute_emoji = None
 
     if sticker_event.sticker:
         document = sticker_event.media.document
-        atrribute_emojis = (
+        attribute_emoji = (
             attribute.alt
             for attribute in document.attributes
             if isinstance(attribute, DocumentAttributeSticker)
@@ -476,10 +517,18 @@ async def _resolve_messages(event, sticker_event):
     emojis_in_text = await _extract_emojis(text)
     pack_in_text = await _extract_pack_name(text)
 
-    pack = None or pack_in_text
-    emojis = emojis_in_text or atrribute_emojis or default_emoji
+    if pack_in_text:
+        pack = pack_in_text
+    else:
+        basic, animated = await _get_default_packs()
+        if is_animated:
+            pack = animated
+        else:
+            pack = basic
 
-    return (pack, *emojis, sticker_name, is_animated)
+    emojis = emojis_in_text or attribute_emoji or default_emoji
+
+    return (pack, emojis, sticker_name, is_animated)
 
 
 async def _get_default_packs():

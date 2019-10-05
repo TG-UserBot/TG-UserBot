@@ -236,7 +236,7 @@ async def delpfp(event):
         return
 
     await event.edit("`Processing all the profile pictures...`")
-    limit = 0 if match == "all" else int(match)
+    limit = None if match == "all" else int(match)
     photos = await client.get_profile_photos("self", limit)
     count = len(photos)
     await client(DeletePhotosRequest(photos))
