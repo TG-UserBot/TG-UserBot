@@ -32,7 +32,7 @@ conversation_args = {
     'timeout': 10,
     'exclusive': True
 }
-NO_PACK = """"`Couldn't find {} in your sticker packs! \
+NO_PACK = """`Couldn't find {} in your sticker packs! \
 Check your packs and update it in the config or use \
 {}kang {}:<pack title> {} to make a new pack.`"""
 
@@ -75,18 +75,25 @@ async def getsticker(event):
 )
 async def kang(event):
     """Steal stickers to your Sticker packs"""
-    if not event.reply_to_msg_id:
-        async for msg in client.iter_messages(
-            event.chat_id,
-            offset_id=event.message.id
-        ):
-            if await _is_sticker_event(event):
-                sticker_event = msg
-                break
-    else:
+    if event.reply_to_msg_id:
         sticker_event = await event.get_reply_message()
         if not await _is_sticker_event(sticker_event):
             await event.edit("`Invalid message type!`")
+            return
+    else:
+        sticker_event = None
+        async for msg in client.iter_messages(
+            event.chat_id,
+            offset_id=event.message.id,
+            limit=10
+        ):
+            if await _is_sticker_event(msg):
+                sticker_event = msg
+                break
+        if not sticker_event:
+            await event.edit(
+                "`Couldn't find any acceptable media in the recent messages.`"
+            )
             return
 
     new_pack = False
@@ -119,18 +126,36 @@ async def kang(event):
         if is_animated:
             pack = await _verify_cs_name(animated, packs)
             if not pack:
-                await event.edit(
-                    f"`Couldn't find {animated} in your animated packs!`"
-                )
-                return
+                if "_kang_pack" in animated:
+                    await event.edit("`Making a custom TG-UserBot pack!`")
+                    user = await client.get_me()
+                    tag = '@' + user.username if user.username else user.id
+                    new_pack = True
+                    pack = animated
+                    packnick = f"{tag}'s animated kang pack"
+                else:
+                    pack = animated or "a default animated pack"
+                    await event.edit(
+                        f"`Couldn't find {pack} in your animated packs!`"
+                    )
+                    return
         else:
             pack = await _verify_cs_name(basic, packs)
             if not pack:
-                await event.edit(
-                    f"`Couldn't find {basic} in your packs! "
-                    "Check your packs and update it in the config.`"
-                )
-                return
+                if "_kang_pack" in basic:
+                    await event.edit("`Making a custom TG-UserBot pack!`")
+                    user = await client.get_me()
+                    tag = '@' + user.username if user.username else user.id
+                    new_pack = True
+                    pack = basic
+                    packnick = f"{tag}'s kang pack"
+                else:
+                    pack = basic or "a default pack"
+                    await event.edit(
+                        f"`Couldn't find {pack} in your "
+                        "packs! Check your packs and update it in the config.`"
+                    )
+                    return
 
     async with client.conversation(**conversation_args) as conv:
         if new_pack:
@@ -149,8 +174,27 @@ async def kang(event):
             r1 = await conv.get_response()
             await client.send_read_acknowledge(conv.chat_id)
             if "120 stickers" in r1.text:
-                await event.edit(f"`{pack} has reached it's limit!`")
-                return
+                if "_kang_pack" in pack:
+                    await event.edit(
+                        "`Current userbot pack is full, making a new one!`"
+                    )
+                    await conv.send_message('/cancel')
+                    await conv.get_response()
+                    await client.send_read_acknowledge(conv.chat_id)
+
+                    pack, packnick = await _get_new_ub_pack(packs, is_animated)
+
+                    packtype = "/newanimated" if is_animated else "/newpack"
+                    await conv.send_message(packtype)
+                    await conv.get_response()
+                    await client.send_read_acknowledge(conv.chat_id)
+                    await conv.send_message(packnick)
+                    await conv.get_response()
+                    await client.send_read_acknowledge(conv.chat_id)
+                    new_pack = True
+                else:
+                    await event.edit(f"`{pack} has reached it's limit!`")
+                    return
             elif ".TGS" in r1.text and not is_animated:
                 await event.edit(
                     "`You're trying to kang a normal sticker "
@@ -160,7 +204,7 @@ async def kang(event):
             elif ".PSD" in r1.text and is_animated:
                 await event.edit(
                     "`You're trying to kang an animated sticker "
-                    "to an normal pack. Choose the correct pack!`"
+                    "to a normal pack. Choose the correct pack!`"
                 )
                 return
 
@@ -227,9 +271,35 @@ async def kang(event):
             await client.send_read_acknowledge(conv.chat_id)
 
     await event.edit(
-        "`Successfully kanged a sticker for you. "
-        f"It can be` [here](https://t.me/addstickers/{pack})`!`"
+        "`Successfully added the sticker to` "
+        f"[{pack}](https://t.me/addstickers/{pack})`!`"
     )
+
+
+async def _get_new_ub_pack(packs: list, is_animated: bool):
+    ub_packs = []
+    for pack in packs:
+        if "_kang_pack" in pack:
+            if is_animated and "_animated" in pack:
+                ub_packs = ub_packs.append(pack)
+            if not is_animated and "_animated" not in pack:
+                ub_packs = ub_packs.append(pack)
+
+    pack = sorted(ub_packs)[-1]
+    l_char = pack[-1:]
+    if l_char.isdigit():
+        pack = pack[:-1] + str(int(l_char) + 1)
+    else:
+        pack = pack + "_1"
+
+    user = await client.get_me()
+    tag = '@' + user.username if user.username else user.id
+    if is_animated:
+        packnick = f"{tag}'s animated kang pack {pack[-1:]}"
+    else:
+        packnick = f"{tag}'s kang pack {pack[-1:]}"
+
+    return pack, packnick
 
 
 async def _verify_cs_name(packname: str or None, packs: list):
@@ -322,9 +392,12 @@ async def _resolve_messages(event, sticker_event):
 
 
 async def _get_default_packs():
+    user = await client.get_me()
+    basic_default = f"u{user.id}s_kang_pack"
+    animated_default = f"u{user.id}s_animated_kang_pack"
     config = client.config['userbot']
-    basic = config.get('default_sticker_pack', None)
-    animated = config.get('default_animated_sticker_pack', None)
+    basic = config.get('default_sticker_pack', basic_default)
+    animated = config.get('default_animated_sticker_pack', animated_default)
     return basic, animated
 
 
