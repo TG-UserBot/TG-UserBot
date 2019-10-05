@@ -32,17 +32,6 @@ DCs = {
 }
 
 
-async def sub_shell(cmd):
-    process = await create_subprocess_shell(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate()
-
-    return stdout.decode("UTF-8"), stderr.decode("UTF-8")
-
-
 @client.onMessage(
     command="ping", info="Get message ping",
     outgoing=True, regex="ping$"
@@ -71,10 +60,10 @@ async def pingdc(event):
     cmd = f"ping {param} 1 {DCs[dc]}"
 
     if platform.startswith("win"):
-        out, err = await sub_shell(cmd)
+        out, err = await _sub_shell(cmd)
         average = out.split("Average = ")[1]
     else:
-        out, err = await sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
+        out, err = await _sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
         average = (out.strip() + "ms")
     if err:
         await event.edit(err)
@@ -182,3 +171,14 @@ async def disabled(event):
     for name, command in disabled_commands.items():
         response += f"\n**{name}:** `{command.info}`"
     await event.edit(response)
+
+
+async def _sub_shell(cmd):
+    process = await create_subprocess_shell(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    return stdout.decode("UTF-8"), stderr.decode("UTF-8")

@@ -1,5 +1,6 @@
 aiohttp>=3.5.4
 cryptg
+emoji>=0.5.4
 hachoir>=3.0a5
 packaging>=19.2
 Pillow>=6.0.0

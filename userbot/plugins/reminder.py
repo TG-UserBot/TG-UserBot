@@ -22,15 +22,6 @@ from userbot import client
 from userbot.helper_funcs.time import string_to_secs
 
 
-async def reminderTask(delay, string):
-    """Reminder task function used to send the reminder after sleep."""
-    await sleep(delay)
-    await client(
-        ToggleDialogPinRequest(peer="self", pinned=True)
-    )
-    await client.send_message("self", string)
-
-
 @client.onMessage(
     command="remindme", info="Recieve a reminder in your saved messages",
     outgoing=True, regex=r"remindme (\w+) ([\s\S]*)"
@@ -43,7 +34,7 @@ async def remindme(event):
 
     if seconds != 0:
         create_task(
-            reminderTask(seconds, text)
+            _reminderTask(seconds, text)
         )
         text = f"`Reminder will be sent in Saved Messages after {time}.`"
         if seconds >= 86400:
@@ -69,3 +60,12 @@ async def dismiss(event):
     await client(
         ToggleDialogPinRequest(peer="self", pinned=None)
     )
+
+
+async def _reminderTask(delay, string):
+    """Reminder task function used to send the reminder after sleep."""
+    await sleep(delay)
+    await client(
+        ToggleDialogPinRequest(peer="self", pinned=True)
+    )
+    await client.send_message("self", string)

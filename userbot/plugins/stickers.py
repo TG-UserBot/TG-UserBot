@@ -15,10 +15,26 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import emoji
 from io import BytesIO
+from itertools import chain
 from PIL import Image
 
+from telethon.tl.types import DocumentAttributeSticker
+
 from userbot import client
+
+
+acceptable = []
+default_emoji = u"🤔"
+conversation_args = {
+    'entity': '@Stickers',
+    'timeout': 10,
+    'exclusive': True
+}
+NO_PACK = """"`Couldn't find {} in your sticker packs! \
+Check your packs and update it in the config or use \
+{}kang {}:<pack title> {} to make a new pack.`"""
 
 
 @client.onMessage(
@@ -51,3 +67,267 @@ async def getsticker(event):
         await reply.reply(file=sticker)
 
     await event.delete()
+
+
+@client.onMessage(
+    command="kang", info="Kang stickers or add images to your Sticker pack",
+    outgoing=True, regex="kang(?: |$)(.*)$"
+)
+async def kang(event):
+    """Steal stickers to your Sticker packs"""
+    if not event.reply_to_msg_id:
+        async for msg in client.iter_messages(
+            event.chat_id,
+            offset_id=event.message.id
+        ):
+            if await _is_sticker_event(event):
+                sticker_event = msg
+                break
+    else:
+        sticker_event = await event.get_reply_message()
+        if not await _is_sticker_event(sticker_event):
+            await event.edit("`Invalid message type!`")
+            return
+
+    new_pack = False
+    pack, emojis, name, is_animated = await _resolve_messages(
+        event, sticker_event
+    )
+    if pack:
+        if ':' in pack:
+            pack, packnick = await _resolve_pack_name(pack, ':')
+            new_pack = True
+        elif '=' in pack:
+            pack, packnick = await _resolve_pack_name(pack, '=')
+            new_pack = True
+        else:
+            packs = await _list_packs()
+            is_pack = await _verify_cs_name(pack, packs)
+            if not is_pack:
+                await event.edit(
+                        NO_PACK.format(
+                            pack,
+                            client.prefix,
+                            pack or "<pack username>",
+                            emojis or default_emoji
+                        )
+                    )
+                return
+    else:
+        basic, animated = await _get_default_packs()
+        packs = await _list_packs()
+        if is_animated:
+            pack = await _verify_cs_name(animated, packs)
+            if not pack:
+                await event.edit(
+                    f"`Couldn't find {animated} in your animated packs!`"
+                )
+                return
+        else:
+            pack = await _verify_cs_name(basic, packs)
+            if not pack:
+                await event.edit(
+                    f"`Couldn't find {basic} in your packs! "
+                    "Check your packs and update it in the config.`"
+                )
+                return
+
+    async with client.conversation(**conversation_args) as conv:
+        if new_pack:
+            packtype = "/newanimated" if is_animated else "/newpack"
+            await conv.send_message(packtype)
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+            await conv.send_message(packnick)
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+        else:
+            await conv.send_message('/addsticker')
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+            await conv.send_message(pack)
+            r1 = await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+            if "120 stickers" in r1.text:
+                await event.edit(f"`{pack} has reached it's limit!`")
+                return
+            elif ".TGS" in r1.text and not is_animated:
+                await event.edit(
+                    "`You're trying to kang a normal sticker "
+                    "to an animated pack. Choose the correct pack!`"
+                )
+                return
+            elif ".PSD" in r1.text and is_animated:
+                await event.edit(
+                    "`You're trying to kang an animated sticker "
+                    "to an normal pack. Choose the correct pack!`"
+                )
+                return
+
+        sticker = BytesIO()
+        sticker.name = name
+        await sticker_event.download_media(file=sticker)
+        sticker.seek(0)
+        if sticker_event.sticker:
+            await conv.send_message(file=sticker, force_document=True)
+        else:
+            new_sticker = BytesIO()
+            resized_sticker = await _resize_image(sticker, new_sticker)
+            new_sticker.name = name
+            new_sticker.seek(0)
+            await conv.send_message(
+                file=resized_sticker, force_document=True
+            )
+            new_sticker.close()
+
+        sticker.close()
+        await conv.get_response()
+        await client.send_read_acknowledge(conv.chat_id)
+
+        await conv.send_message(emojis)
+        await conv.get_response()
+        await client.send_read_acknowledge(conv.chat_id)
+        if new_pack:
+            await conv.send_message('/publish')
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+            if is_animated:
+                await conv.send_message('<' + packnick + '>')
+                r2 = await conv.get_response()
+                await client.send_read_acknowledge(conv.chat_id)
+
+                if r2.text == "Invalid pack selected.":
+                    await event.edit(
+                        "`You tried to kang to an invalid pack.`"
+                    )
+                    await conv.send_message('/cancel')
+                    await conv.get_response()
+                    await client.send_read_acknowledge(conv.chat_id)
+                    return
+
+            await conv.send_message('/skip')
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+
+            await conv.send_message(pack)
+            r2 = await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+            if "Sorry" in r2.text:
+                await conv.send_message('/cancel')
+                await conv.get_response()
+                await client.send_read_acknowledge(conv.chat_id)
+                await event.edit(
+                    "`Pack's short name is unacceptable or already taken. "
+                    "Try thinking of a better short name.`"
+                )
+                return
+        else:
+            await conv.send_message('/done')
+            await conv.get_response()
+            await client.send_read_acknowledge(conv.chat_id)
+
+    await event.edit(
+        "`Successfully kanged a sticker for you. "
+        f"It can be` [here](https://t.me/addstickers/{pack})`!`"
+    )
+
+
+async def _verify_cs_name(packname: str, packs: list):
+    correct_pack = None
+    for pack in packs:
+        if pack.lower() == packname.lower():
+            correct_pack = pack
+            break
+    return correct_pack
+
+
+async def _resolve_pack_name(text: str, delimiter: str):
+    splits = text.split(delimiter)
+    packname = splits[0]
+    packnickname = ''.join(splits[1:])
+
+    if packname == "auto":
+        user = (await client.get_me()).id
+        packname = f"u{user}s_kang_pack"
+
+    return packname, packnickname
+
+
+async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
+    size = (512, 512)
+    image = Image.open(image)
+    image.thumbnail(size).save(new_image, 'png')
+    image.close()
+    return new_image
+
+
+async def _list_packs():
+    async with client.conversation(**conversation_args) as conv:
+        await conv.send_message('/cancel')
+        await conv.get_response()
+        await client.send_read_acknowledge(conv.chat_id)
+        await conv.send_message('/packstats')
+        buttons = (await conv.get_response()).buttons
+        await client.send_read_acknowledge(conv.chat_id)
+        buttons = list(chain.from_iterable(buttons))
+        await conv.send_message('/cancel')
+        await conv.get_response()
+        await client.send_read_acknowledge(conv.chat_id)
+        return [button.text for button in buttons]
+
+
+async def _extract_emojis(string):
+    emojis = ''
+    for e in string:
+        if e in emoji.UNICODE_EMOJI and e not in emojis:
+            emojis += e
+    return emojis if len(emojis) > 0 else None
+
+
+async def _extract_pack_name(string):
+    name = ''
+    for c in string:
+        if c not in emoji.UNICODE_EMOJI:
+            name += c
+    return name.strip() if len(name) > 0 else None
+
+
+async def _resolve_messages(event, sticker_event):
+    sticker_name = "sticker.png"
+    text = event.matches[0].group(1)
+    is_animated = False
+    atrribute_emojis = None
+
+    if sticker_event.sticker:
+        document = sticker_event.media.document
+        atrribute_emojis = (
+            attribute.alt
+            for attribute in document.attributes
+            if isinstance(attribute, DocumentAttributeSticker)
+        )
+        if document.mime_type == "application/x-tgsticker":
+            sticker_name = 'AnimatedSticker.tgs'
+            is_animated = True
+
+    emojis_in_text = await _extract_emojis(text)
+    pack_in_text = await _extract_pack_name(text)
+
+    pack = None or pack_in_text
+    emojis = emojis_in_text or atrribute_emojis or default_emoji
+
+    return (pack, *emojis, sticker_name, is_animated)
+
+
+async def _get_default_packs():
+    config = client.config['userbot']
+    basic = config.get('default_sticker_pack', None)
+    animated = config.get('default_animated_sticker_pack', None)
+    return basic, animated
+
+
+async def _is_sticker_event(event) -> bool:
+    if event.sticker or event.photo:
+        return True
+    if event.document and "image" in event.media.document.mime_type:
+        return True
+    return False

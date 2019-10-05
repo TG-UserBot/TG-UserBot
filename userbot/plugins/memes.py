@@ -20,22 +20,14 @@ import aiohttp
 from userbot import client
 
 
-async def request(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                return await response.json(), await response.json()
-            return None
-
-
 @client.onMessage(
-    command="dog", info="Get random pictures of dogs",
-    outgoing=True, regex="dog$"
+    command="shibe", info="Get random pictures of shibes",
+    outgoing=True, regex="shibe$"
 )
 async def shibes(event):
-    shibe = await request('http://shibe.online/api/shibes')
+    shibe = await _request('http://shibe.online/api/shibes')
     if not shibe:
-        await event.edit("`Couldn't fetch a dog for you :(`")
+        await event.edit("`Couldn't fetch a shibe for you :(`")
         return
 
     _, json = shibe
@@ -48,7 +40,7 @@ async def shibes(event):
     outgoing=True, regex="cat$"
 )
 async def cats(event):
-    shibe = await request('http://shibe.online/api/cats')
+    shibe = await _request('http://shibe.online/api/cats')
     if not shibe:
         await event.edit("`Couldn't fetch a cat for you :(`")
         return
@@ -63,7 +55,7 @@ async def cats(event):
     outgoing=True, regex="bird$"
 )
 async def birds(event):
-    shibe = await request('http://shibe.online/api/birds')
+    shibe = await _request('http://shibe.online/api/birds')
     if not shibe:
         await event.edit("`Couldn't fetch a bird for you :(`")
         return
@@ -71,3 +63,11 @@ async def birds(event):
     _, json = shibe
     await event.respond(file=json[0])
     await event.delete()
+
+
+async def _request(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return await response.json(), await response.json()
+            return None
