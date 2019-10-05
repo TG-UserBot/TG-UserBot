@@ -400,9 +400,21 @@ async def _resolve_pack_name(text: str, delimiter: str, is_animated: bool):
 
 
 async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
-    size = (512, 512)
     image = Image.open(image)
-    image.thumbnail(size).save(new_image, 'png')
+    w, h = (image.width, image.height)
+
+    if w == h:
+        size = (512, 512)
+    else:
+        if w > 512:
+            h = int(max(h * 512 / w, 1))
+            w = int(512)
+        if h > 512:
+            w = int(max(w * 512 / h, 1))
+            h = int(512)
+        size = (w, h)
+
+    image.resize(size).save(new_image, 'png')
     image.close()
     return new_image
 
