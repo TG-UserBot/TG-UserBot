@@ -232,7 +232,10 @@ async def kang(event):
     )
 
 
-async def _verify_cs_name(packname: str, packs: list):
+async def _verify_cs_name(packname: str or None, packs: list):
+    if not packname:
+        return
+
     correct_pack = None
     for pack in packs:
         if pack.lower() == packname.lower():
