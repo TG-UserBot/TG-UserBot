@@ -77,14 +77,17 @@ async def pingdc(event):
 )
 async def setprefix(event):
     """Change the prefix default prefix."""
+    match = event.matches[0].group(1).strip()
     old_prefix = client.prefix
-    client.prefix = event.matches[0].group(1).strip()
+    client.prefix = match
+    client.config['userbot']['prefix'] = match
     await event.edit(
         "`Successfully changed the prefix to `**{0}**`. "
         "To revert this, do `**{0}setprefix {1}**".format(
             client.prefix, old_prefix
         )
     )
+    await client._updateconfig()
 
 
 @client.onMessage(
@@ -147,7 +150,7 @@ async def disable(event):
 
 @client.onMessage(
     command="commands", info="Lists all the enabled commands.",
-    outgoing=True, regex=r"commands$", builtin=True
+    outgoing=True, regex="commands$", builtin=True
 )
 async def commands(event):
     response = "**Enabled commands:**"
@@ -158,7 +161,7 @@ async def commands(event):
 
 @client.onMessage(
     command="disabled", info="Lists all the disabled commands.",
-    outgoing=True, regex=r"disabled$", builtin=True
+    outgoing=True, regex="disabled$", builtin=True
 )
 async def disabled(event):
     disabled_commands = event.client.disabled_commands

@@ -76,11 +76,10 @@ class NewMessage(events.NewMessage):
             tl_event.matches = matches
 
         if self.require_admin:
-            if not (
-                (tl_event.chat.is_private or tl_event.chat.creator) or
-                tl_event.chat.admin_rights
-            ):
-                return
+            if not isinstance(tl_event._chat_peer, types.PeerUser):
+                if not tl_event.chat.creator:
+                    if not tl_event.chat.admin_rights:
+                        return
 
         return tl_event
 

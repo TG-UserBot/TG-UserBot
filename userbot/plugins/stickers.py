@@ -70,6 +70,30 @@ async def getsticker(event):
 
 
 @client.onMessage(
+    command="setdefaultpack", info="Set default packs for your stickers",
+    outgoing=True, regex="setdefaultpack(?: |$)(.*)$"
+)
+async def setdefaultpacks(event):
+    match = event.matches[0].group(1).strip()
+    if not match:
+        basic, animated = await _get_default_packs()
+        text = "`Default kang packs:`\n**Basic:** `{}`\n**Animated:** `{}`"
+        await event.edit(text.format(basic, animated))
+        return
+
+    if ':' in match:
+        await event.edit(await _set_default_packs(':'))
+    elif '=' in match:
+        await event.edit(await _set_default_packs('='))
+    else:
+        client.config['userbot']['default_sticker_pack'] = match
+        text = f"`Successfully changed your default pack to {match}!`"
+        await event.edit(text)
+
+    await client._updateconfig()
+
+
+@client.onMessage(
     command="kang", info="Kang stickers or add images to your Sticker pack",
     outgoing=True, regex="kang(?: |$)(.*)$"
 )
@@ -102,27 +126,28 @@ async def kang(event):
     )
     if pack:
         if ':' in pack:
-            pack, packnick = await _resolve_pack_name(pack, ':')
+            pack, packnick = await _resolve_pack_name(pack, ':', is_animated)
             new_pack = True
         elif '=' in pack:
-            pack, packnick = await _resolve_pack_name(pack, '=')
+            pack, packnick = await _resolve_pack_name(pack, '=', is_animated)
             new_pack = True
         else:
-            packs = await _list_packs()
+            packs, first_msg = await _list_packs()
             is_pack = await _verify_cs_name(pack, packs)
             if not is_pack:
                 await event.edit(
-                        NO_PACK.format(
-                            pack,
-                            client.prefix,
-                            pack or "<pack username>",
-                            emojis or default_emoji
-                        )
+                    NO_PACK.format(
+                        pack,
+                        client.prefix,
+                        pack or "<pack username>",
+                        emojis or default_emoji
                     )
+                )
+                await _delete_sticker_messages(first_msg)
                 return
     else:
         basic, animated = await _get_default_packs()
-        packs = await _list_packs()
+        packs, first_msg = await _list_packs()
         if is_animated:
             pack = await _verify_cs_name(animated, packs)
             if not pack:
@@ -138,6 +163,7 @@ async def kang(event):
                     await event.edit(
                         f"`Couldn't find {pack} in your animated packs!`"
                     )
+                    await _delete_sticker_messages(first_msg)
                     return
         else:
             pack = await _verify_cs_name(basic, packs)
@@ -155,6 +181,7 @@ async def kang(event):
                         f"`Couldn't find {pack} in your "
                         "packs! Check your packs and update it in the config.`"
                     )
+                    await _delete_sticker_messages(first_msg)
                     return
 
     async with client.conversation(**conversation_args) as conv:
@@ -194,18 +221,21 @@ async def kang(event):
                     new_pack = True
                 else:
                     await event.edit(f"`{pack} has reached it's limit!`")
+                    await _delete_sticker_messages(first_msg)
                     return
             elif ".TGS" in r1.text and not is_animated:
                 await event.edit(
                     "`You're trying to kang a normal sticker "
                     "to an animated pack. Choose the correct pack!`"
                 )
+                await _delete_sticker_messages(first_msg)
                 return
             elif ".PSD" in r1.text and is_animated:
                 await event.edit(
                     "`You're trying to kang an animated sticker "
                     "to a normal pack. Choose the correct pack!`"
                 )
+                await _delete_sticker_messages(first_msg)
                 return
 
         sticker = BytesIO()
@@ -264,6 +294,7 @@ async def kang(event):
                     "`Pack's short name is unacceptable or already taken. "
                     "Try thinking of a better short name.`"
                 )
+                await _delete_sticker_messages(first_msg)
                 return
         else:
             await conv.send_message('/done')
@@ -274,6 +305,33 @@ async def kang(event):
         "`Successfully added the sticker to` "
         f"[{pack}](https://t.me/addstickers/{pack})`!`"
     )
+    await _delete_sticker_messages(first_msg)
+
+
+async def _set_default_packs(string: str, delimiter: str) -> str:
+    splits = string.split(delimiter)
+    pack_type = splits[0]
+    name = splits[1:]
+    if pack_type == "animated":
+        client.config['userbot']['default_animated_sticker_pack'] = name
+        text = f"`Successfully changed your default animated pack to {name}!`"
+    else:
+        client.config['userbot']['default_sticker_pack'] = name
+        text = f"`Successfully changed your default pack to {name}!`"
+
+    return text
+
+
+async def _delete_sticker_messages(offset):
+    messages = [offset]
+    async for msg in client.iter_messages(
+        entity="@Stickers",
+        offset_id=offset.id,
+        reverse=True
+    ):
+        messages.append(msg)
+
+    return await client.delete_messages('@Stickers', messages)
 
 
 async def _get_new_ub_pack(packs: list, is_animated: bool):
@@ -314,14 +372,17 @@ async def _verify_cs_name(packname: str or None, packs: list):
     return correct_pack
 
 
-async def _resolve_pack_name(text: str, delimiter: str):
+async def _resolve_pack_name(text: str, delimiter: str, is_animated: bool):
     splits = text.split(delimiter)
     packname = splits[0]
     packnickname = ''.join(splits[1:])
 
     if packname == "auto":
         user = (await client.get_me()).id
-        packname = f"u{user}s_kang_pack"
+        if is_animated:
+            packname = f"u{user}s_animated_kang_pack"
+        else:
+            packname = f"u{user}s_kang_pack"
 
     return packname, packnickname
 
@@ -336,7 +397,7 @@ async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
 
 async def _list_packs():
     async with client.conversation(**conversation_args) as conv:
-        await conv.send_message('/cancel')
+        first = await conv.send_message('/cancel')
         await conv.get_response()
         await client.send_read_acknowledge(conv.chat_id)
         await conv.send_message('/packstats')
@@ -346,7 +407,8 @@ async def _list_packs():
         await conv.send_message('/cancel')
         await conv.get_response()
         await client.send_read_acknowledge(conv.chat_id)
-        return [button.text for button in buttons]
+
+        return [button.text for button in buttons], first
 
 
 async def _extract_emojis(string):
@@ -354,6 +416,7 @@ async def _extract_emojis(string):
     for e in string:
         if e in emoji.UNICODE_EMOJI and e not in emojis:
             emojis += e
+
     return emojis if len(emojis) > 0 else None
 
 
@@ -362,6 +425,7 @@ async def _extract_pack_name(string):
     for c in string:
         if c not in emoji.UNICODE_EMOJI:
             name += c
+
     return name.strip() if len(name) > 0 else None
 
 
@@ -398,6 +462,7 @@ async def _get_default_packs():
     config = client.config['userbot']
     basic = config.get('default_sticker_pack', basic_default)
     animated = config.get('default_animated_sticker_pack', animated_default)
+
     return basic, animated
 
 
@@ -406,4 +471,5 @@ async def _is_sticker_event(event) -> bool:
         return True
     if event.document and "image" in event.media.document.mime_type:
         return True
+
     return False

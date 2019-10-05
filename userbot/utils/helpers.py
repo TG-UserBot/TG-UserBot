@@ -18,7 +18,11 @@
 from telethon.tl.types import User
 from telethon.utils import get_display_name
 
-from userbot.helper_funcs.log_formatter import CUSR, CEND
+import userbot.helper_funcs.log_formatter as log_formatter
+
+
+CUSR = log_formatter.CUSR
+CEND = log_formatter.CEND
 
 
 def printUser(entity: User) -> None:

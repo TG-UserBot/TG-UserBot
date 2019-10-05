@@ -17,32 +17,36 @@
 
 from logging import StreamHandler
 
-from userbot import (
-    __copyright__, __license__,
-    client, ROOT_LOGGER, verifyLoggerGroup
-)
-from userbot.helper_funcs.log_formatter import CustomFormatter
-from userbot.utils.helpers import printUser, printVersion
-from userbot.utils.pluginManager import PluginManager
+import userbot
+import userbot.helper_funcs.log_formatter as log_formatter
+import userbot.utils.pluginManager as pluginManager
+import userbot.utils.helpers as helpers
 
-
+client = userbot.client
 handler = StreamHandler()
 
-handler.setFormatter(CustomFormatter())
-ROOT_LOGGER.addHandler(handler)
+handler.setFormatter(log_formatter.CustomFormatter())
+userbot.ROOT_LOGGER.addHandler(handler)
 
-print(__copyright__)
-print("Licensed under the terms of the " + __license__)
+print(userbot.__copyright__)
+print("Licensed under the terms of the " + userbot.__license__)
 
 
 if __name__ == "__main__":
-    client.pluginManager = PluginManager(client)
+    client.register_commands = True
+    client.pluginManager = pluginManager.PluginManager(client)
     client.pluginManager.import_all()
     client.pluginManager.add_handlers()
     client.start()
 
-    verifyLoggerGroup(client)
-    printUser(client.loop.run_until_complete(client.get_me()))
-    printVersion(client.version, client.prefix)
+    userbot.verifyLoggerGroup(client)
+    helpers.printUser(
+        client.loop.run_until_complete(client.get_me())
+    )
+    helpers.printVersion(client.version, client.prefix)
 
-    client.run_until_disconnected()
+    # client.run_until_disconnected()
+    try:
+        client.loop.run_forever()
+    except KeyboardInterrupt:
+        exit(0)

@@ -21,8 +21,8 @@ from importlib import reload
 from sys import modules
 from telethon import TelegramClient, events
 
-from .pluginManager import PluginManager
-from .events import MessageEdited, NewMessage
+import userbot.utils.pluginManager as PluginManager
+import userbot.utils.events as custom_events
 
 
 @dataclass
@@ -38,9 +38,11 @@ class UserBotClient(TelegramClient):
     commands: dict = {}
     config: ConfigParser = None
     disabled_commands: dict = {}
-    pluginManager: PluginManager = None
+    pluginManager: PluginManager.PluginManager = None
     plugins: list = []
     prefix: str = '.'
+    restarting: bool = False
+    register_commands: bool = False
     version: int = 0
 
     def onMessage(
@@ -54,12 +56,12 @@ class UserBotClient(TelegramClient):
         """Method to register a function without the client"""
 
         def wrapper(func):
-            events.register(NewMessage(**kwargs))(func)
+            events.register(custom_events.NewMessage(**kwargs))(func)
 
             if edited:
-                events.register(MessageEdited(**kwargs))(func)
+                events.register(custom_events.MessageEdited(**kwargs))(func)
 
-            if command:
+            if self.register_commands and command:
                 handlers = events._get_handlers(func)
                 self.commands.update(
                     {command: Command(func, handlers, info, builtin)}
@@ -70,6 +72,7 @@ class UserBotClient(TelegramClient):
         return wrapper
 
     async def _restarter(self, event):
+        self.restarting = True
         await event.edit(
             "`Removing all the event handlers and disonnecting "
             "the client. BRB.`"
@@ -79,12 +82,12 @@ class UserBotClient(TelegramClient):
         self.pluginManager.active_plugins = []
         self.commands.clear()
         self.disabled_commands.clear()
-        # await self.disconnect() Comment it out for now
+        await self.disconnect()
         for module in modules:
             # Required to update helper and util file.
             if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
                 reload(modules[module])
-        # await self.connect() Comment it out for now
+        await self.connect()
         await event.edit(
             "`Succesfully removed all the handlers and started "
             "the client again! Adding the new handlers now. BRB..`"
@@ -94,3 +97,9 @@ class UserBotClient(TelegramClient):
         await event.edit(
             "`Successfully restarted and imported all the plugins!`"
         )
+        self.restarting = False
+
+    async def _updateconfig(self):
+        with open('config.ini', 'w+') as configfile:
+            self.config.write(configfile)
+        return True

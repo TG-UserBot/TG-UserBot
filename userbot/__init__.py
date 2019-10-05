@@ -22,10 +22,13 @@ from sys import exit, platform, version_info
 from logging import (
     getLogger, DEBUG, INFO, ERROR, CRITICAL
 )
+
 from telethon.tl.types import User
 
-from .utils.client import UserBotClient
+import userbot.utils.client
 
+
+UserBotClient = userbot.utils.client.UserBotClient
 
 config_file = join(dirname(dirname(__file__)), 'config.ini')
 pyversion = ".".join(str(num) for num in version_info if isinstance(num, int))
