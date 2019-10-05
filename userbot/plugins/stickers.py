@@ -121,15 +121,18 @@ async def kang(event):
             return
 
     new_pack = False
+    first_msg = None
+    new_first_msg = None
     pack, emojis, name, is_animated = await _resolve_messages(
         event, sticker_event
     )
-    if pack:
-        if ':' in pack:
-            pack, packnick = await _resolve_pack_name(pack, ':', is_animated)
+    match = event.matches[0].group(1)
+    if pack or match:
+        if ':' in match:
+            pack, packnick = await _resolve_pack_name(match, ':', is_animated)
             new_pack = True
-        elif '=' in pack:
-            pack, packnick = await _resolve_pack_name(pack, '=', is_animated)
+        elif '=' in match:
+            pack, packnick = await _resolve_pack_name(match, '=', is_animated)
             new_pack = True
         else:
             packs, first_msg = await _list_packs()
@@ -187,7 +190,7 @@ async def kang(event):
     async with client.conversation(**conversation_args) as conv:
         if new_pack:
             packtype = "/newanimated" if is_animated else "/newpack"
-            await conv.send_message(packtype)
+            new_first_msg = await conv.send_message(packtype)
             await conv.get_response()
             await client.send_read_acknowledge(conv.chat_id)
             await conv.send_message(packnick)
@@ -221,21 +224,21 @@ async def kang(event):
                     new_pack = True
                 else:
                     await event.edit(f"`{pack} has reached it's limit!`")
-                    await _delete_sticker_messages(first_msg)
+                    await _delete_sticker_messages(first_msg or new_first_msg)
                     return
             elif ".TGS" in r1.text and not is_animated:
                 await event.edit(
                     "`You're trying to kang a normal sticker "
                     "to an animated pack. Choose the correct pack!`"
                 )
-                await _delete_sticker_messages(first_msg)
+                await _delete_sticker_messages(first_msg or new_first_msg)
                 return
             elif ".PSD" in r1.text and is_animated:
                 await event.edit(
                     "`You're trying to kang an animated sticker "
                     "to a normal pack. Choose the correct pack!`"
                 )
-                await _delete_sticker_messages(first_msg)
+                await _delete_sticker_messages(first_msg or new_first_msg)
                 return
 
         sticker = BytesIO()
@@ -294,7 +297,7 @@ async def kang(event):
                     "`Pack's short name is unacceptable or already taken. "
                     "Try thinking of a better short name.`"
                 )
-                await _delete_sticker_messages(first_msg)
+                await _delete_sticker_messages(first_msg or new_first_msg)
                 return
         else:
             await conv.send_message('/done')
@@ -305,7 +308,7 @@ async def kang(event):
         "`Successfully added the sticker to` "
         f"[{pack}](https://t.me/addstickers/{pack})`!`"
     )
-    await _delete_sticker_messages(first_msg)
+    await _delete_sticker_messages(first_msg or new_first_msg)
 
 
 async def _set_default_packs(string: str, delimiter: str) -> str:
