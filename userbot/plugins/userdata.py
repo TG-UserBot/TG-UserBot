@@ -232,7 +232,7 @@ async def delpfp(event):
         count = (await client.get_profile_photos("self")).total
         amount = ("one profile picture." if count == 1
                   else f"{count} profile pictures.")
-        await event.edit(f"`You currently have {amount.total}`")
+        await event.edit(f"`You currently have {amount}`")
         return
 
     await event.edit("`Processing all the profile pictures...`")

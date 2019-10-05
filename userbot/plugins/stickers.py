@@ -57,14 +57,18 @@ async def getsticker(event):
         await event.edit("`No point in uploading animated stickers.`")
         return
     else:
+        sticker_bytes = BytesIO()
+        await reply.download_media(sticker_bytes)
+        sticker_bytes.seek(0)
         sticker = BytesIO()
-        await client.download_media(reply, sticker)
-        pilImg = Image.open(sticker)
+        pilImg = Image.open(sticker_bytes)
         pilImg.save(sticker, format="PNG")
         pilImg.close()
         sticker.seek(0)
         sticker.name = "sticcer.png"
         await reply.reply(file=sticker)
+        sticker_bytes.close()
+        sticker.close()
 
     await event.delete()
 
