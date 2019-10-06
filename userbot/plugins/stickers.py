@@ -415,7 +415,7 @@ async def _get_new_ub_pack(packs: list, is_animated: bool):
 
 
 async def _verify_cs_name(packname: str or None, packs: list):
-    if not packname:
+    if not packname or not packs:
         return
 
     correct_pack = None
