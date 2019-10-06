@@ -45,12 +45,11 @@ async def get_user_from_msg(event: Message) -> Union[int, str, None]:
                 return event.text[offset:maxlen]
 
     if match:
-        if match == str and match.isdigit():
-            user = int(match)
-        elif match == str:
-            user = match.strip()
+        if isinstance(match, str) and match.isdigit():
+            user = int(match.strip())
         else:
-            user = match
+            user = match.strip()
+
     return user
 
 

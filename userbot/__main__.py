@@ -32,6 +32,13 @@ print(userbot.__copyright__)
 print("Licensed under the terms of the " + userbot.__license__)
 
 
+async def _run_until_complete():
+    await client.disconnected
+    while client.restarting:
+        await client.start()
+        await client.disconnected
+
+
 if __name__ == "__main__":
     client.register_commands = True
     client.pluginManager = pluginManager.PluginManager(client)
@@ -45,8 +52,8 @@ if __name__ == "__main__":
     )
     helpers.printVersion(client.version, client.prefix)
 
-    # client.run_until_disconnected()
     try:
-        client.loop.run_forever()
+        client.loop.run_until_complete(_run_until_complete())
     except KeyboardInterrupt:
-        exit(0)
+        userbot.LOGGER("Exiting the script due to keyboard interruption.")
+        pass

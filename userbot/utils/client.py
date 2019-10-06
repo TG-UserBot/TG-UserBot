@@ -77,6 +77,9 @@ class UserBotClient(TelegramClient):
         return wrapper
 
     async def _restarter(self, event):
+        if self.restarting:
+            await event.edit("`Previous restart is still in proccess!`")
+            return
         self.failed_imports.clear()
         self.restarting = True
         await event.edit(
