@@ -124,6 +124,7 @@ class PluginManager:
             self.active_plugins.append(Plugin(name, callbacks, path, module))
             LOGGER.info("Successfully Imported %s", name)
         except Exception as E:
+            self.client.failed_imports.append(path)
             LOGGER.error(
                 "Failed to import %s due to the error(s) below.", path
             )

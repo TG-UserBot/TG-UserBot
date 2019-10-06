@@ -55,7 +55,10 @@ class NewMessage(events.NewMessage):
 
     def filter(self, event):
         """Overriding the default filter to check additional values"""
-        prefix = re.escape(event._client.prefix)
+        if event._client.prefix:
+            prefix = re.escape(event._client.prefix)
+        else:
+            prefix = r"[^/!#@\$A-Za-z0-9]"
         tl_event = events.NewMessage.filter(self, event)
 
         if not tl_event:

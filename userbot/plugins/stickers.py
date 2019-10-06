@@ -344,8 +344,14 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
     name = ''.join(splits[1:]).strip()
     if pack_type.lower() == "animated":
         if name.lower() in ['reset', 'none']:
-            text = f"`Successfully reset your default animated pack!`"
-            del client.config['userbot']['default_animated_sticker_pack']
+            is_pack = client.config['userbot'].get(
+                'default_animated_sticker_pack', None
+            )
+            if is_pack:
+                text = f"`Successfully reset your default animated pack!`"
+                del client.config['userbot']['default_animated_sticker_pack']
+            else:
+                text = "`You had no default animated pack. to reset!`"
         else:
             client.config['userbot']['default_animated_sticker_pack'] = name
             text = (
@@ -353,14 +359,20 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
             )
     elif pack_type.lower() == "basic":
         if name.lower() in ['reset', 'none']:
-            text = f"`Successfully reset your default pack!`"
-            del client.config['userbot']['default_sticker_pack']
+            is_pack = client.config['userbot'].get(
+                'default_sticker_pack', None
+            )
+            if is_pack:
+                text = f"`Successfully reset your default pack!`"
+                del client.config['userbot']['default_sticker_pack']
+            else:
+                text = "`You had no default animated pack. to reset!`"
         else:
             client.config['userbot']['default_sticker_pack'] = name
             text = f"`Successfully changed your default pack to {name}!`"
     else:
         text = "`Invalid pack type. Make sure it's animated or basic!`"
-
+    await client._updateconfig()
     return text
 
 

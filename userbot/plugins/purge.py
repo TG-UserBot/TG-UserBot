@@ -74,18 +74,18 @@ async def purge(event):
     outgoing=True, regex=r"delme(?: |$)(\d*)"
 )
 async def delme(event):
-
     entity = await event.get_input_chat()
     amount = event.matches[0].group(1)
     offset = 0
     reverse = False
     limit = None
+    reply_message = None
 
     if event.reply_to_msg_id:
         reply = await event.get_reply_message()
         await event.delete()
         if reply.sender_id == (await client.get_me()).id:
-            await reply.delete()
+            reply_message = reply.id
         offset = reply.id
         reverse = True
         if amount:
@@ -95,9 +95,14 @@ async def delme(event):
         offset = event.id
         limit = int(amount)
     else:
-        limit = 2
+        await event.delete()
+        offset = event.id
+        limit = 1
 
     messages = []
+    if reply_message:
+        messages.append(reply_message)
+
     async for msg in client.iter_messages(
         entity=entity,
         offset_id=offset,

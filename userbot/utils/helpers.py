@@ -33,6 +33,8 @@ def printUser(entity: User) -> None:
 
 
 def printVersion(version: int, prefix: str) -> None:
+    if not prefix:
+        prefix = '.'
     print(
         "{0}UserBot v{2}{1} is running, test it by sending {3}ping in"
         " any chat.\n".format(CUSR, CEND, version, prefix)

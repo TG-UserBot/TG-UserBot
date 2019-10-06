@@ -18,11 +18,15 @@
 from configparser import ConfigParser
 from dataclasses import dataclass
 from importlib import reload
+from logging import getLogger
 from sys import modules
 from telethon import TelegramClient, events
 
 import userbot.utils.pluginManager as PluginManager
 import userbot.utils.events as custom_events
+
+
+LOGGER = getLogger("UserBot Client")
 
 
 @dataclass
@@ -38,9 +42,10 @@ class UserBotClient(TelegramClient):
     commands: dict = {}
     config: ConfigParser = None
     disabled_commands: dict = {}
+    failed_imports: list = []
     pluginManager: PluginManager.PluginManager = None
     plugins: list = []
-    prefix: str = '.'
+    prefix: str = None
     restarting: bool = False
     register_commands: bool = False
     version: int = 0
@@ -72,6 +77,7 @@ class UserBotClient(TelegramClient):
         return wrapper
 
     async def _restarter(self, event):
+        self.failed_imports.clear()
         self.restarting = True
         await event.edit(
             "`Removing all the event handlers and disonnecting "
@@ -94,10 +100,20 @@ class UserBotClient(TelegramClient):
         )
         self.pluginManager.import_all()
         self.pluginManager.add_handlers()
-        await event.edit(
-            "`Successfully restarted and imported all the plugins!`"
-        )
+
+        text = "`Successfully restarted and imported all the plugins!`"
+        if self.failed_imports:
+            text += "\n`Failed to import:`\n"
+            text += '\n'.join(self.failed_imports)
+            self.failed_imports.clear()
+        await event.edit(text)
+
         self.restarting = False
+        LOGGER.info(
+            "Successfully restarted and imported all the plugins! "
+            "Current prefix: {}".format(self.prefix)
+        )
+        print()
 
     async def _updateconfig(self):
         with open('config.ini', 'w+') as configfile:

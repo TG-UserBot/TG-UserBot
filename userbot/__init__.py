@@ -102,7 +102,7 @@ client = UserBotClient(
 
 client.version = __version__
 client.config = config
-client.prefix = userbot.get('prefix', '.')
+client.prefix = userbot.get('prefix', None)
 
 
 def verifyLoggerGroup(client: UserBotClient) -> None:
