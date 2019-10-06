@@ -64,6 +64,8 @@ async def whois(event):
                     user = reply.fwd_from.from_id
                 else:
                     user = reply.sender_id
+            if user == "self":
+                user = reply.from_id
 
     try:
         input_entity = await client.get_input_entity(user)

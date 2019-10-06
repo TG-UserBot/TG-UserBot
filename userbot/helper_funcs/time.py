@@ -19,6 +19,7 @@ from re import compile as reCompile
 
 
 regexp = reCompile(r"(\d+)(w|d|h|m|s)?")
+adminregexp = reCompile(r"\d+(?:w|d|h|m|s)?")
 
 
 async def amount_to_secs(amount: tuple) -> int:
@@ -84,3 +85,14 @@ async def string_to_secs(string: str) -> int:
         for amount in values:
             total += await amount_to_secs(amount)
         return total
+
+
+async def split_extra_string(string: str) -> (str, int):
+    reason = string
+    time = adminregexp.findall(string)
+    for u in time:
+        reason = reason.replace(u, '').strip()
+
+    total_time = await string_to_secs(''.join(time))
+
+    return reason or None, total_time or None

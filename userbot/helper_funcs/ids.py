@@ -15,10 +15,16 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import re
+from logging import getLogger
+from typing import Union
+
 from telethon.tl.types import (
     Message, MessageEntityMention, MessageEntityMentionName
 )
-from typing import Union
+
+
+LOGGER = getLogger()
 
 
 async def get_user_from_msg(event: Message) -> Union[int, str, None]:
@@ -46,3 +52,29 @@ async def get_user_from_msg(event: Message) -> Union[int, str, None]:
         else:
             user = match
     return user
+
+
+async def get_entity_from_msg(event: Message) -> Union[int, str, None]:
+    exception = False
+    entity = None
+    match = event.matches[0].group(1)
+
+    pattern = re.compile(r"(@\w*|\w*|\d*)(?: |$)(.*)")
+    user = pattern.match(match).group(1)
+    extra = pattern.match(match).group(2)
+    reply = await event.get_reply_message()
+
+    if reply and user:
+        extra = user + extra
+        user = str(reply.from_id)
+
+    user = int(user) if user.isdigit() else str(user)
+
+    try:
+        entity = await event.client.get_entity(user)
+    except Exception as e:
+        exception = True
+        entity = e
+        LOGGER.exception(e)
+
+    return entity, extra, exception

@@ -45,13 +45,13 @@ async def evaluate(event):
             result = await result
         result = str(result)
         if (len(result)) > 4096:
-            await limit_exceeded(event, result, True)
+            await limit_exceeded(event, "```" + result + "```", True)
             return
     except Exception as e:
-        await event.reply(type(e).__name__ + ': ' + str(e))
+        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
-    await event.reply(result)
+    await event.reply("```" + result + "```")
 
 
 @client.onMessage(
@@ -71,24 +71,23 @@ async def execute(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = (
-        f"[**PID:** `{process.pid}`] "
-        f"[**Return code:** `{process.returncode}`]\n\n"
-    )
 
     if stderr:
-        text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
-        await event.reply(text)
+        text = stderr.decode('UTF-8')
+        if len(text) > 4096:
+            await limit_exceeded(event, "```" + text + "```", True)
+            return
+        await event.reply("```" + text + "```")
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
-        if (len(text) + len(extras)) > 4096:
-            await limit_exceeded(event, extras + text, True)
+        if len(text) > 4096:
+            await limit_exceeded(event, "```" + text + "```", True)
             return
-        await event.reply(extras + text)
+        await event.reply("```" + text + "```")
     else:
-        await event.reply(extras + "Nice, get off the void.")
+        await event.reply("Nice, get off the void.\nNo output for you.")
 
 
 @client.onMessage(
@@ -108,21 +107,20 @@ async def terminal(event):
         stderr=subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
-    extras = (
-        f"[**PID:** `{process.pid}`] "
-        f"[**Return code:** `{process.returncode}`]\n\n"
-    )
 
     if stderr:
-        text = ("__You dun goofed up.__\n" + extras + stderr.decode('UTF-8'))
-        await event.reply(text)
+        text = stderr.decode('UTF-8')
+        if len(text) > 4096:
+            await limit_exceeded(event, "```" + text + "```", True)
+            return
+        await event.reply("```" + text + "```")
         return
 
     elif stdout:
         text = stdout.decode("UTF-8")
-        if (len(text) + len(extras)) > 4096:
-            await limit_exceeded(event, extras + text, True)
+        if len(text) > 4096:
+            await limit_exceeded(event, "```" + text + "```", True)
             return
-        await event.reply(extras + text)
+        await event.reply("```" + text + "```")
     else:
-        await event.reply(extras + "Nice, get off the void.")
+        await event.reply("Nice, get off the void.\nNo output for you.")

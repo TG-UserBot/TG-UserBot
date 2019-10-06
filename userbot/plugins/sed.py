@@ -24,8 +24,6 @@
 from asyncio import sleep
 from re import match, MULTILINE, IGNORECASE
 
-from telethon.tl.types import ChannelParticipantsBots
-
 from userbot import client
 from userbot.helper_funcs.sed import sub_matches
 
@@ -54,14 +52,6 @@ async def sed_substitute(event):
     """SED function used to substitution texts for s command"""
     if not match(r"^(?:[1-9]+sed|sed)", event.text, IGNORECASE):
         return
-
-    if event.matches[0].group('d') == '/':
-        #  Ignore if regexbot is in the chat and we use it's delimiter
-        async for bot in event.client.iter_participants(
-            event.chat_id, filter=ChannelParticipantsBots
-        ):
-            if bot.username == "regexbot":
-                return
 
     matches = event.matches
     reply = await event.get_reply_message()
