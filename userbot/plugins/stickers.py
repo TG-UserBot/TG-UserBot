@@ -74,10 +74,10 @@ async def getsticker(event):
 
 
 @client.onMessage(
-    command="setdefaultpack", info="Set default packs for your stickers",
-    outgoing=True, regex="setdefaultpack(?: |$)(.*)$"
+    command="stickerpack", info="Set default packs for your stickers",
+    outgoing=True, regex="stickerpack(?: |$)(.*)$"
 )
-async def setdefaultpacks(event):
+async def stickerpack(event):
     match = event.matches[0].group(1).strip()
     if not match:
         basic, animated = await _get_default_packs()
@@ -487,9 +487,11 @@ async def _list_packs():
         await conv.get_response()
         await client.send_read_acknowledge(conv.chat_id)
         await conv.send_message('/packstats')
-        buttons = (await conv.get_response()).buttons
+        r1 = await conv.get_response()
+        if r1.text.startswith("You don't have sticker packs yet."):
+            return [], first
         await client.send_read_acknowledge(conv.chat_id)
-        buttons = list(chain.from_iterable(buttons))
+        buttons = list(chain.from_iterable(r1.buttons))
         await conv.send_message('/cancel')
         await conv.get_response()
         await client.send_read_acknowledge(conv.chat_id)
