@@ -15,7 +15,8 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from logging import StreamHandler
+from logging import StreamHandler, getLogger
+from sys import platform
 
 import userbot
 import userbot.helper_funcs.log_formatter as log_formatter
@@ -24,6 +25,7 @@ import userbot.utils.helpers as helpers
 
 client = userbot.client
 handler = StreamHandler()
+LOGGER = getLogger('userbot')
 
 handler.setFormatter(log_formatter.CustomFormatter())
 userbot.ROOT_LOGGER.addHandler(handler)
@@ -37,6 +39,10 @@ async def _run_until_complete():
     while client.restarting:
         await client.start()
         await client.disconnected
+
+
+def wakeup():
+    client.loop.call_later(0.1, wakeup)
 
 
 if __name__ == "__main__":
@@ -53,7 +59,14 @@ if __name__ == "__main__":
     helpers.printVersion(client.version, client.prefix)
 
     try:
+        if platform.startswith('win'):
+            client.loop.call_later(0.1, wakeup)  # Needed for SIGINT handling
         client.loop.run_until_complete(_run_until_complete())
-    except KeyboardInterrupt:
-        userbot.LOGGER("Exiting the script due to keyboard interruption.")
+    except NotImplementedError:
         pass
+    except KeyboardInterrupt:
+        print()
+        LOGGER.info("Exiting the script due to keyboard interruption.")
+        pass
+    finally:
+        client.disconnect()

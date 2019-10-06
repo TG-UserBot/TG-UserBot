@@ -17,7 +17,7 @@
 
 from datetime import datetime
 
-from userbot import client
+from userbot import client, LOGGER
 
 
 @client.onMessage(
@@ -85,6 +85,8 @@ async def setprefix(event):
 async def shutdown(event):
     """Shutdown userbot."""
     await event.edit("`Disconnecting the client and exiting. Ciao!`")
+    print()
+    LOGGER.info("Disconnecting the client and exiting the main script.")
     await event.client.disconnect()
 
 
