@@ -490,7 +490,7 @@ async def _list_packs():
         await client.send_read_acknowledge(conv.chat_id)
         await conv.send_message('/packstats')
         r1 = await conv.get_response()
-        if r1.text.startswith("You don't have sticker packs yet."):
+        if r1.text.startswith("You don't have any sticker packs yet."):
             return [], first
         await client.send_read_acknowledge(conv.chat_id)
         buttons = list(chain.from_iterable(r1.buttons))
