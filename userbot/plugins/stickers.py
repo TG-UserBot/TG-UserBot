@@ -89,6 +89,10 @@ async def stickerpack(event):
         await event.edit(await _set_default_packs(match, ':'))
     elif '=' in match:
         await event.edit(await _set_default_packs(match, '='))
+    elif match.strip().lower() == "reset":
+        await _set_default_packs("basic=reset", ':')
+        await _set_default_packs("animated=reset", ':')
+        await event.edit("`Successfully reset both of your packs.`")
     else:
         match = f"basic:{match}"
         await event.edit(await _set_default_packs(match, ':'))
@@ -127,6 +131,7 @@ async def kang(event):
     pack, emojis, name, is_animated = await _resolve_messages(
         event, sticker_event
     )
+    prefix = client.prefix if client.prefix is not None else '.'
     if pack:
         if (':' in pack) or ('=' in pack):
             text = event.matches[0].group(1)
@@ -135,7 +140,6 @@ async def kang(event):
                 text, is_animated
             )
             if not pack and not packnick:
-                prefix = client.prefix if client.prefix else '.'
                 await event.edit(
                     "`Are you sure you're using the correct syntax?`\n"
                     f"`{prefix}kang <packName>=<packsShortName>`\n"
@@ -166,7 +170,7 @@ async def kang(event):
                 await event.edit(
                     NO_PACK.format(
                         pack,
-                        client.prefix,
+                        prefix,
                         pack or "<pack username>",
                         emojis or default_emoji
                     )
@@ -209,7 +213,8 @@ async def kang(event):
                     pack = basic or "a default pack"
                     await event.edit(
                         f"`Couldn't find {pack} in your "
-                        "packs! Check your packs and update it in the config.`"
+                        "packs! Check your packs and update it in the config "
+                        f"or use {prefix}stickerpack reset for deafult packs.`"
                     )
                     await _delete_sticker_messages(first_msg)
                     return
@@ -529,17 +534,15 @@ async def _extract_pack_name(string):
 
 async def _resolve_messages(event, sticker_event):
     sticker_name = "sticker.png"
-    text = event.matches[0].group(1)
+    text = event.matches[0].group(1).strip()
     is_animated = False
     attribute_emoji = None
 
     if sticker_event.sticker:
         document = sticker_event.media.document
-        attribute_emoji = (
-            attribute.alt
-            for attribute in document.attributes
-            if isinstance(attribute, DocumentAttributeSticker)
-        )
+        for attribute in document.attributes:
+            if isinstance(attribute, DocumentAttributeSticker):
+                attribute_emoji = attribute.alt
         if document.mime_type == "application/x-tgsticker":
             sticker_name = 'AnimatedSticker.tgs'
             is_animated = True
@@ -550,15 +553,16 @@ async def _resolve_messages(event, sticker_event):
     if pack_in_text:
         pack = pack_in_text
     else:
-        basic, animated = await _get_default_packs()
+        pack = None
+        """basic, animated = await _get_default_packs()
         if is_animated:
             pack = animated
         else:
-            pack = basic
+            pack = basic"""
 
     emojis = emojis_in_text or attribute_emoji or default_emoji
 
-    return (pack, emojis, sticker_name, is_animated)
+    return pack, emojis, sticker_name, is_animated
 
 
 async def _get_default_packs():
