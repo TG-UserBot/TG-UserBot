@@ -90,8 +90,8 @@ async def stickerpack(event):
     elif '=' in match:
         await event.edit(await _set_default_packs(match, '='))
     elif match.strip().lower() == "reset":
-        await _set_default_packs("basic=reset", ':')
-        await _set_default_packs("animated=reset", ':')
+        await _set_default_packs("basic=reset", '=')
+        await _set_default_packs("animated=reset", '=')
         await event.edit("`Successfully reset both of your packs.`")
     else:
         match = f"basic:{match}"
