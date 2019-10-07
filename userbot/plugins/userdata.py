@@ -45,7 +45,6 @@ from userbot.helper_funcs.parser import Parser
 )
 async def whois(event):
     match = event.matches[0].group(1)
-    reply_id = None
 
     if event.entities or match:
         user = await get_user_from_msg(event)
@@ -56,7 +55,6 @@ async def whois(event):
         user = "self"
 
     if event.reply_to_msg_id:
-        reply_id = event.reply_to_msg_id
         if not match:
             reply = await event.get_reply_message()
             if reply.fwd_from:
@@ -93,9 +91,7 @@ async def whois(event):
         await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
-    if reply_id:
-        await event.delete()
-    await event.respond(string, reply_to=reply_id)
+    await event.edit(string)
 
 
 @client.onMessage(

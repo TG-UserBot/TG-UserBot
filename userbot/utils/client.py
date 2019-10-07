@@ -48,6 +48,7 @@ class UserBotClient(TelegramClient):
     prefix: str = None
     restarting: bool = False
     register_commands: bool = False
+    running_processes: dict = {}
     version: int = 0
 
     def onMessage(
@@ -80,8 +81,15 @@ class UserBotClient(TelegramClient):
         if self.restarting:
             await event.edit("`Previous restart is still in proccess!`")
             return
+
         self.failed_imports.clear()
         self.restarting = True
+
+        for _, process in self.running_processes.items():
+            process.kill()
+            LOGGER.debug("Killed %s which was still running.", process.pid)
+        self.running_processes.clear()
+
         await event.edit(
             "`Removing all the event handlers and disonnecting "
             "the client. BRB.`"
@@ -92,10 +100,12 @@ class UserBotClient(TelegramClient):
         self.commands.clear()
         self.disabled_commands.clear()
         await self.disconnect()
+
         for module in modules:
             # Required to update helper and util file.
             if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
                 reload(modules[module])
+
         await self.connect()
         await event.edit(
             "`Succesfully removed all the handlers and started "

@@ -118,3 +118,27 @@ async def delme(event):
     )
     await sleep(2)
     await toast.delete()
+
+
+@client.onMessage(
+    command="del", info="Delete a particular messsage!",
+    outgoing=True, regex=r"del$"
+)
+async def delete(event):
+    reply = await event.get_reply_message()
+    if not reply:
+        await event.edit("`There's nothing for me to delete!`")
+        return
+
+    if not reply.from_id == (await client.get_me()).id:
+        if (
+            event.is_group and
+            (event.chat.creator or event.chat.admin_rights.delete_messages)
+        ):
+            await reply.delete()
+        else:
+            await event.edit("`You don't have enough rights in here fool!`")
+            return
+    else:
+        await reply.delete()
+    await event.delete()

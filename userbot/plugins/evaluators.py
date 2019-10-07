@@ -70,18 +70,22 @@ async def execute(event):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
+
+    message = str(event.chat.id) + ':' + str(event.message.id)
+    client.running_processes.update({
+        message: process
+    })
     stdout, stderr = await process.communicate()
+    del client.running_processes[message]
 
+    text = f"[EXEC] Return code: {process.returncode}\n"
+
+    if stdout:
+        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip()
     if stderr:
-        text = stderr.decode('UTF-8')
-        if len(text) > 4096:
-            await limit_exceeded(event, "```" + text + "```", True)
-            return
-        await event.reply("```" + text + "```")
-        return
+        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip()
 
-    elif stdout:
-        text = stdout.decode("UTF-8")
+    if stdout or stderr:
         if len(text) > 4096:
             await limit_exceeded(event, "```" + text + "```", True)
             return
@@ -106,21 +110,61 @@ async def terminal(event):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
+
+    message = str(event.chat.id) + ':' + str(event.message.id)
+    client.running_processes.update({
+        message: process
+    })
     stdout, stderr = await process.communicate()
+    del client.running_processes[message]
 
+    text = f"[TERM] Return code: {process.returncode}\n"
+
+    if stdout:
+        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip()
     if stderr:
-        text = stderr.decode('UTF-8')
-        if len(text) > 4096:
-            await limit_exceeded(event, "```" + text + "```", True)
-            return
-        await event.reply("```" + text + "```")
-        return
+        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip()
 
-    elif stdout:
-        text = stdout.decode("UTF-8")
+    if stdout or stderr:
         if len(text) > 4096:
             await limit_exceeded(event, "```" + text + "```", True)
             return
         await event.reply("```" + text + "```")
     else:
         await event.reply("Nice, get off the void.\nNo output for you.")
+
+
+@client.onMessage(
+    command="kill/terminate",
+    outgoing=True, regex=r"(kill|terminate)$",
+    info="Kill or Terminate a subprocess which is still running"
+)
+async def killandterminate(event):
+    """Function used to kill or terminate asyncio subprocesses"""
+    if not event.reply_to_msg_id:
+        await event.edit(
+            "`Reply to a message to kill or terminate the process!`"
+        )
+        return
+
+    reply = await event.get_reply_message()
+    message = str(reply.chat.id) + ':' + str(reply.id)
+    running_process = client.running_processes.get(message, False)
+
+    if running_process:
+        # If we ever want to wait for it to complete. (Most likely never)
+        """try:
+            await running_process.wait()
+        finally:
+            if running_process.returncode is None:"""
+
+        option = event.matches[0].group(1)
+        if option == "kill":
+            running_process.kill()
+        else:
+            running_process.terminate()
+        await event.edit(
+            f"`Successfully {option}ed the process.`"
+        )
+    else:
+        await event.edit("`There is no process running for this message.`")
