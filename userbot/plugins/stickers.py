@@ -135,9 +135,10 @@ async def kang(event):
                 text, is_animated
             )
             if not pack and not packnick:
+                prefix = client.prefix if client.prefix else '.'
                 await event.edit(
                     "`Are you sure you're using the correct syntax?`\n"
-                    f"`{client.prefix}kang <packName>=<packsShortName>`\n"
+                    f"`{prefix}kang <packName>=<packsShortName>`\n"
                     "`You can also choose emojis whilst making a new pack.`"
                 )
                 return

@@ -88,9 +88,9 @@ async def execute(event):
     text = f"[EXEC] Return code: {process.returncode}\n"
 
     if stdout:
-        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip()
+        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip() + "\n"
     if stderr:
-        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip()
+        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
     if stdout or stderr:
         if len(text) > 4096:
@@ -135,9 +135,9 @@ async def terminal(event):
     text = f"[TERM] Return code: {process.returncode}\n"
 
     if stdout:
-        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip()
+        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip() + "\n"
     if stderr:
-        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip()
+        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
     if stdout or stderr:
         if len(text) > 4096:
