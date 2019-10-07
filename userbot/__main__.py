@@ -39,6 +39,7 @@ async def _run_until_complete():
     while client.restarting:
         await client.start()
         await client.disconnected
+    client._kill_running_processes()
 
 
 def wakeup():
@@ -67,6 +68,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print()
         LOGGER.info("Exiting the script due to keyboard interruption.")
+        client._kill_running_processes()
         pass
     finally:
         client.disconnect()

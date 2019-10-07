@@ -85,10 +85,7 @@ class UserBotClient(TelegramClient):
         self.failed_imports.clear()
         self.restarting = True
 
-        for _, process in self.running_processes.items():
-            process.kill()
-            LOGGER.debug("Killed %s which was still running.", process.pid)
-        self.running_processes.clear()
+        self._kill_running_processes()
 
         await event.edit(
             "`Removing all the event handlers and disonnecting "
@@ -128,7 +125,13 @@ class UserBotClient(TelegramClient):
         )
         print()
 
-    async def _updateconfig(self):
+    def _updateconfig(self):
         with open('config.ini', 'w+') as configfile:
             self.config.write(configfile)
         return True
+
+    def _kill_running_processes(self):
+        for _, process in self.running_processes.items():
+            process.kill()
+            LOGGER.debug("Killed %d which was still running.", process.pid)
+        self.running_processes.clear()

@@ -46,7 +46,7 @@ async def resetprefix(event):
         await event.edit(
             "`Succesffully reset your prefix to the deafult ones!`"
         )
-        await event.client._updateconfig()
+        client._updateconfig()
     else:
         await event.edit(
             "`There is no prefix set as a default!`"
@@ -75,7 +75,7 @@ async def setprefix(event):
                 event.client.prefix, old_prefix
             )
         )
-    await event.client._updateconfig()
+    client._updateconfig()
 
 
 @client.onMessage(

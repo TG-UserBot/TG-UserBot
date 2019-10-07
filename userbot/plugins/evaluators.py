@@ -60,6 +60,11 @@ async def evaluate(event):
 )
 async def execute(event):
     """Executor function used to execute Python code for .exec"""
+    message = str(event.chat.id) + ':' + str(event.message.id)
+    if client.running_processes.get(message, False):
+        await event.reply("A process for this event is already running!")
+        return
+
     code = event.matches[0].group(1).strip()
     if not code:
         await event.edit("Executed the void.")
@@ -71,12 +76,14 @@ async def execute(event):
         stderr=subprocess.PIPE
     )
 
-    message = str(event.chat.id) + ':' + str(event.message.id)
     client.running_processes.update({
         message: process
     })
     stdout, stderr = await process.communicate()
-    del client.running_processes[message]
+
+    not_killed = client.running_processes.get(message, False)
+    if not_killed:
+        del client.running_processes[message]
 
     text = f"[EXEC] Return code: {process.returncode}\n"
 
@@ -100,6 +107,11 @@ async def execute(event):
 )
 async def terminal(event):
     """Terminal function used to execute shell commands for .term"""
+    message = str(event.chat.id) + ':' + str(event.message.id)
+    if client.running_processes.get(message, False):
+        await event.reply("A process for this event is already running!")
+        return
+
     cmd = event.matches[0].group(1).strip()
     if not cmd:
         await event.edit("Executed the void.")
@@ -111,12 +123,14 @@ async def terminal(event):
         stderr=subprocess.PIPE
     )
 
-    message = str(event.chat.id) + ':' + str(event.message.id)
     client.running_processes.update({
         message: process
     })
     stdout, stderr = await process.communicate()
-    del client.running_processes[message]
+
+    not_killed = client.running_processes.get(message, False)
+    if not_killed:
+        del client.running_processes[message]
 
     text = f"[TERM] Return code: {process.returncode}\n"
 

@@ -94,7 +94,7 @@ async def stickerpack(event):
         text = f"`Successfully changed your default pack to {match}!`"
         await event.edit(text)
 
-    await client._updateconfig()
+    client._updateconfig()
 
 
 @client.onMessage(
@@ -372,7 +372,7 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
             text = f"`Successfully changed your default pack to {name}!`"
     else:
         text = "`Invalid pack type. Make sure it's animated or basic!`"
-    await client._updateconfig()
+    client._updateconfig()
     return text
 
 
