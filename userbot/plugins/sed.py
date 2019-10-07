@@ -22,7 +22,7 @@
 
 
 from asyncio import sleep
-from re import match, MULTILINE, IGNORECASE
+from re import match, DOTALL, MULTILINE, IGNORECASE
 
 from userbot import client
 from userbot.helper_funcs.sed import sub_matches
@@ -33,7 +33,7 @@ REGEXNINJA = False
 pattern = (
     r'(?:^|;.+?)'  # Ensure that the expression doesn't go blatant
     r'([1-9]+?)?'  # line: Don't match a 0, sed counts lines from 1
-    r'sed'  # The s command (as in substitute)
+    r'(?:sed|s)'  # The s command (as in substitute)
     r'(?:(?P<d>.))'  # Unknown delimiter with a named group d
     r'((?:(?!(?<![^\\]\\)(?P=d)).)+)'  # regexp
     r'(?P=d)'  # Unknown delimiter
@@ -46,11 +46,11 @@ pattern = (
 
 @client.onMessage(
     command="sed", info="GNU sed like substitution", disable_prefix=True,
-    outgoing=True, regex=(pattern, MULTILINE | IGNORECASE)
+    outgoing=True, regex=(pattern, MULTILINE | IGNORECASE | DOTALL)
 )
 async def sed_substitute(event):
     """SED function used to substitution texts for s command"""
-    if not match(r"^(?:[1-9]+sed|sed)", event.text, IGNORECASE):
+    if not match(r"^(?:[1-9]+sed|[1-9]+s|sed)", event.raw_text, IGNORECASE):
         return
 
     matches = event.matches
@@ -62,7 +62,7 @@ async def sed_substitute(event):
             if not original:
                 return
 
-            newStr = await sub_matches(matches, original.text)
+            newStr = await sub_matches(matches, original.raw_text)
             if newStr:
                 await original.reply('[SED]\n\n' + newStr)
         else:
@@ -73,7 +73,7 @@ async def sed_substitute(event):
                 event.chat_id,
                 offset_id=event.message.id
             ):
-                if msg.text:
+                if msg.raw_text:
                     total_messages.append(msg)
                     count += 1
                 else:
@@ -82,13 +82,13 @@ async def sed_substitute(event):
                     break
 
             for message in total_messages:
-                newStr = await sub_matches(matches, message.text)
+                newStr = await sub_matches(matches, message.raw_text)
                 if newStr:
                     await message.reply('[SED]\n\n' + newStr)
                     break
     except Exception as e:
         await event.reply((
-            f"{event.text}"
+            f"{event.raw_text}"
             '\n\n'
             'Like regexbox says, fuck me.\n'
             '`'

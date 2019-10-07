@@ -90,11 +90,8 @@ async def stickerpack(event):
     elif '=' in match:
         await event.edit(await _set_default_packs(match, '='))
     else:
-        client.config['userbot']['default_sticker_pack'] = match
-        text = f"`Successfully changed your default pack to {match}!`"
-        await event.edit(text)
-
-    client._updateconfig()
+        match = f"basic:{match}"
+        await event.edit(await _set_default_packs(match, ':'))
 
 
 @client.onMessage(
@@ -162,7 +159,9 @@ async def kang(event):
         else:
             packs, first_msg = await _list_packs()
             is_pack = await _verify_cs_name(pack, packs)
-            if not is_pack:
+            if "_kang_pack" in pack:
+                new_pack = True
+            elif not is_pack:
                 await event.edit(
                     NO_PACK.format(
                         pack,
@@ -351,7 +350,7 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
                 text = f"`Successfully reset your default animated pack!`"
                 del client.config['userbot']['default_animated_sticker_pack']
             else:
-                text = "`You had no default animated pack. to reset!`"
+                text = "`You had no default animated pack to reset!`"
         else:
             client.config['userbot']['default_animated_sticker_pack'] = name
             text = (
@@ -366,7 +365,7 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
                 text = f"`Successfully reset your default pack!`"
                 del client.config['userbot']['default_sticker_pack']
             else:
-                text = "`You had no default animated pack. to reset!`"
+                text = "`You had no default pack to reset!`"
         else:
             client.config['userbot']['default_sticker_pack'] = name
             text = f"`Successfully changed your default pack to {name}!`"

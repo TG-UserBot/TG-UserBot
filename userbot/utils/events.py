@@ -68,9 +68,12 @@ class NewMessage(events.NewMessage):
             exp, flags = self.regex
 
             if not self.disable_prefix:
-                pattern = re.compile("(?i)^" + prefix + exp).finditer
+                pattern = re.compile(
+                    "(?i)^" + prefix + exp,
+                    flags=flags
+                ).finditer
             else:
-                pattern = re.compile(exp).finditer
+                pattern = re.compile(exp, flags=flags).finditer
 
             text = tl_event.message.message or ''
             matches = list(pattern(text)) or None
