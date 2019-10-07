@@ -442,6 +442,8 @@ async def _resolve_pack_name(text: str, is_animated: bool):
         name_and_emojis = [x for x in name_and_emojis if x]
         for i in name_and_emojis:
             if re.match(r"\w+", i):
+                if packname == "auto":
+                    packname = ''
                 packname += i
             else:
                 emojis += i
@@ -449,9 +451,13 @@ async def _resolve_pack_name(text: str, is_animated: bool):
     else:
         packname = splits[0].strip()
         name_and_emojis = ''.join(splits[1:]).split(' ')
-        name_and_emojis = [x for x in name_and_emojis if x]
-        packnickname = ' '.join(name_and_emojis[:-1])
-        emojis = ''.join(name_and_emojis[-1:]) or None
+        if len(name_and_emojis) > 1:
+            name_and_emojis = [x for x in name_and_emojis if x]
+            packnickname = ' '.join(name_and_emojis[:-1])
+            emojis = ''.join(name_and_emojis[-1:]) or None
+        else:
+            packnickname = name_and_emojis[0]
+            emojis = None
 
     if packname == "auto":
         user = (await client.get_me()).id
@@ -479,7 +485,11 @@ async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
         size = (w, h)
 
     image.resize(size).save(new_image, 'png')
-    image.close()
+    if image is None:
+        del image
+    else:
+        image.close()
+
     return new_image
 
 
