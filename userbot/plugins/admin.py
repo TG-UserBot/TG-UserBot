@@ -361,7 +361,7 @@ async def tmute(event):
 
 
 @client.onMessage(
-    command="tban", info="T-an someone in a group|channel.",
+    command="tban", info="T-ban someone in a group|channel.",
     outgoing=True, regex=r"tban(?: |$)(.*)$", require_admin=True
 )
 async def tban(event):
@@ -381,7 +381,7 @@ async def tban(event):
         time = None
         reason = None
         seconds = None
-        text = "`Successfully t-muted ``{}`` (``{}``)!`"
+        text = "`Successfully t-banned ``{}`` (``{}``)!`"
         if extra:
             reason, seconds = await split_extra_string(extra)
             if reason:
@@ -391,7 +391,7 @@ async def tban(event):
                 text += f"\n`Time:` `{time}`"
 
         if not seconds:
-            await event.edit("`Provide the total time limit for t-mute!`")
+            await event.edit("`Provide the total time limit for t-ban!`")
             return
 
         await client.edit_permissions(
