@@ -144,7 +144,7 @@ async def disable(event):
 )
 async def commands(event):
     response = "**Enabled commands:**"
-    for name, command in event.client.commands.items():
+    for name, command in sorted(event.client.commands.items()):
         response += f"\n**{name}:** `{command.info}`"
     await event.edit(response)
 

@@ -32,9 +32,14 @@ conversation_args = {
     'timeout': 10,
     'exclusive': True
 }
+
 NO_PACK = """`Couldn't find {} in your sticker packs! \
 Check your packs and update it in the config or use \
 {}kang {}:<pack title> {} to make a new pack.`"""
+
+FALSE_DEFAULT = """`Couldn't find {} in your \
+packs! Check your packs and update it in the config \
+or use {}stickerpack reset for deafult packs.`"""
 
 
 @client.onMessage(
@@ -194,9 +199,7 @@ async def kang(event):
                     packnick = f"{tag}'s animated kang pack"
                 else:
                     pack = animated or "a default animated pack"
-                    await event.edit(
-                        f"`Couldn't find {pack} in your animated packs!`"
-                    )
+                    await event.edit(FALSE_DEFAULT.format(pack, prefix))
                     await _delete_sticker_messages(first_msg)
                     return
         else:
@@ -211,11 +214,7 @@ async def kang(event):
                     packnick = f"{tag}'s kang pack"
                 else:
                     pack = basic or "a default pack"
-                    await event.edit(
-                        f"`Couldn't find {pack} in your "
-                        "packs! Check your packs and update it in the config "
-                        f"or use {prefix}stickerpack reset for deafult packs.`"
-                    )
+                    await event.edit(FALSE_DEFAULT.format(pack, prefix))
                     await _delete_sticker_messages(first_msg)
                     return
 
@@ -572,6 +571,14 @@ async def _get_default_packs():
     config = client.config['userbot']
     basic = config.get('default_sticker_pack', basic_default)
     animated = config.get('default_animated_sticker_pack', animated_default)
+
+    if basic.strip().lower() == "auto" or basic.strip().lower() == "none":
+        basic = basic_default
+    if (
+        animated.strip().lower() == "auto" or
+        animated.strip().lower() == "none"
+    ):
+        animated = animated_default
 
     return basic, animated
 
