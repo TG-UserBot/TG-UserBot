@@ -79,12 +79,14 @@ async def reverse(event):
     matching = match['matching']
 
     if guess and imgspage:
-        text = "[{}]({})\n\n[Visually similar images]({})"
+        text = (
+            f"[{guess}]({fetchUrl})\n\n[Visually similar images]({imgspage})"
+        )
         if matching_text and matching:
             text += "\n\n**" + matching_text + ":**"
             for title, link in matching.items():
                 text += f"\n[{title.strip()}]({link.strip()})"
-        await event.edit(text.format(guess, fetchUrl, imgspage))
+        await event.edit(text)
     else:
         await event.edit("`Couldn't find anything for you.`")
         return
@@ -183,7 +185,10 @@ async def _get_similar_links(link: str, lim: int = 2):
     async with aiohttp.ClientSession() as session:
         for link in matches:
             async with session.get(link) as response:
-                if response.status == 200:
+                if (
+                    response.status == 200 and
+                    response.content_type.startswith('image/')
+                ):
                     counter += 1
                     links.append(await response.read())
             if counter >= int(lim):

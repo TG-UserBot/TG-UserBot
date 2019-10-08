@@ -1,8 +1,9 @@
 aiohttp>=3.5.4
-cryptg
+beautifulsoup4>=4.8.1
+cryptg>=0.2.post0
 hachoir>=3.0a5
 packaging>=19.2
 Pillow>=6.0.0
 requests>=2.22.0
 telethon>=1.10.6
-youtube-dl
+youtube-dl>=2019.9.28
