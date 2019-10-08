@@ -69,5 +69,5 @@ async def _request(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
-                return await response.json(), await response.json()
+                return await response.text(), await response.json()
             return None

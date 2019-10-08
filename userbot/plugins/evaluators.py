@@ -18,7 +18,7 @@
 from sys import executable
 from inspect import isawaitable
 from asyncio import (
-    create_subprocess_exec, create_subprocess_shell, subprocess
+    create_subprocess_exec, create_subprocess_shell, subprocess, sleep
 )
 
 from userbot import client
@@ -180,5 +180,7 @@ async def killandterminate(event):
         await event.edit(
             f"`Successfully {option}ed the process.`"
         )
+        await sleep(2)
+        await event.delete()
     else:
         await event.edit("`There is no process running for this message.`")
