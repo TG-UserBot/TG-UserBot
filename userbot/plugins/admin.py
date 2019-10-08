@@ -71,8 +71,7 @@ async def demote(event):
     if (
         (event.is_channel or event.is_group) and
         not (
-            event.chat.creator or event.chat.admin_rights.add_admins or
-            event.chat.admin_rights.ban_users
+            event.chat.creator or event.chat.admin_rights.ban_users
         )
     ):
         await event.edit("`You do not have rights to remove admins in here!`")
@@ -235,7 +234,7 @@ async def kick(event):
 async def mute(event):
     if (
         (event.is_channel or event.is_group) and
-        not (event.chat.creator or event.chat.admin_rights)
+        not (event.chat.creator or event.chat.ban_users)
     ):
         await event.edit("`You do not have rights to mute users in here!`")
         return
@@ -274,7 +273,7 @@ async def mute(event):
 async def unmute(event):
     if (
         (event.is_channel or event.is_group) and
-        not (event.chat.creator or event.chat.admin_rights)
+        not (event.chat.creator or event.chat.ban_users)
     ):
         await event.edit("`You do not have rights to un-mute users in here!`")
         return
@@ -313,7 +312,7 @@ async def unmute(event):
 async def tmute(event):
     if (
         (event.is_channel or event.is_group) and
-        not (event.chat.creator or event.chat.admin_rights)
+        not (event.chat.creator or event.chat.ban_users)
     ):
         await event.edit("`You do not have rights to mute users in here!`")
         return
