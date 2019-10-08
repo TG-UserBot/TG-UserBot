@@ -44,7 +44,7 @@ or use {}stickerpack reset for deafult packs.`"""
 
 @client.onMessage(
     command="getsticker", info="Get a stickers PNG or JPG",
-    outgoing=True, regex="getsticker$"
+    outgoing=True, regex="getsticker(?: |$)(file|document)?$"
 )
 async def getsticker(event):
     """Get sticker function used to convert a sticker for .getsticker"""
@@ -71,7 +71,10 @@ async def getsticker(event):
         pilImg.close()
         sticker.seek(0)
         sticker.name = "sticcer.png"
-        await reply.reply(file=sticker)
+        if event.matches[0].group(1):
+            await reply.reply(file=sticker, force_document=True)
+        else:
+            await reply.reply(file=sticker)
         sticker_bytes.close()
         sticker.close()
 
