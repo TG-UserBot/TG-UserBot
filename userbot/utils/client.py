@@ -60,12 +60,16 @@ class UserBotClient(TelegramClient):
         **kwargs
     ) -> callable:
         """Method to register a function without the client"""
+        NewMessage = custom_events.NewMessage
+        MessageEdited = custom_events.MessageEdited
+
+        kwargs.setdefault('forwards', False)
 
         def wrapper(func):
-            events.register(custom_events.NewMessage(**kwargs))(func)
+            events.register(NewMessage(**kwargs))(func)
 
             if edited:
-                events.register(custom_events.MessageEdited(**kwargs))(func)
+                events.register(MessageEdited(**kwargs))(func)
 
             if self.register_commands and command:
                 handlers = events._get_handlers(func)

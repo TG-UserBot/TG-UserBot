@@ -102,8 +102,7 @@ async def stickerpack(event):
         await _set_default_packs("animated=reset", '=')
         await event.edit("`Successfully reset both of your packs.`")
     else:
-        match = f"basic:{match}"
-        await event.edit(await _set_default_packs(match, ':'))
+        await event.edit(await _set_default_packs(f"basic:{match}", ':'))
 
 
 @client.onMessage(
