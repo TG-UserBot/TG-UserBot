@@ -15,6 +15,9 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import redis
+import userbot.utils.client
+
 from configparser import ConfigParser
 from os.path import abspath, basename, dirname, isfile, join
 from packaging.version import parse
@@ -24,9 +27,7 @@ from logging import (
 )
 
 from telethon.tl.types import User
-
-import userbot.utils.client
-
+from userbot.utils.sessions import RedisSession
 
 UserBotClient = userbot.utils.client.UserBotClient
 
@@ -60,6 +61,22 @@ telethon = config['telethon']
 LOGGER_CHAT_ID = userbot.getint('logger_group_id', 0)
 CONSOLE_LOGGER = userbot.get('console_logger_level', 'INFO')
 USERBOT_LOGGER = True if LOGGER_CHAT_ID else False
+REDIS_ENDPOINT = telethon.get('redis_endpoint', None)
+REDIS_PASSWORD = telethon.get('redis_password', None)
+
+if not REDIS_ENDPOINT or not REDIS_PASSWORD:
+    LOGGER.warn(
+        "Consider making an account on redislab.com and updating your config "
+        "if you want to run on Heroku!"
+    )
+    session = "userbot"
+else:
+    REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
+    REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
+    redis = redis.Redis(
+        host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD
+    )
+    session = RedisSession("userbot", redis)
 
 LEVELS = {
     'DEBUG': DEBUG,
@@ -92,9 +109,9 @@ __copyright__ = (
 )
 
 client = UserBotClient(
-    "userbot",
-    telethon.getint('api_id', None),
-    telethon.get('api_hash', None),
+    session=session,
+    api_id=telethon.getint('api_id', None),
+    api_hash=telethon.get('api_hash', None),
     loop=loop,
     app_version=__version__,
     auto_reconnect=False
