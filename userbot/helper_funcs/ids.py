@@ -32,7 +32,7 @@ async def get_user_from_msg(event: Message) -> Union[int, str, None]:
     match = event.matches[0].group(1)
 
     if match == "this":
-        match = event.chat_id
+        match = str(event.chat.id)
 
     if event.entities:
         for entity in event.entities:
