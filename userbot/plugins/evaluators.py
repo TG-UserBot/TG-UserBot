@@ -60,7 +60,11 @@ async def evaluate(event):
 )
 async def execute(event):
     """Executor function used to execute Python code for .exec"""
-    message = str(event.chat.id) + ':' + str(event.message.id)
+    message = (
+        str(getattr(event.chat, 'id', event.chat_id)) +
+        ':' +
+        str(event.message.id)
+    )
     if client.running_processes.get(message, False):
         await event.reply("A process for this event is already running!")
         return
@@ -107,7 +111,11 @@ async def execute(event):
 )
 async def terminal(event):
     """Terminal function used to execute shell commands for .term"""
-    message = str(event.chat.id) + ':' + str(event.message.id)
+    message = (
+        str(getattr(event.chat, 'id', event.chat_id)) +
+        ':' +
+        str(event.message.id)
+    )
     if client.running_processes.get(message, False):
         await event.reply("A process for this event is already running!")
         return
@@ -162,7 +170,9 @@ async def killandterminate(event):
         return
 
     reply = await event.get_reply_message()
-    message = str(reply.chat.id) + ':' + str(reply.id)
+    message = (
+        str(getattr(reply.chat, 'id', reply.chat_id)) + ':' + str(reply.id)
+    )
     running_process = client.running_processes.get(message, False)
 
     if running_process:
