@@ -2,10 +2,10 @@ aiohttp>=3.5.4
 beautifulsoup4>=4.8.1
 cryptg>=0.2.post0
 hachoir>=3.0a5
-hiredis
+hiredis>=1.0.0
 packaging>=19.2
 Pillow>=6.0.0
-redis
+redis>=3.3.10
 requests>=2.22.0
 telethon>=1.10.6
 youtube-dl>=2019.9.28

@@ -48,9 +48,11 @@ class PluginManager:
 
     def __init__(self, client):
         self.client = client
+        if "plugins" not in client.config:
+            client.config["plugins"] = {}
         config = client.config["plugins"]
         self.plugin_path: str = relpath(
-            config.get("root", "./userbot/plugins")
+            config.setdefault("root", "./userbot/plugins")
         )
         self.include: list = self._split_plugins(config.get("include", []))
         self.exclude: list = self._split_plugins(config.get("exclude", []))
@@ -95,7 +97,7 @@ class PluginManager:
 
     def _list_plugins(self):
         plugins: List[str, str] = []
-        if self.client.config["plugins"].getboolean("enabled", False):
+        if self.client.config["plugins"].getboolean("enabled", True):
             for f in Path(self.plugin_path).glob("**/*.py"):
                 if f.name != "__init__.py" and not f.name.startswith('_'):
                     name = f.name[:-3]

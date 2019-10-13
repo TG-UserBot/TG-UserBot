@@ -28,8 +28,10 @@ from logging import (
 
 from telethon.tl.types import User
 from userbot.utils.sessions import RedisSession
+from userbot.utils.helpers import resolve_env
 
 UserBotClient = userbot.utils.client.UserBotClient
+config = ConfigParser()
 
 config_file = join(dirname(dirname(__file__)), 'config.ini')
 pyversion = ".".join(str(num) for num in version_info if isinstance(num, int))
@@ -40,12 +42,23 @@ if parse(pyversion) < parse('3.7'):
         "\nExiting the script."
     )
     exit(1)
-elif not isfile(config_file):
-    if basename(abspath('.')) == 'source':  # To avoid errors from Sphinx
+
+if basename(abspath('.')) == 'source':  # To avoid errors from Sphinx
+    sphinx = True
+else:
+    sphinx = False
+
+if isfile(config_file) or sphinx:
+    if sphinx:
         config_file = join(dirname(dirname(__file__)), 'sample_config.ini')
-    else:
+    config.read(config_file)
+else:
+    try:
+        resolve_env(config)
+    except ValueError:
         print(
-            "Please make sure you have a proper config.ini in this directory."
+            "Please make sure you have a proper config.ini in this directory "
+            "or the required environment variables set."
             "\nExiting the script."
         )
         exit(1)
@@ -53,8 +66,6 @@ elif not isfile(config_file):
 ROOT_LOGGER = getLogger()
 LOGGER = getLogger(__name__)
 
-config = ConfigParser()
-config.read(config_file)
 userbot = config['userbot']
 telethon = config['telethon']
 
@@ -69,14 +80,27 @@ if not REDIS_ENDPOINT or not REDIS_PASSWORD:
         "Consider making an account on redislab.com and updating your config "
         "if you want to run on Heroku!"
     )
+    redis_session = False
     session = "userbot"
 else:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
     REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
-    redis = redis.Redis(
+    redis_connection = redis.Redis(
         host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD
     )
-    session = RedisSession("userbot", redis)
+    try:
+        redis_connection.ping()
+    except Exception as e:
+        LOGGER.exception(e)
+        print()
+        LOGGER.warning(
+            "Make sure you have the correct Redis endpoint and password."
+            "\nOr you're missing redis-server? Install it with your package "
+            "manager"
+        )
+        exit(1)
+    redis_session = True
+    session = RedisSession("userbot", redis_connection)
 
 LEVELS = {
     'DEBUG': DEBUG,
