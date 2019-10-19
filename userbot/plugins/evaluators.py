@@ -61,7 +61,7 @@ async def evaluate(event):
 async def execute(event):
     """Executor function used to execute Python code for .exec"""
     message = (
-        str(getattr(event.chat, 'id', event.chat_id)) +
+        str((await event.get_chat()).id) +
         ':' +
         str(event.message.id)
     )
@@ -112,7 +112,7 @@ async def execute(event):
 async def terminal(event):
     """Terminal function used to execute shell commands for .term"""
     message = (
-        str(getattr(event.chat, 'id', event.chat_id)) +
+        str((await event.get_chat()).id) +
         ':' +
         str(event.message.id)
     )

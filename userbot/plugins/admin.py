@@ -44,6 +44,8 @@ async def promote(event):
     try:
         await client.edit_admin(
             entity=await event.get_input_chat(),
+            post_messages=True if event.is_channel else False,
+            edit_messages=True if event.is_channel else False,
             user=user,
             is_admin=True,
             title=extra
