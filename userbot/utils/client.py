@@ -102,7 +102,7 @@ class UserBotClient(TelegramClient):
         self.disabled_commands.clear()
         await self.disconnect()
 
-        for module in modules:
+        for module in modules.copy():
             # Required to update helper and util file.
             if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
                 reload(modules[module])
