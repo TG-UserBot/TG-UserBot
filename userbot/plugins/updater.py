@@ -84,7 +84,7 @@ async def update(event):
         heroku_conn = heroku3.from_key(heroku_api_key)
         heroku_app = None
         for app in heroku_conn.apps():
-            if app == os.getenv('HEROKU_APP_NAME', ''):
+            if app.name == os.getenv('HEROKU_APP_NAME', ''):
                 heroku_app = app
                 break
         if heroku_app is None:
