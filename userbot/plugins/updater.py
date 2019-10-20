@@ -113,8 +113,17 @@ async def update(event):
                 repo.create_remote('heroku', url)
             app.enable_feature('runtime-dyno-metadata')
             await event.edit("`Pushing all the changes to the Heroku.`")
-            repo.remotes['heroku'].push(f'{str(repo.active_branch)}:master')
-            await event.edit("`There was nothing to push to Heroku?`")
+            remote = repo.remotes['heroku']
+            try:
+                remote.pull()
+                remote.push(f'{str(repo.active_branch)}:master')
+                await event.edit("`There was nothing to push to Heroku?`")
+            except git.GitCommandError as command:
+                await event.edit(
+                    "`An error occured trying to pull and push to Heorku`"
+                    f"\n`{command}`"
+                )
+                LOGGER.exception(command)
     else:
         await updated_pip_modules(event, pull, repo, new_commit)
         await restart(event)
