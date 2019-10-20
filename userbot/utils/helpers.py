@@ -95,20 +95,29 @@ async def isRestart(client):
         entity = int(userbot_restarted.split('/')[0])
         message = int(userbot_restarted.split('/')[1])
         text = '`Successfully restarted the userbot!`'
-        try:
-            await client.edit_message(entity, message, text)
-        except (
-            MessageAuthorRequiredError,
-            MessageNotModifiedError,
-            MessageIdInvalidError
-        ):
-            pass
+
+        async def success_edit():
+            try:
+                await client.edit_message(entity, message, text)
+            except (
+                MessageAuthorRequiredError, MessageNotModifiedError,
+                MessageIdInvalidError
+            ):
+                pass
+
         if os.environ.get('DYNO', False) and heroku:
             heroku_conn = from_key(heroku)
-            app = os.environ.get('HEROKU_APP_NAME', False)
-            if app:
-                del heroku_conn.apps()[app].config()['userbot_restarted']
-        del os.environ['userbot_restarted']
+            HEROKU_APP = os.environ.get('HEROKU_APP_NAME', False)
+            if HEROKU_APP:
+                app = heroku_conn.apps()[HEROKU_APP]
+                for build in app.builds():
+                    if build.status == "pending":
+                        return
+                await success_edit()
+                del app.config()['userbot_restarted']
+        else:
+            await success_edit()
+            del os.environ['userbot_restarted']
 
 
 async def restart(event):

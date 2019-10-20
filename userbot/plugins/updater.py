@@ -105,9 +105,7 @@ async def update(event):
             app.config().update(
                 {'userbot_restarted': f"{event.chat_id}/{event.message.id}"}
             )
-            url = app.git_url.replace(
-                "https://", ''.join(["https://api:", heroku_api_key, "@"])
-            )
+            url = "{}@git.heroku.com:{}.git".format(heroku_api_key, app.name)
             if "heroku" in repo.remotes:
                 repo.remotes['heroku'].set_url(url)
             else:
@@ -120,7 +118,8 @@ async def update(event):
             remote = repo.remotes['heroku']
             try:
                 remote.push(
-                    refspec=f'{str(repo.active_branch)}:master'
+                    refspec=f'{str(repo.active_branch)}:master',
+                    force=True
                 )
                 await event.edit("`There was nothing to push to Heroku?`")
             except git.exc.GitCommandError as command:
