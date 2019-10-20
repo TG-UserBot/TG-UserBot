@@ -19,7 +19,7 @@ import os
 import heroku3
 import git
 import sys
-from asyncio import create_subprocess_shell
+from asyncio import create_subprocess_shell, sleep
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import restart
@@ -93,13 +93,14 @@ async def update(event):
                 "with an invalid environment. Couldn't update the app.`\n"
                 "`The changes will be reverted upon dyno restart.`"
             )
+            await sleep(2)
             await updated_pip_modules(pull, repo, new_commit)
             await restart(event)
             await event.client.disconnect()
         else:
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
-            app.config().update(userbot_config)
+            app.config().update(dict(userbot_config))
             url = app.git_url.replace(
                 "https://", ''.join("https://api:", heroku_api_key, "@")
             )
