@@ -119,8 +119,7 @@ async def update(event):
             await event.edit("`Pushing all the changes to the Heroku.`")
             remote = repo.remotes['heroku']
             try:
-                remote.pull()
-                remote.push(f'{str(repo.active_branch)}:master')
+                remote.push(f'{str(repo.active_branch)}:master', '--force')
                 await event.edit("`There was nothing to push to Heroku?`")
             except git.exc.GitCommandError as command:
                 await event.edit(

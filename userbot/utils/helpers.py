@@ -17,6 +17,7 @@
 
 import os
 import sys
+from heroku3 import from_key
 from logging import getLogger
 
 from telethon.tl.types import User
@@ -103,9 +104,10 @@ async def isRestart(client):
         ):
             pass
         if os.environ.get('DYNO', False) and heroku:
+            heroku_conn = from_key(heroku)
             app = os.environ.get('HEROKU_APP_NAME', False)
             if app:
-                del heroku.apps()[app].config()['userbot_restarted']
+                del heroku_conn.apps()[app].config()['userbot_restarted']
         del os.environ['userbot_restarted']
 
 
