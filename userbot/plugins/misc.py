@@ -101,7 +101,7 @@ async def restart(event):
     if arg:
         event.client.loop.create_task(event.client._restarter(event))
     else:
-        await event.edit("`BRB restarting!`")
+        await event.edit("`BRB disconnecting and starting the script again!`")
         await shell_restart(event)
         await event.client.disconnect()
 
