@@ -105,11 +105,10 @@ async def update(event):
                 "https://", ''.join(["https://api:", heroku_api_key, "@"])
             )
             if "heroku" in repo.remotes:
-                remote = repo.remotes['heroku']
-                remote.set_url(url)
+                repo.remotes['heroku'].set_url(url)
             else:
-                repo.create_remote("heroku", url)
-            remote.push(f'{str(repo.active_branch)}:master')
+                repo.create_remote('heroku', url)
+            repo.remotes['heroku'].push(f'{str(repo.active_branch)}:master')
             app.enable_feature('runtime-dyno-metadata')
     else:
         await updated_pip_modules(pull, repo, new_commit)
