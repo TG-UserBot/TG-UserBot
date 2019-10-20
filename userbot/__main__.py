@@ -58,6 +58,7 @@ if __name__ == "__main__":
         client.loop.run_until_complete(client.get_me())
     )
     helpers.printVersion(client.version, client.prefix)
+    client.loop.create_task(helpers.isRestart(client))
 
     try:
         if platform.startswith('win'):

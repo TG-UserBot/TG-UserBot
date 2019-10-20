@@ -18,6 +18,7 @@
 from datetime import datetime
 
 from userbot import client, LOGGER
+from userbot.utils.helpers import restart as shell_restart
 
 
 @client.onMessage(
@@ -91,12 +92,18 @@ async def shutdown(event):
 
 
 @client.onMessage(
-    command="restart", info="Restart the client and reimport plugins.",
-    outgoing=True, regex="restart$", builtin=True
+    command="restart", info="Restart (the client and reimport plugins).",
+    outgoing=True, regex="restart(?: |$)(client)?$", builtin=True
 )
 async def restart(event):
     """Restart userbot."""
-    event.client.loop.create_task(event.client._restarter(event))
+    arg = event.matches[0].group(1)
+    if arg:
+        event.client.loop.create_task(event.client._restarter(event))
+    else:
+        await event.edit("`BRB restarting!`")
+        await shell_restart(event)
+        await event.client.disconnect()
 
 
 @client.onMessage(

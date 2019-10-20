@@ -64,11 +64,10 @@ async def get_entity_from_msg(event: Message) -> Union[int, str, None]:
     reply = await event.get_reply_message()
 
     if reply:
-        user = str(reply.from_id)
-        if extra:
-            extra = user + extra
+        user = reply.from_id
+        extra = match.strip()
 
-    user = int(user) if user.isdigit() else str(user)
+    user = int(user) if isinstance(user, str) and user.isdigit() else user
 
     try:
         entity = await event.client.get_entity(user)

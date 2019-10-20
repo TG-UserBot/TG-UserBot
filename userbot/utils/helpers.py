@@ -16,6 +16,8 @@
 
 
 import os
+import sys
+from logging import getLogger
 
 from telethon.tl.types import User
 from telethon.utils import get_display_name
@@ -23,6 +25,7 @@ from telethon.utils import get_display_name
 import userbot.helper_funcs.log_formatter as log_formatter
 
 
+LOGGER = getLogger(__name__)
 CUSR = log_formatter.CUSR
 CEND = log_formatter.CEND
 
@@ -68,6 +71,9 @@ def resolve_env(config):
         'default_sticker_pack': os.getenv('default_sticker_pack', None),
         'default_animated_sticker_pack': os.getenv(
             'default_animated_sticker_pack', None
+        ),
+        'api_key_heroku': os.getenv(
+            'api_key_heroku', None
         )
     }
 
@@ -75,3 +81,25 @@ def resolve_env(config):
     for key, value in userbot.items():
         if value is not None and value != 0:
             config['userbot'][key] = str(value)
+
+
+async def isRestart(client):
+    userbot_restarted = os.environ.get('userbot_restarted', False)
+    if userbot_restarted:
+        LOGGER.debug('Userbot was restarted! Editing the message.')
+        entity = int(userbot_restarted.split('/')[0])
+        message = int(userbot_restarted.split('/')[1])
+        text = '`Successfully restarted the userbot!`'
+        del os.environ['userbot_restarted']
+        await client.edit_message(entity, message, text)
+
+
+async def restart(event):
+    args = [sys.executable, "-m", "userbot"]
+
+    env = os.environ
+    env.setdefault('userbot_restarted', f"{event.chat_id}/{event.message.id}")
+    if sys.platform.startswith('win'):
+        os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
+    else:
+        os.execle(sys.executable, *args, os.environ)
