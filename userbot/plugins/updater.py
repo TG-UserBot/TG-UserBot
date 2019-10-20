@@ -36,15 +36,15 @@ async def update(event):
     main_repo = "https://github.com/kandnub/TG-UserBot.git"
     try:
         repo = git.Repo(basedir)
-    except git.NoSuchPathError as path:
+    except git.exc.NoSuchPathError as path:
         await event.edit(f"`Couldn't find {path}!`")
         return
-    except git.GitCommandError as command:
+    except git.exc.GitCommandError as command:
         await event.edit(
             f"`An error occured trying to get the Git Repo.`\n`{command}`"
         )
         return
-    except git.InvalidGitRepositoryError:
+    except git.exc.InvalidGitRepositoryError:
         repo = git.Repo.init(basedir)
         origin = repo.create_remote('origin', main_repo)
         if not origin.exists():
@@ -66,7 +66,7 @@ async def update(event):
         repo.head.reset('--hard')
     try:
         pull = repo.remotes.origin.pull()
-    except git.GitCommandError as command:
+    except git.exc.GitCommandError as command:
         text = (
             "`An error occured trying to Git pull:`\n`{0}`\n\n"
             "`You may use` **{1}update reset** `or` **{1}update add** "
@@ -121,7 +121,7 @@ async def update(event):
                 remote.pull()
                 remote.push(f'{str(repo.active_branch)}:master')
                 await event.edit("`There was nothing to push to Heroku?`")
-            except git.GitCommandError as command:
+            except git.exc.GitCommandError as command:
                 await event.edit(
                     "`An error occured trying to pull and push to Heorku`"
                     f"\n`{command}`"
