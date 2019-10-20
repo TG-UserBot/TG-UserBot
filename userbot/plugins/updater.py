@@ -120,8 +120,7 @@ async def update(event):
             remote = repo.remotes['heroku']
             try:
                 remote.push(
-                    refspec=f'{str(repo.active_branch)}:master',
-                    force=True
+                    refspec=f'{str(repo.active_branch)}:master'
                 )
                 await event.edit("`There was nothing to push to Heroku?`")
             except git.exc.GitCommandError as command:
