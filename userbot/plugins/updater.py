@@ -59,7 +59,7 @@ async def update(event):
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit
     if arg == "add":
-        repo.inded.add(untracked_files, force=True)
+        repo.index.add(untracked_files, force=True)
         repo.index.commit("[TG-UserBot] Updater: Untracked files")
     elif arg == "reset":
         repo.head.reset('--hard')
