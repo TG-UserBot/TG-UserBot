@@ -108,3 +108,4 @@ async def restart(event):
         os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
     else:
         os.execle(sys.executable, *args, os.environ)
+    await event.client.disconnect()

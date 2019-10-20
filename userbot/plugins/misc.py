@@ -103,7 +103,6 @@ async def restart(event):
     else:
         await event.edit("`BRB disconnecting and starting the script again!`")
         await shell_restart(event)
-        await event.client.disconnect()
 
 
 @client.onMessage(

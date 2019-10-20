@@ -56,6 +56,7 @@ async def update(event):
         repo.create_head('master', origin.refs.master)
         repo.set_tracking_branch(origin.refs.master).checkout()
 
+    await event.edit("`Checking for updates!`")
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit
     if arg == "add":
@@ -94,9 +95,8 @@ async def update(event):
                 "`The changes will be reverted upon dyno restart.`"
             )
             await sleep(2)
-            await updated_pip_modules(pull, repo, new_commit)
+            await updated_pip_modules(event, pull, repo, new_commit)
             await restart(event)
-            await event.client.disconnect()
         else:
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
@@ -116,16 +116,16 @@ async def update(event):
             repo.remotes['heroku'].push(f'{str(repo.active_branch)}:master')
             await event.edit("`There was nothing to push to Heroku?`")
     else:
-        await updated_pip_modules(pull, repo, new_commit)
+        await updated_pip_modules(event, pull, repo, new_commit)
         await restart(event)
-        await event.client.disconnect()
 
 
-async def updated_pip_modules(pull, repo, new_commit):
+async def updated_pip_modules(event, pull, repo, new_commit):
     pulled = getattr(pull, str(repo.active_branch), False)
     if pulled and pulled.old_commit:
         for f in new_commit.diff(pulled.old_commit):
             if f.b_path == "requirements.txt":
+                await event.edit("`Updating the requirements.`")
                 await update_requirements()
 
 
