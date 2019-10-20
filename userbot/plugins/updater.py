@@ -99,7 +99,7 @@ async def update(event):
         else:
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
-            app.config.update(userbot_config)
+            app.config().update(userbot_config)
             url = app.git_url.replace(
                 "https://", ''.join("https://api:", heroku_api_key, "@")
             )
