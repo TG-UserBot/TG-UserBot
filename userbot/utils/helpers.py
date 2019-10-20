@@ -21,6 +21,9 @@ from logging import getLogger
 
 from telethon.tl.types import User
 from telethon.utils import get_display_name
+from telethon.errors.rpcerrorlist import (
+    MessageAuthorRequiredError, MessageNotModifiedError, MessageIdInvalidError
+)
 
 import userbot.helper_funcs.log_formatter as log_formatter
 
@@ -91,7 +94,14 @@ async def isRestart(client):
         entity = int(userbot_restarted.split('/')[0])
         message = int(userbot_restarted.split('/')[1])
         text = '`Successfully restarted the userbot!`'
-        await client.edit_message(entity, message, text)
+        try:
+            await client.edit_message(entity, message, text)
+        except (
+            MessageAuthorRequiredError,
+            MessageNotModifiedError,
+            MessageIdInvalidError
+        ):
+            pass
         if os.environ.get('DYNO', False) and heroku:
             app = os.environ.get('HEROKU_APP_NAME', False)
             if app:
