@@ -53,8 +53,9 @@ async def update(event):
             )
             return
         origin.fetch()
-        repo.create_head('master', origin.refs.master)
-        repo.set_tracking_branch(origin.refs.master).checkout()
+        repo.create_head('master', origin.refs.master).set_tracking_branch(
+            origin.refs.master
+        ).checkout()
 
     await event.edit("`Checking for updates!`")
     untracked_files = repo.untracked_files
