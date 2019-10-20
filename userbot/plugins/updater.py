@@ -105,7 +105,7 @@ async def update(event):
             app.config().update(
                 {'userbot_restarted': f"{event.chat_id}/{event.message.id}"}
             )
-            url = "{}@git.heroku.com:{}.git".format(heroku_api_key, app.name)
+            url = f"https://{heroku_api_key}@git.heroku.com:{app.name}.git"
             if "heroku" in repo.remotes:
                 repo.remotes['heroku'].set_url(url)
             else:
