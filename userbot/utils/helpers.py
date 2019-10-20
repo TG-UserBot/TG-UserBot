@@ -85,13 +85,18 @@ def resolve_env(config):
 
 async def isRestart(client):
     userbot_restarted = os.environ.get('userbot_restarted', False)
+    heroku = os.environ.get('api_key_heroku', False)
     if userbot_restarted:
         LOGGER.debug('Userbot was restarted! Editing the message.')
         entity = int(userbot_restarted.split('/')[0])
         message = int(userbot_restarted.split('/')[1])
         text = '`Successfully restarted the userbot!`'
-        del os.environ['userbot_restarted']
         await client.edit_message(entity, message, text)
+        if os.environ.get('DYNO', False) and heroku:
+            app = os.environ.get('HEROKU_APP_NAME', False)
+            if app:
+                del heroku.apps()[app].config()['userbot_restarted']
+        del os.environ['userbot_restarted']
 
 
 async def restart(event):

@@ -101,6 +101,9 @@ async def update(event):
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
             app.config().update(dict(userbot_config))
+            app.config().update(
+                {'userbot_restarted': f"{event.chat_id}/{event.message.id}"}
+            )
             url = app.git_url.replace(
                 "https://", ''.join(["https://api:", heroku_api_key, "@"])
             )
@@ -108,8 +111,10 @@ async def update(event):
                 repo.remotes['heroku'].set_url(url)
             else:
                 repo.create_remote('heroku', url)
-            repo.remotes['heroku'].push(f'{str(repo.active_branch)}:master')
             app.enable_feature('runtime-dyno-metadata')
+            await event.edit("`Pushing all the changes to the Heroku.`")
+            repo.remotes['heroku'].push(f'{str(repo.active_branch)}:master')
+            await event.edit("`There was nothing to push to Heroku?`")
     else:
         await updated_pip_modules(pull, repo, new_commit)
         await restart(event)
