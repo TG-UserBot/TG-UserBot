@@ -102,7 +102,7 @@ async def update(event):
             userbot_config = client.config['userbot']
             app.config().update(dict(userbot_config))
             url = app.git_url.replace(
-                "https://", ''.join("https://api:", heroku_api_key, "@")
+                "https://", ''.join(["https://api:", heroku_api_key, "@"])
             )
             if "heroku" in repo.remotes:
                 remote = repo.remotes['heroku']
