@@ -114,7 +114,9 @@ async def update(event):
                 repo.index.add(untracked_files, force=True)
                 repo.index.commit("[TG-UserBot] Updater: Untracked files")
             app.enable_feature('runtime-dyno-metadata')
-            await event.edit("`Pushing all the changes to the Heroku.`")
+            await event.edit(
+                "`Pushing all the changes to the Heroku. Might take a while.`"
+            )
             remote = repo.remotes['heroku']
             try:
                 remote.push(

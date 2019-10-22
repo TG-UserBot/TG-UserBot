@@ -15,7 +15,13 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import aiohttp
+import io
+import requests
 from datetime import datetime
+from functools import partial
+from PIL import Image
+from telethon.utils import get_extension
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import restart as shell_restart
@@ -170,3 +176,91 @@ async def disabled(event):
     for name, command in disabled_commands.items():
         response += f"\n**{name}:** `{command.info}`"
     await event.edit(response)
+
+
+@client.onMessage(
+    command="rmbg", info="Remove the background of an image.",
+    outgoing=True, regex="rmbg(?: |$)(.*)$"
+)
+async def rmbg(event):
+    API_KEY = client.config['api_keys'].get('api_key_removebg', False)
+    if not API_KEY:
+        await event.edit("`You don't have an API key set for remove.bg!`")
+        return
+
+    match = event.matches[0].group(1)
+    reply = await event.get_reply_message()
+
+    if match and match != '':
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(match) as response:
+                    if not (
+                        response.status == 200 and
+                        response.content_type.startswith('image/')
+                    ):
+                        await event.edit(
+                            "`The provided link seems to be invalid.`"
+                        )
+                        return
+            except aiohttp.client_exceptions.InvalidURL:
+                await event.edit("`Invalid URL provided!`")
+                return
+            except Exception as e:
+                await event.edit(f"`Unknown exception: {e}`")
+                return
+        media = match
+    elif reply and reply.media:
+        ext = get_extension(reply.media)
+        acceptable = [".jpg", ".png", ".bmp", ".tif", ".webp"]
+        if ext not in acceptable:
+            await event.edit("`Nice try, fool!`")
+            return
+
+        await event.edit("`Downloading media...`")
+        media = io.BytesIO()
+        await client.download_media(reply, media)
+        if ext in [".bmp", ".tif", ".webp"]:
+            media.seek(0)
+            new_media = io.BytesIO()
+            pilImg = Image.open(media)
+            pilImg.save(new_media, format="PNG")
+            pilImg.close()
+            media.close()
+            media = new_media
+    else:
+        await event.edit("`Reply to a photo or provide a valid link.`")
+        return
+
+    response = await client.loop.run_in_executor(
+        None, partial(removebg_post, API_KEY, media)
+    )
+    if not isinstance(media, str):
+        media.close()
+    if response.status_code == requests.codes.ok:
+        await event.delete()
+        image = io.BytesIO(response.content)
+        image.name = "image.png"
+        await event.respond(file=image, force_document=True)
+        image.close()
+    else:
+        error = response.json()['errors'][0]
+        code = error.get('code', False)
+        title = error.get('title', 'No title?')
+        body = code + ': ' + title if code else title
+        text = f"`[{response.status_code}] {body}`"
+        await event.edit(text)
+
+
+def removebg_post(API_KEY: str, media: io.BytesIO or str):
+    image_parameter = 'image_url' if isinstance(media, str) else 'image_file'
+    if not isinstance(media, str):
+        media.seek(0)
+
+    response = requests.post(
+        'https://api.remove.bg/v1.0/removebg',
+        files={image_parameter: media},
+        data={'size': 'auto'},
+        headers={'X-Api-Key': API_KEY},
+    )
+    return response

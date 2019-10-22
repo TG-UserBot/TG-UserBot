@@ -17,6 +17,7 @@
 
 import os
 import sys
+from configparser import ConfigParser
 from heroku3 import from_key
 from logging import getLogger
 
@@ -75,16 +76,20 @@ def resolve_env(config):
         'default_sticker_pack': os.getenv('default_sticker_pack', None),
         'default_animated_sticker_pack': os.getenv(
             'default_animated_sticker_pack', None
-        ),
-        'api_key_heroku': os.getenv(
-            'api_key_heroku', None
         )
     }
 
-    config['userbot'] = {}
-    for key, value in userbot.items():
-        if value is not None and value != 0:
-            config['userbot'][key] = str(value)
+    api_keys = {
+        'api_key_heroku': os.getenv(
+            'api_key_heroku', None
+        ),
+        'removebg': os.getenv(
+            'api_key_removebg', None
+        )
+    }
+
+    make_config(config, 'userbot', userbot)
+    make_config(config, 'api_keys', api_keys)
 
 
 async def isRestart(client):
@@ -130,3 +135,11 @@ async def restart(event):
     else:
         os.execle(sys.executable, *args, os.environ)
     await event.client.disconnect()
+
+
+def make_config(config: ConfigParser, section: str, section_dict: dict):
+    UNACCETPABLE = ['', '0', 'None', 'none']
+    config[section] = {}
+    for key, value in section_dict.items():
+        if value is not None and value not in UNACCETPABLE:
+            config[section][key] = str(value)
