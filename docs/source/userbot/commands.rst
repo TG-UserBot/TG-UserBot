@@ -5,7 +5,7 @@
 Available Commands
 ===================
 
-You will find all the commands available in the UserBot including their
+Here you can find all the commands available in the UserBot including their
 description, how to use them correctly and what they return.
 
 
@@ -22,7 +22,7 @@ description, how to use them correctly and what they return.
 Main Commands
 -------------
 
-Commands (*commands*)
+Commands
 ---------------------
 Lists all the enabled bot commands.
 
@@ -31,16 +31,7 @@ Lists all the enabled bot commands.
 **Returns:** A list of all the enabled bot commands.
 
 
-Set Prefix (*setprefix*)
-------------------------
-Change the default prefix for all the commands.
-
-**Usage:** ``.setprefix !``
-
-**Returns:** The new prefix and how to reset to old prefix.
-
-
-Disable (*disable*)
+Disable
 -------------------
 Disable any bot command with it's name. Restarting will enable all the
 disabled commands.
@@ -49,8 +40,7 @@ disabled commands.
 
 **Returns:** This disables the use of sed by removing it's handler.
 
-
-Disabled (*disabled*)
+Disabled
 ---------------------
 Lists all the disabled bot commands.
 
@@ -59,7 +49,7 @@ Lists all the disabled bot commands.
 **Returns:** A list of all the disabled bot commands.
 
 
-Enable (*enable*)
+Enable
 -------------------
 Enable any disabled bot commands with it's name.
 
@@ -67,8 +57,7 @@ Enable any disabled bot commands with it's name.
 
 **Returns:** This enables the sed command if it was disabled.
 
-
-Restart (*restart*)
+Restart
 -------------------
 Restarts the Telethon client. This reloads all the modules (smart plugins)
 with it.
@@ -76,7 +65,24 @@ with it.
 **Usage:** ``.restart``
 
 
-Shutdown (*shutdown*)
+Set Prefix
+------------------------
+Change the default prefix for all the commands.
+
+**Usage:** ``.setprefix !``
+
+**Returns:** The new prefix and how to reset to old prefix.
+
+Reset Prefix
+------------------------
+Resets to the default prefix which is ".".
+
+**Usage:** ``resetprefix`` 
+
+**Note:** "resetprefix" works without any prefix because it is a fail-safe incase the user forgets the prefix.
+
+
+Shutdown
 ---------------------
 Stops the Telethon client and exits the main script completely.
 
@@ -87,52 +93,17 @@ Stops the Telethon client and exits the main script completely.
 Bot Commands
 -------------
 
-Eval (*eval*)
--------------
-Evaluates the provided code.
+Dismiss
+-------------------
+Unpin the `Saved Messages` dialog.
 
-**Usage:** ``.eval 60+9`` or ``.eval reply``
+**Usage:** ``dismiss``
 
-**Returns:** `69` or the `Message` object of the replied message.
-
-
-Exec (*exec*)
--------------
-Executes the provided Python code.
-
-**Usage:** ``.exec print("TG-UserBot")``
-
-**Returns:** `TG-UserBot`.
+**Returns:** Unpins `Saved Messages` dialog and deletes the replied to message
+if any.
 
 
-Term (*term*)
--------------
-Executes terminal commands.
-
-**Usage:** ``.term ls``
-
-**Returns:** The result of `ls` command.
-
-
-Ping (*ping*)
--------------
-Message edit/send response time.
-
-**Usage:** ``.ping``
-
-**Returns:** The time it took to edit the message.
-
-
-Ping DC (*pingdc*)
-------------------
-Gets the average response time of a datacenter (DC).
-
-**Usage:** ``.pingdc`` or ``.pingdc n`` *n refers to the DC (1 - 5)*
-
-**Returns:** Average response time of your DC or the one you specified.
-
-
-Remind me (*remindme*)
+Remind me
 ----------------------
 Set a reminder for yourself.
 
@@ -144,17 +115,74 @@ Set a reminder for yourself.
 and pin the dialog.
 
 
-Dismiss (*dismiss*)
--------------------
-Unpin the `Saved Messages` dialog.
+Eval
+-------------
+Evaluates the provided code.
 
-**Usage:** ``dismiss``
+**Usage:** ``.eval 60+9`` or ``.eval reply``
 
-**Returns:** Unpins `Saved Messages` dialog and deletes the replied to message
-if any.
+**Returns:** `69` or the `Message` object of the replied message.
 
 
-SED (*sed*)
+Exec
+-------------
+Executes the provided Python code.
+
+**Usage:** ``.exec print("TG-UserBot")``
+
+**Returns:** `TG-UserBot`.
+
+
+Get sticker
+--------------------------
+Convert a sticker to a png format.
+
+**Usage:** ``.getsticker`` or ``.getsticker file`` 
+
+**Returns:** Sends the replied to sticker as an image or as a file if mentioned.
+
+
+Nearest DC
+------------------------
+Get your country, current DC and nearest DC information of account.
+
+**Usage:** ``.nearestdc``
+
+**Returns:** Country, your current DC and nearest DC.
+
+
+Ping
+-------------
+Message edit/send response time.
+
+**Usage:** ``.ping``
+
+**Returns:** The time it took to edit the message.
+
+
+Ping DC
+------------------
+Gets the average response time of a datacenter (DC).
+
+**Usage:** ``.pingdc`` or ``.pingdc n`` *n refers to the DC (1 - 5)*
+
+**Returns:** Average response time of your DC or the one you specified.
+
+
+Regex Ninja
+--------------------------
+Automatically deletes sed commands for regexbot.
+
+**Usage:** ``regexninja on`` or ``regexninja off`` or
+``regexninja``
+
+    * on or off are used to set the mode. Without it, it'll return the current
+      value.
+
+**Returns:** New or current mode for Regex Ninja.
+
+
+SED
 -----------
 Perform a regular expression substituion with the provided replacement.
 
@@ -171,38 +199,16 @@ no replied to messages, then the last 10 messages will be used as source and
 the one which has a match will be used for replacement.
 
 
-Regex Ninja (*regexninja*)
---------------------------
-Automatically deletes sed commands for regexbot.
+Term
+-------------
+Executes terminal commands.
 
-**Usage:** ``regexninja on`` or ``regexninja off`` or
-``regexninja``
+**Usage:** ``.term ls``
 
-    * on or off are used to set the mode. Without it, it'll return the current
-      value.
-
-**Returns:** New or current mode for Regex Ninja.
+**Returns:** The result of `ls` command.
 
 
-Get sticker (*getsticker*)
---------------------------
-Convert a sticker to a png format.
-
-**Usage:** ``.getsticker``
-
-**Returns:** Sends the replied to sticker in a png format.
-
-
-Nearest DC (*nearestdc*)
-------------------------
-Get your current DC, nearest DC and country information of account.
-
-**Usage:** ``.nearestdc``
-
-**Returns:** Your current DC, nearest DC and current country.
-
-
-YouTube-DL (*yt_dl*)
+YouTube-DL
 --------------------
 Download videos from supported sites in your choice of format.
 
