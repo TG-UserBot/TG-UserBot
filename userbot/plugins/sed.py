@@ -45,11 +45,11 @@ pattern = (
 
 
 @client.onMessage(
-    command="sed", info="GNU sed like substitution", disable_prefix=True,
-    outgoing=True, regex=(pattern, MULTILINE | IGNORECASE | DOTALL)
+    command="sed", outgoing=True,
+    disable_prefix=True, regex=(pattern, MULTILINE | IGNORECASE | DOTALL)
 )
 async def sed_substitute(event):
-    """SED function used to substitution texts for s command"""
+    """Perfom a GNU like SED substitution of the matched text."""
     if not match(r"^(?:[1-9]+sed|[1-9]+s|sed)", event.raw_text, IGNORECASE):
         return
 
@@ -87,7 +87,7 @@ async def sed_substitute(event):
                     await message.reply('[SED]\n\n' + newStr)
                     break
     except Exception as e:
-        await event.reply((
+        await event.answer((
             f"{event.raw_text}"
             '\n\n'
             'Like regexbox says, fuck me.\n'
@@ -96,12 +96,12 @@ async def sed_substitute(event):
             ':` `'
             f"{str(e)}"
             '`'
-        ))
+        ), reply=True)
 
 
 @client.onMessage(
-    command="regexninja", info="Enable or disable regex ninja",
-    outgoing=True, regex=r"regexninja(?: |$)(on|off)$"
+    command="regexninja",
+    outgoing=True, regex=r"regexninja(?: |$)(on|off)?$"
 )
 async def regex_ninja(event):
     global REGEXNINJA
@@ -109,9 +109,9 @@ async def regex_ninja(event):
 
     if not arg:
         if REGEXNINJA:
-            await event.edit("`Regex ninja is enabled.`")
+            await event.answer("`Regex ninja is enabled.`")
         else:
-            await event.edit("`Regex ninja is disabled.`")
+            await event.answer("`Regex ninja is disabled.`")
         return
 
     if arg == "on":
@@ -121,7 +121,7 @@ async def regex_ninja(event):
         REGEXNINJA = False
         value = "disabled"
 
-    await event.edit(f"`Successfully {value} ninja mode for regexbot!`")
+    await event.answer(f"`Successfully {value} ninja mode for regexbot!`")
     await sleep(2)
     await event.delete()
 

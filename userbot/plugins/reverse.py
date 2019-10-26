@@ -22,7 +22,7 @@ import requests
 from bs4 import BeautifulSoup
 from functools import partial
 from urllib import request
-from telethon.utils import get_extension
+from telethon.utils import get_extension, get_display_name
 
 from userbot import client
 
@@ -41,21 +41,21 @@ heavy_useragent = """Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 \
     outgoing=True, regex=r"reverse(?: |$)(\d*)"
 )
 async def reverse(event):
-    """ For .reverse, which does a reverse image lookup and sends results. """
+    """Reverse search supported media types on Google images."""
 
     reply = await event.get_reply_message()
     if reply and reply.media:
         ext = get_extension(reply.media)
         acceptable = [".jpg", ".gif", ".png", ".bmp", ".tif", ".webp"]
         if ext not in acceptable:
-            await event.edit("`Nice try, fool!`")
+            await event.answer("`Nice try, fool!`")
             return
 
-        await event.edit("`Downloading media...`")
+        await event.answer("`Downloading media...`")
         photo = io.BytesIO()
         await client.download_media(reply, photo)
     else:
-        await event.edit("`Reply to a photo or a non-animated sticker.`")
+        await event.answer("`Reply to a photo or a non-animated sticker.`")
         return
 
     photo.seek(0)
@@ -69,7 +69,7 @@ async def reverse(event):
     photo.close()
 
     if not response.ok:
-        await event.edit("`Google told me to go away!`")
+        await event.answer("`Google told me to go away!`")
         return
 
     match = await _scrape_url(fetchUrl + "&hl=en")
@@ -86,9 +86,18 @@ async def reverse(event):
             text += "\n\n**" + matching_text + ":**"
             for title, link in matching.items():
                 text += f"\n[{title.strip()}]({link.strip()})"
-        await event.edit(text)
+        chat = await event.get_chat()
+        if event.is_private:
+            msg = (
+                f"media in [{get_display_name(chat)}]"
+                f"(tg://user?id={chat.id})"
+            )
+        else:
+            msg = f"[media](https://t.me/c/{chat.id}/{reply.id})"
+        extra = f"Successfully reversed {msg}: [{guess}]({fetchUrl})"
+        await event.answer(text, log=("reverse", extra))
     else:
-        await event.edit("`Couldn't find anything for you.`")
+        await event.answer("`Couldn't find anything for you.`")
         return
 
     limit = event.matches[0].group(1)

@@ -16,104 +16,79 @@
 
 
 from asyncio import sleep
+from telethon.utils import get_display_name
 
 from userbot import client
 
+plugin_category = "user"
+
 
 @client.onMessage(
-    command="purge", info="Purge multiple messages!",
+    command=("purge", "admin"),
     outgoing=True, regex=r"purge(?: |$)(\d*)", require_admin=True
 )
 async def purge(event):
+    """Delete (AKA purge) multiple messages from a chat all together."""
     if (
         (event.is_channel or event.is_group) and
         not (event.chat.creator or event.chat.admin_rights.delete_messages)
     ):
-        await event.edit("`You do not have message deleting rights in here!`")
+        await event.answer(
+            "`You do not have message deleting rights in here!`"
+        )
         return
 
-    entity = await event.get_input_chat()
+    entity = await event.get_chat()
     amount = event.matches[0].group(1)
-    reverse = False
-    limit = None
 
-    if event.reply_to_msg_id:
-        await event.delete()
-        offset = await event.get_reply_message()
-        reverse = True
-        if amount:
-            limit = int(amount) - 1
-    elif amount:
-        offset = event
-        limit = int(amount)
-    else:
-        await event.edit("`Purge yourself!`")
+    if not event.reply_to_msg_id and not amount:
+        await event.answer("`Purge yourself!`")
         await sleep(2)
         await event.delete()
         return
 
-    messages = [offset.id]
-    async for msg in client.iter_messages(
-        entity=entity,
-        offset_id=offset.id,
-        reverse=reverse,
-        limit=limit
-    ):
-        messages.append(msg.id)
+    messages = await client.get_messages(
+        entity,
+        limit=int(amount) if amount else None,
+        offset_id=event.reply_to_msg_id or event.message.id,
+        reverse=True if event.reply_to_msg_id else False
+    )
 
     await client.delete_messages(entity, messages)
-    toast = await event.respond(
-        f"`Successfully deleted {len(messages)} messages!`"
+    if event.is_private:
+        e1 = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
+    else:
+        e1 = f"[{entity.title}] ( {entity.id} )"
+    toast = await event.answer(
+        f"`Successfully deleted {len(messages)} message(s)!`",
+        log=("purge", f"Purged {len(messages)} message(s) in {e1}")
     )
     await sleep(2)
     await toast.delete()
 
 
 @client.onMessage(
-    command="delme", info="Delete YOUR messsages!",
+    command=("delme", plugin_category),
     outgoing=True, regex=r"delme(?: |$)(\d*)"
 )
 async def delme(event):
-    entity = await event.get_input_chat()
+    """Delete YOUR messages in a chat. Similar to purge's logic."""
+    entity = await event.get_chat()
     amount = event.matches[0].group(1)
-    offset = 0
-    reverse = False
-    limit = None
-    reply_message = None
 
-    if event.reply_to_msg_id:
-        reply = await event.get_reply_message()
-        await event.delete()
-        if reply.sender_id == (await client.get_me()).id:
-            reply_message = reply.id
-        offset = reply.id
-        reverse = True
-        if amount:
-            limit = int(amount)
-    elif amount:
-        await event.delete()
-        offset = event.id
-        limit = int(amount)
-    else:
-        await event.delete()
-        offset = event.id
-        limit = 1
+    if not amount:
+        amount = 1 if not event.reply_to_msg_id else None
 
-    messages = []
-    if reply_message:
-        messages.append(reply_message)
-
-    async for msg in client.iter_messages(
-        entity=entity,
-        offset_id=offset,
-        reverse=reverse,
-        limit=limit,
+    messages = await client.get_messages(
+        entity,
+        limit=int(amount) if amount else None,
+        offset_id=event.reply_to_msg_id or event.message.id,
+        reverse=True if event.reply_to_msg_id else False,
         from_user="me"
-    ):
-        messages.append(msg.id)
+    )
 
     await client.delete_messages(entity, messages)
-    toast = await event.respond(
+    toast = await event.answer(
         f"`Successfully deleted {len(messages)} messages!`"
     )
     await sleep(2)
@@ -121,13 +96,14 @@ async def delme(event):
 
 
 @client.onMessage(
-    command="del", info="Delete a particular messsage!",
+    command="del",
     outgoing=True, regex=r"del$"
 )
 async def delete(event):
+    """Delete your or other's replied to message."""
     reply = await event.get_reply_message()
     if not reply:
-        await event.edit("`There's nothing for me to delete!`")
+        await event.answer("`There's nothing for me to delete!`")
         return
 
     if not reply.from_id == (await client.get_me()).id:
@@ -137,7 +113,7 @@ async def delete(event):
         ):
             await reply.delete()
         else:
-            await event.edit("`You don't have enough rights in here fool!`")
+            await event.answer("`You don't have enough rights in here fool!`")
             return
     else:
         await reply.delete()

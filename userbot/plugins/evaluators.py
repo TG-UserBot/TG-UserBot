@@ -20,21 +20,23 @@ from inspect import isawaitable
 from asyncio import (
     create_subprocess_exec, create_subprocess_shell, subprocess, sleep
 )
+from telethon.utils import get_display_name
 
 from userbot import client
-from userbot.helper_funcs.messages import limit_exceeded
+
+plugin_category = "terminal"
 
 
 @client.onMessage(
-    command="eval", info="Evaluate something",
+    command=("eval", plugin_category),
     outgoing=True, regex=r"eval(?: |$)([\s\S]*)"
 )
 async def evaluate(event):
-    """Evaluator function used to evaluate for .eval"""
+    """Evaluate something in the running script."""
     expression = event.matches[0].group(1).strip()
     reply = await event.get_reply_message()
     if not expression:
-        await event.edit("Evaluated the void.")
+        await event.answer("Evaluated the void.")
         return
 
     try:
@@ -44,34 +46,44 @@ async def evaluate(event):
         if isawaitable(result):
             result = await result
         result = str(result)
-        if (len(result)) > 4096:
-            await limit_exceeded(event, "```" + result + "```", True)
-            return
     except Exception as e:
-        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+        await event.answer('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
-    await event.reply("```" + result + "```")
+    chat = await event.get_chat()
+    if event.is_private:
+        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
+    else:
+        username = '@' + chat.username if chat.username else chat.id
+        extra = f"[{chat.title}] ( {username} )"
+    await event.answer(
+        "```" + result + "```",
+        log=("eval", f"Successfully evaluated {expression} in {extra}!"),
+        reply=True
+    )
 
 
 @client.onMessage(
-    command="exec", info="Excecute something",
+    command=("exec", plugin_category),
     outgoing=True, regex=r"exec(?: |$)([\s\S]*)"
 )
 async def execute(event):
-    """Executor function used to execute Python code for .exec"""
+    """Execute Python code in a subprocess."""
     message = (
-        str((await event.get_chat()).id) +
+        str(event.chat_id) +
         ':' +
         str(event.message.id)
     )
     if client.running_processes.get(message, False):
-        await event.reply("A process for this event is already running!")
+        await event.answer(
+            "A process for this event is already running!",
+            reply=True
+        )
         return
 
     code = event.matches[0].group(1).strip()
     if not code:
-        await event.edit("Executed the void.")
+        await event.answer("Executed the void.")
         return
 
     process = await create_subprocess_exec(
@@ -96,33 +108,43 @@ async def execute(event):
     if stderr:
         text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
-    if stdout or stderr:
-        if len(text) > 4096:
-            await limit_exceeded(event, "```" + text + "```", True)
-            return
-        await event.reply("```" + text + "```")
+    chat = await event.get_chat()
+    if event.is_private:
+        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
     else:
-        await event.reply("Nice, get off the void.\nNo output for you.")
+        username = '@' + chat.username if chat.username else chat.id
+        extra = f"[{chat.title}] ( {username} )"
+    if stdout or stderr:
+        await event.answer(
+            "```" + text + "```",
+            log=("exec", f"Successfully executed {code} in {extra}!"),
+            reply=True
+        )
+    else:
+        await event.answer("Nice, get off the void.\nNo output for you.")
 
 
 @client.onMessage(
-    command="term", info="Execute something in the terminal",
+    command=("term", plugin_category),
     outgoing=True, regex=r"term(?: |$)([\s\S]*)"
 )
 async def terminal(event):
-    """Terminal function used to execute shell commands for .term"""
+    """Execute terminal commands in a subprocess."""
     message = (
-        str((await event.get_chat()).id) +
+        str(event.chat_id) +
         ':' +
         str(event.message.id)
     )
     if client.running_processes.get(message, False):
-        await event.reply("A process for this event is already running!")
+        await event.answer(
+            "A process for this event is already running!",
+            reply=True
+        )
         return
 
     cmd = event.matches[0].group(1).strip()
     if not cmd:
-        await event.edit("Executed the void.")
+        await event.answer("Executed the void.")
         return
 
     process = await create_subprocess_shell(
@@ -147,31 +169,38 @@ async def terminal(event):
     if stderr:
         text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
-    if stdout or stderr:
-        if len(text) > 4096:
-            await limit_exceeded(event, "```" + text + "```", True)
-            return
-        await event.reply("```" + text + "```")
+    chat = await event.get_chat()
+    if event.is_private:
+        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
     else:
-        await event.reply("Nice, get off the void.\nNo output for you.")
+        username = '@' + chat.username if chat.username else chat.id
+        extra = f"[{chat.title}] ( {username} )"
+    if stdout or stderr:
+        await event.answer(
+            "```" + text + "```",
+            log=("term", f"Successfully executed {cmd} in {extra}!"),
+            reply=True
+        )
+    else:
+        await event.answer("Nice, get off the void.\nNo output for you.")
 
 
 @client.onMessage(
-    command="kill/terminate",
+    command=("kill/terminate", plugin_category),
     outgoing=True, regex=r"(kill|terminate)$",
     info="Kill or Terminate a subprocess which is still running"
 )
 async def killandterminate(event):
-    """Function used to kill or terminate asyncio subprocesses"""
+    """Kill or terminate a running subprocess."""
     if not event.reply_to_msg_id:
-        await event.edit(
+        await event.answer(
             "`Reply to a message to kill or terminate the process!`"
         )
         return
 
     reply = await event.get_reply_message()
     message = (
-        str(getattr(reply.chat, 'id', reply.chat_id)) + ':' + str(reply.id)
+        str(reply.chat_id) + ':' + str(reply.id)
     )
     running_process = client.running_processes.get(message, False)
 
@@ -187,10 +216,20 @@ async def killandterminate(event):
             running_process.kill()
         else:
             running_process.terminate()
-        await event.edit(
-            f"`Successfully {option}ed the process.`"
+        chat = await reply.get_chat()
+        if event.is_private:
+            proc = (
+                f"proccess in [{get_display_name(chat)}]"
+                f"(tg://user?id={chat.id})"
+            )
+        else:
+            proc = f"[process](https://t.me/c/{chat.id}/{reply.id})"
+        await event.answer(
+            f"`Successfully {option}ed the process.`",
+            log=(option, f"Successfully {option}ed a {proc}!"),
+            reply=True
         )
         await sleep(2)
         await event.delete()
     else:
-        await event.edit("`There is no process running for this message.`")
+        await event.answer("`There is no process running for this message.`")

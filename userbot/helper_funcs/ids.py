@@ -24,7 +24,7 @@ from telethon.tl.types import (
 )
 
 
-LOGGER = getLogger()
+LOGGER = getLogger(__name__)
 
 
 async def get_user_from_msg(event: Message) -> Union[int, str, None]:
@@ -68,12 +68,13 @@ async def get_entity_from_msg(event: Message) -> Union[int, str, None]:
         extra = match.strip()
 
     user = int(user) if isinstance(user, str) and user.isdigit() else user
+    if not user:
+        return None, None, "Couldn't fetch an entity from your message!"
 
     try:
         entity = await event.client.get_entity(user)
     except Exception as e:
         exception = True
-        entity = e
         LOGGER.exception(e)
 
     return entity, extra, exception

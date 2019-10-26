@@ -22,28 +22,38 @@ from userbot import client, LOGGER
 from userbot.helper_funcs.ids import get_entity_from_msg
 from userbot.helper_funcs.time import split_extra_string
 
+plugin_category = "admin"
+
 
 @client.onMessage(
-    command="promote", info="Promote someone in a group|channel.",
+    command=("promote", plugin_category),
     outgoing=True, regex=r"promote(?: |$)(.*)$", require_admin=True
 )
 async def promote(event):
+    """Promote a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.admin_rights.add_admins)
     ):
-        await event.edit("`You do not have rights to add admins in here!`")
+        await event.answer("`You do not have rights to add admins in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't promote users in private chats.`")
         return
 
     user, extra, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Promote machine broke!\n{user}`")
+            await event.answer(f"`Promote machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_admin(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             is_admin=True,
             title=extra
@@ -51,107 +61,152 @@ async def promote(event):
         text = "`Successfully promoted ``{}`` (``{}``)!`"
         if extra:
             text += f"\n`Title:` `{extra}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully promoted {e1} in {e2}"
+        if extra:
+            log_msg += f"\nTitle: {extra}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("promote", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="demote", info="Demote someone in a group|channel.",
+    command=("demote", plugin_category),
     outgoing=True, regex=r"demote(?: |$)(.*)$", require_admin=True
 )
 async def demote(event):
+    """Demote a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
-        not (
-            event.chat.creator or event.chat.admin_rights.ban_users
-        )
+        not event.is_private and
+        not (event.chat.creator or event.chat.admin_rights.ban_users)
     ):
-        await event.edit("`You do not have rights to remove admins in here!`")
+        await event.answer(
+            "`You do not have rights to remove admins in here!`"
+        )
+        return
+    elif event.is_private:
+        await event.answer("`You can't demote users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Demote machine broke!\n{user}`")
+            await event.answer(f"`Demote machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_admin(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             is_admin=False
         )
         text = "`Successfully demoted ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully demoted {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("demote", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="ban", info="Ban someone in a group|channel.",
+    command=("ban", plugin_category),
     outgoing=True, regex=r"ban(?: |$)(.*)$", require_admin=True
 )
 async def ban(event):
+    """Ban a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.admin_rights.ban_users)
     ):
-        await event.edit("`You do not have rights to ban users in here!`")
+        await event.answer("`You do not have rights to ban users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't ban users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Ban machine broke!\n{user}`")
+            await event.answer(f"`Ban machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             view_messages=False
         )
         text = "`Successfully banned ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully banned {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("ban", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="unban", info="Un-ban someone in a group|channel.",
+    command=("unban", plugin_category),
     outgoing=True, regex=r"unban(?: |$)(.*)$", require_admin=True
 )
 async def unban(event):
+    """Un-ban a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.admin_rights.ban_users)
     ):
-        await event.edit("`You do not have rights to un-ban users in here!`")
+        await event.answer("`You do not have rights to un-ban users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't un-ban users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Un-ban machine broke!\n{user}`")
+            await event.answer(f"`Un-ban machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             view_messages=True,
             send_messages=True,
@@ -165,212 +220,295 @@ async def unban(event):
         text = "`Successfully un-banned ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully unbanned {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("unban", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="kick", info="Kick someone in a group|channel.",
+    command=("kick", plugin_category),
     outgoing=True, regex=r"kick(?: |$)(.*)$", require_admin=True
 )
 async def kick(event):
+    """Kick a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.admin_rights.ban_users)
     ):
-        await event.edit("`You do not have rights to kick users in here!`")
+        await event.answer("`You do not have rights to kick users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't kick users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Kick machine broke!\n{user}`")
+            await event.answer(f"`Kick machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.kick_participant(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user
         )
         text = "`Successfully kicked ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully kicked {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("kick", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="mute", info="Mute someone in a group|channel.",
+    command=("mute", plugin_category),
     outgoing=True, regex=r"mute(?: |$)(.*)$", require_admin=True
 )
 async def mute(event):
+    """Mute a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.ban_users)
     ):
-        await event.edit("`You do not have rights to mute users in here!`")
+        await event.answer("`You do not have rights to mute users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't mute users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Mute machine broke!\n{user}`")
+            await event.answer(f"`Mute machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             send_messages=False
         )
         text = "`Successfully muted ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully muted {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("mute", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="unmute", info="Un-mute someone in a group|channel.",
+    command=("unmute", plugin_category),
     outgoing=True, regex=r"unmute(?: |$)(.*)$", require_admin=True
 )
 async def unmute(event):
+    """Un-mute a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.ban_users)
     ):
-        await event.edit("`You do not have rights to un-mute users in here!`")
+        await event.answer(
+            "`You do not have rights to un-mute users in here!`"
+        )
+        return
+    elif event.is_private:
+        await event.answer("`You can't un-mute users in private chats.`")
         return
 
     user, reason, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`Un-mute machine broke!\n{user}`")
+            await event.answer(f"`Un-mute machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             send_messages=True
         )
         text = "`Successfully un-muted ``{}`` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully un-muted {e1} in {e2}"
+        if reason:
+            log_msg += f"\nReason: {reason}"
+
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("unmute", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="tmute", info="T-mute someone in a group|channel.",
+    command=("tmute", plugin_category),
     outgoing=True, regex=r"tmute(?: |$)(.*)$", require_admin=True
 )
 async def tmute(event):
+    """Temporary mute a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.ban_users)
     ):
-        await event.edit("`You do not have rights to mute users in here!`")
+        await event.answer("`You do not have rights to mute users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't t-mute users in private chats.`")
         return
 
     user, extra, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`T-mute machine broke!\n{user}`")
+            await event.answer(f"`T-mute machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
+    entity = await event.get_chat()
     try:
         time = None
         reason = None
         seconds = None
         text = "`Successfully t-muted ``{}`` (``{}``)!`"
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully tmuted {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)
             if reason:
                 text += f"\n`Reason:` `{reason}`"
+                log_msg += f"\nReason: {reason}"
             if seconds:
                 time = timedelta(seconds=seconds)
                 text += f"\n`Time:` `{time}`"
+                log_msg += f"\nTime: {time}"
 
         if not seconds:
-            await event.edit("`Provide the total time limit for t-mute!`")
+            await event.answer("`Provide the total time limit for t-mute!`")
             return
 
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             until_date=time,
             send_messages=False
         )
 
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("tmute", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)
 
 
 @client.onMessage(
-    command="tban", info="T-ban someone in a group|channel.",
+    command=("tban", plugin_category),
     outgoing=True, regex=r"tban(?: |$)(.*)$", require_admin=True
 )
 async def tban(event):
+    """Temporary ban a user in a group or channel."""
     if (
-        (event.is_channel or event.is_group) and
+        not event.is_private and
         not (event.chat.creator or event.chat.admin_rights.ban_users)
     ):
-        await event.edit("`You do not have rights to t-ban users in here!`")
+        await event.answer("`You do not have rights to t-ban users in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't t-ban users in private chats.`")
         return
 
     user, extra, exception = await get_entity_from_msg(event)
     if user:
         if exception:
-            await event.edit(f"`T-ban machine broke!\n{user}`")
+            await event.answer(f"`T-ban machine broke!\n{user}`")
             return
+    else:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
+
+    entity = await event.get_chat()
     try:
         time = None
         reason = None
         seconds = None
         text = "`Successfully t-banned ``{}`` (``{}``)!`"
+        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
+        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        log_msg = f"Successfully t-banned {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)
             if reason:
                 text += f"\n`Reason:` `{reason}`"
+                log_msg += f"\nReason: {reason}"
             if seconds:
                 time = timedelta(seconds=seconds)
                 text += f"\n`Time:` `{time}`"
+                log_msg += f"Time: {time}"
 
         if not seconds:
-            await event.edit("`Provide the total time limit for t-ban!`")
+            await event.answer("`Provide the total time limit for t-ban!`")
             return
 
         await client.edit_permissions(
-            entity=await event.get_input_chat(),
+            entity=entity,
             user=user,
             until_date=time,
             view_messages=False
         )
 
-        await event.edit(
-            text.format(get_display_name(user), user.id)
+        await event.answer(
+            text.format(get_display_name(user), user.id),
+            log=("tban", log_msg)
         )
     except Exception as e:
-        await event.edit(f"`{e}`")
+        await event.answer(f"`{e}`")
         LOGGER.exception(e)

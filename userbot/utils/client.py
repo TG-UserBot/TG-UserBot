@@ -21,12 +21,16 @@ from importlib import reload
 from logging import getLogger
 from sys import modules
 from telethon import TelegramClient, events
+from typing import Dict, List
 
 import userbot.utils.pluginManager as PluginManager
 import userbot.utils.events as custom_events
 
 
-LOGGER = getLogger("UserBot Client")
+LOGGER = getLogger(__name__)
+NewMessage = custom_events.NewMessage
+MessageEdited = custom_events.MessageEdited
+no_info = "There is no help available for this command!"
 
 
 @dataclass
@@ -39,10 +43,12 @@ class Command:
 
 class UserBotClient(TelegramClient):
     """UserBot client with additional attributes inheriting TelegramClient"""
-    commands: dict = {}
+    commandcategories: Dict[str, List[str]] = {}
+    commands: Dict[str, Command] = {}
     config: ConfigParser = None
-    disabled_commands: dict = {}
+    disabled_commands: Dict[str, Command] = {}
     failed_imports: list = []
+    logger: bool = False
     pluginManager: PluginManager.PluginManager = None
     plugins: list = []
     prefix: str = None
@@ -54,14 +60,12 @@ class UserBotClient(TelegramClient):
     def onMessage(
         self,
         builtin: bool = False,
-        command: str = None,
+        command: str or tuple = None,
         edited: bool = True,
         info: str = None,
         **kwargs
     ) -> callable:
         """Method to register a function without the client"""
-        NewMessage = custom_events.NewMessage
-        MessageEdited = custom_events.MessageEdited
 
         kwargs.setdefault('forwards', False)
 
@@ -73,17 +77,39 @@ class UserBotClient(TelegramClient):
 
             if self.register_commands and command:
                 handlers = events._get_handlers(func)
-                self.commands.update(
-                    {command: Command(func, handlers, info, builtin)}
-                )
+                category = "misc"
+                com = command
+                if isinstance(command, tuple):
+                    if len(command) == 2:
+                        com, category = command
+                    else:
+                        raise ValueError
 
+                UBcommand = Command(
+                    func,
+                    handlers,
+                    info or func.__doc__ or no_info,
+                    builtin
+                )
+                category = category.lower()
+                self.commands.update({
+                    com: UBcommand
+                })
+
+                self.commandcategories.setdefault(category, []).append(
+                    com
+                )
+                if builtin:
+                    self.commandcategories.setdefault('builtin', []).append(
+                        com
+                    )
             return func
 
         return wrapper
 
     async def _restarter(self, event):
         if self.restarting:
-            await event.edit("`Previous restart is still in proccess!`")
+            await event.answer("`Previous restart is still in proccess!`")
             return
 
         self.failed_imports.clear()
@@ -91,7 +117,7 @@ class UserBotClient(TelegramClient):
 
         self._kill_running_processes()
 
-        await event.edit(
+        await event.answer(
             "`Removing all the event handlers and disonnecting "
             "the client. BRB.`"
         )
@@ -108,7 +134,7 @@ class UserBotClient(TelegramClient):
                 reload(modules[module])
 
         await self.connect()
-        await event.edit(
+        await event.answer(
             "`Succesfully removed all the handlers and started "
             "the client again! Adding the new handlers now. BRB..`"
         )
@@ -124,7 +150,10 @@ class UserBotClient(TelegramClient):
             text += "\n`Failed imports:`\n"
             text += '\n'.join(self.failed_imports)
             self.failed_imports.clear()
-        await event.edit(text)
+        await event.answer(
+            text,
+            log=("restart client", "Successfully restarted the client")
+        )
 
         self.restarting = False
         LOGGER.info(

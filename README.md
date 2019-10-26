@@ -1,5 +1,7 @@
 # TG-UserBot
 
+[![Documentation Status][docsbadge]][docs]
+
 A modular Telegram UserBot for Python which uses the [Telethon][telethon] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
 
 ### Requirements
@@ -58,5 +60,6 @@ Either submit pull requests or create an issue on here, if not, you can join the
 [//]: # (Comment)
    [telethon]: <https://github.com/LonamiWebs/Telethon/>
    [tg-apps]: <https://my.telegram.org/apps>
-   [docs]: <https://tg-userbot.readthedocs.io>
+   [docs]: <https://tg-userbot.readthedocs.io/en/latest/>
+   [docsbadge]: <https://readthedocs.org/projects/tg-userbot/badge/?version=latest>
    [support]: <https://t.me/tg_userbot_support>

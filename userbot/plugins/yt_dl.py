@@ -68,11 +68,11 @@ except OSError:
 
 
 @client.onMessage(
-    command="yt_dl", info="YouTube-Dl to download videos via TG",
+    command="yt_dl",
     outgoing=True, regex=r"yt_dl (.+?)(?: |$)(.+)?$"
 )
 async def yt_dl(event):
-    """YouTube-DL function used to download videos for .yt_dl"""
+    """Download videos from YouTube with their url in multiple formats."""
     url = event.matches[0].group(1)
     fmt = event.matches[0].group(2)
 
@@ -82,9 +82,9 @@ async def yt_dl(event):
             info = await extract_info(executor, params, url)
             if isinstance(info, dict):
                 fmts = await list_formats(info)
-                await event.edit(fmts)
+                await event.answer(fmts)
             else:
-                await event.edit(info)
+                await event.answer(info)
             return
         elif fmt in audioFormats and ffmpeg is True:
             params.update({'format': 'bestaudio'})
@@ -111,11 +111,13 @@ async def yt_dl(event):
                     params.update({'writethumbnail': True})
                     params['postprocessors'].append({'key': 'EmbedThumbnail'})
 
-    await event.edit("`Processing...`")
+    await event.answer("`Processing...`")
     output = await extract_info(executor, params, url, download=True)
     warning = (
         "`WARNING: FFMPEG is not installed!`"
         " `If you requested multiple formats, they won't be merged.`\n\n"
     )
     result = warning + output if ffmpeg is False else output
-    await event.edit(result)
+    await event.answer(
+        result, log=("YT_DL", f"Successfully downloaded {url}!")
+    )

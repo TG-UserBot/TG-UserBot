@@ -1,6 +1,5 @@
 .. _commands:
 
-
 ===================
 Available Commands
 ===================
@@ -23,7 +22,7 @@ Main Commands
 -------------
 
 Commands
----------------------
+--------
 Lists all the enabled bot commands.
 
 **Usage:** ``.commands``
@@ -32,7 +31,7 @@ Lists all the enabled bot commands.
 
 
 Disable
--------------------
+-------
 Disable any bot command with it's name. Restarting will enable all the
 disabled commands.
 
@@ -41,7 +40,7 @@ disabled commands.
 **Returns:** This disables the use of sed by removing it's handler.
 
 Disabled
----------------------
+--------
 Lists all the disabled bot commands.
 
 **Usage:** ``.disabled``
@@ -50,7 +49,7 @@ Lists all the disabled bot commands.
 
 
 Enable
--------------------
+------
 Enable any disabled bot commands with it's name.
 
 **Usage:** ``.enable sed``
@@ -58,7 +57,7 @@ Enable any disabled bot commands with it's name.
 **Returns:** This enables the sed command if it was disabled.
 
 Restart
--------------------
+-------
 Restarts the Telethon client. This reloads all the modules (smart plugins)
 with it.
 
@@ -66,7 +65,7 @@ with it.
 
 
 Set Prefix
-------------------------
+----------
 Change the default prefix for all the commands.
 
 **Usage:** ``.setprefix !``
@@ -74,16 +73,17 @@ Change the default prefix for all the commands.
 **Returns:** The new prefix and how to reset to old prefix.
 
 Reset Prefix
-------------------------
+------------
 Resets to the default prefix which is ".".
 
-**Usage:** ``resetprefix`` 
+**Usage:** ``resetprefix``
 
-**Note:** "resetprefix" works without any prefix because it is a fail-safe incase the user forgets the prefix.
+**Note:** "resetprefix" works without any prefix because it is a fail-safe
+incase the user forgets the prefix.
 
 
 Shutdown
----------------------
+--------
 Stops the Telethon client and exits the main script completely.
 
 **Usage:** ``.shutdown``
@@ -94,7 +94,7 @@ Bot Commands
 -------------
 
 Dismiss
--------------------
+-------
 Unpin the `Saved Messages` dialog.
 
 **Usage:** ``dismiss``
@@ -104,7 +104,7 @@ if any.
 
 
 Remind me
-----------------------
+---------
 Set a reminder for yourself.
 
 **Usage:** ``.remindme 2h Go outside`` *Format: .remindme time text*
@@ -116,7 +116,7 @@ and pin the dialog.
 
 
 Eval
--------------
+----
 Evaluates the provided code.
 
 **Usage:** ``.eval 60+9`` or ``.eval reply``
@@ -125,7 +125,7 @@ Evaluates the provided code.
 
 
 Exec
--------------
+----
 Executes the provided Python code.
 
 **Usage:** ``.exec print("TG-UserBot")``
@@ -134,16 +134,16 @@ Executes the provided Python code.
 
 
 Get sticker
---------------------------
+-----------
 Convert a sticker to a png format.
 
-**Usage:** ``.getsticker`` or ``.getsticker file`` 
+**Usage:** ``.getsticker`` or ``.getsticker file`` or ``.getsticker document``
 
-**Returns:** Sends the replied to sticker as an image or as a file if mentioned.
+**Returns:** Get replied to sticker as an image or as a file if mentioned.
 
 
 Nearest DC
-------------------------
+----------
 Get your country, current DC and nearest DC information of account.
 
 **Usage:** ``.nearestdc``
@@ -152,7 +152,7 @@ Get your country, current DC and nearest DC information of account.
 
 
 Ping
--------------
+----
 Message edit/send response time.
 
 **Usage:** ``.ping``
@@ -161,7 +161,7 @@ Message edit/send response time.
 
 
 Ping DC
-------------------
+-------
 Gets the average response time of a datacenter (DC).
 
 **Usage:** ``.pingdc`` or ``.pingdc n`` *n refers to the DC (1 - 5)*
@@ -170,7 +170,7 @@ Gets the average response time of a datacenter (DC).
 
 
 Regex Ninja
---------------------------
+-----------
 Automatically deletes sed commands for regexbot.
 
 **Usage:** ``regexninja on`` or ``regexninja off`` or
@@ -183,7 +183,7 @@ Automatically deletes sed commands for regexbot.
 
 
 SED
------------
+---
 Perform a regular expression substituion with the provided replacement.
 
 **Usage:** ``s/hi/hello`` or ``2s/cat/dog; s|boi|boy`` or
@@ -200,7 +200,7 @@ the one which has a match will be used for replacement.
 
 
 Term
--------------
+----
 Executes terminal commands.
 
 **Usage:** ``.term ls``
@@ -209,7 +209,7 @@ Executes terminal commands.
 
 
 YouTube-DL
---------------------
+----------
 Download videos from supported sites in your choice of format.
 
 **Usage:** ``.yt_dl https://youtu.be/dWhyFfsb74g listformats``

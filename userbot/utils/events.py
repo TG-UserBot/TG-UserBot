@@ -20,10 +20,13 @@ from telethon import events
 from telethon.tl import types
 from typing import Tuple
 
+from userbot.utils.custom import Message
+
 
 @events.common.name_inner_event
 class NewMessage(events.NewMessage):
     """Custom NewMessage event inheriting the default Telethon event"""
+    types.Message = Message
 
     def __init__(
         self,
@@ -33,7 +36,7 @@ class NewMessage(events.NewMessage):
         **kwargs
     ):
         """Overriding the default init to add additional attributes"""
-        events.NewMessage.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
         if regex:
             if isinstance(regex, tuple):
@@ -55,14 +58,14 @@ class NewMessage(events.NewMessage):
 
     def filter(self, event):
         """Overriding the default filter to check additional values"""
+        event = super().filter(event)
+        if not event:
+            return
+
         if event._client.prefix:
             prefix = re.escape(event._client.prefix)
         else:
             prefix = r"[^/!#@\$A-Za-z0-9]"
-        tl_event = events.NewMessage.filter(self, event)
-
-        if not tl_event:
-            return
 
         if self.regex:
             exp, flags = self.regex
@@ -75,19 +78,36 @@ class NewMessage(events.NewMessage):
             else:
                 pattern = re.compile(exp, flags=flags).finditer
 
-            text = tl_event.message.message or ''
+            text = event.message.message or ''
             matches = list(pattern(text)) or None
             if not matches:
                 return
-            tl_event.matches = matches
+            event.matches = matches
 
         if self.require_admin:
-            if not isinstance(tl_event._chat_peer, types.PeerUser):
-                if not tl_event.chat.creator:
-                    if not tl_event.chat.admin_rights:
+            text = "`You need to be an admin to use this command!`"
+            if not isinstance(event._chat_peer, types.PeerUser):
+                if not event.chat.creator:
+                    if not event.chat.admin_rights:
+                        if self.outgoing and event.message.out:
+                            event._client.loop.create_task(
+                                event.edit(text)
+                            )
+                        elif self.incoming and not event.message.out:
+                            event._client.loop.create_task(
+                                event.reply(text)
+                            )
                         return
 
-        return tl_event
+        return super().filter(event)
+
+    class Event(events.NewMessage.Event):
+        def __init__(self, update):
+            # Rebuild the update type to our custom Message type
+            # Very dirty but it'll do for now. TODO: Fix it soon.
+            if type(update).__name__ != type(Message).__name__:
+                update = Message(**vars(update))
+            super().__init__(update)
 
 
 @events.common.name_inner_event

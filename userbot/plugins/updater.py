@@ -28,19 +28,20 @@ basedir = os.path.abspath(os.path.curdir)
 
 
 @client.onMessage(
-    command="update", info="Update the bot.",
-    outgoing=True, regex="update(?: |$)(reset|add)?$"
+    command="update",
+    outgoing=True, regex="update(?: |$)(reset|add)?$", builtin=True
 )
 async def update(event):
+    """Pull newest changes from the official repo and update the script/app."""
     arg = event.matches[0].group(1)
     main_repo = "https://github.com/kandnub/TG-UserBot.git"
     try:
         repo = git.Repo(basedir)
     except git.exc.NoSuchPathError as path:
-        await event.edit(f"`Couldn't find {path}!`")
+        await event.answer(f"`Couldn't find {path}!`")
         return
     except git.exc.GitCommandError as command:
-        await event.edit(
+        await event.answer(
             f"`An error occured trying to get the Git Repo.`\n`{command}`"
         )
         return
@@ -48,7 +49,7 @@ async def update(event):
         repo = git.Repo.init(basedir)
         origin = repo.create_remote('origin', main_repo)
         if not origin.exists():
-            await event.edit(
+            await event.answer(
                 "`The main repository does not exist. Remote is invalid!`"
             )
             return
@@ -57,7 +58,7 @@ async def update(event):
             origin.refs.master
         ).checkout()
 
-    await event.edit("`Checking for updates!`")
+    await event.answer("`Checking for updates!`")
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit
     if arg == "add":
@@ -74,11 +75,11 @@ async def update(event):
             "`to reset your repo or add and commit your changes as well.`"
         )
         prefix = client.prefix if client.prefix is not None else '.'
-        await event.edit(text.format(command, prefix))
+        await event.answer(text.format(command, prefix))
         return
     new_commit = repo.head.commit
     if old_commit == new_commit:
-        await event.edit("`Already up-to-date!`")
+        await event.answer("`Already up-to-date!`")
         return
 
     heroku_api_key = client.config['userbot'].get('api_key_heroku', False)
@@ -90,7 +91,7 @@ async def update(event):
                 heroku_app = app
                 break
         if heroku_app is None:
-            await event.edit(
+            await event.answer(
                 "`You seem to be running on Heroku "
                 "with an invalid environment. Couldn't update the app.`\n"
                 "`The changes will be reverted upon dyno restart.`"
@@ -114,7 +115,7 @@ async def update(event):
                 repo.index.add(untracked_files, force=True)
                 repo.index.commit("[TG-UserBot] Updater: Untracked files")
             app.enable_feature('runtime-dyno-metadata')
-            await event.edit(
+            await event.answer(
                 "`Pushing all the changes to the Heroku. Might take a while.`"
             )
             remote = repo.remotes['heroku']
@@ -123,9 +124,9 @@ async def update(event):
                     refspec=f'{str(repo.active_branch)}:master',
                     force=True
                 )
-                await event.edit("`There was nothing to push to Heroku?`")
+                await event.answer("`There was nothing to push to Heroku?`")
             except git.exc.GitCommandError as command:
-                await event.edit(
+                await event.answer(
                     "`An error occured trying to pull and push to Heorku`"
                     f"\n`{command}`"
                 )
@@ -140,7 +141,7 @@ async def updated_pip_modules(event, pull, repo, new_commit):
     if pulled and pulled.old_commit:
         for f in new_commit.diff(pulled.old_commit):
             if f.b_path == "requirements.txt":
-                await event.edit("`Updating the requirements.`")
+                await event.answer("`Updating the requirements.`")
                 await update_requirements()
 
 

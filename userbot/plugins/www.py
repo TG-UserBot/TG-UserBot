@@ -16,12 +16,14 @@
 
 
 from asyncio import create_subprocess_shell, subprocess
+from datetime import datetime
 from sys import platform
 from telethon.tl.functions.help import GetNearestDcRequest
 
 from userbot import client
 
 
+plugin_category = "www"
 DCs = {
     1: "149.154.175.50",
     2: "149.154.167.51",
@@ -32,26 +34,39 @@ DCs = {
 
 
 @client.onMessage(
-    command="nearestdc", info="Get your DC information",
+    command=("ping", plugin_category),
+    outgoing=True, regex="ping$"
+)
+async def ping(event):
+    """Check how long it takes to get an update and respond to it."""
+    start = datetime.now()
+    await event.answer("**PONG**")
+    duration = (datetime.now() - start)
+    milliseconds = duration.microseconds / 1000
+    await event.answer(f"**PONG:** `{milliseconds}ms`")
+
+
+@client.onMessage(
+    command=("nearestdc", plugin_category),
     outgoing=True, regex="nearestdc$"
 )
 async def nearestdc(event):
-    """DC function used to get information for .dc"""
+    """Get information of your country and data center information."""
     result = await client(GetNearestDcRequest())
     text = (
         f"**Country:** `{result.country}`\n" +
         f"**This DC:** `{result.this_dc}`\n" +
         f"**Nearest DC:** `{result.nearest_dc}`"
     )
-    await event.edit(text)
+    await event.answer(text)
 
 
 @client.onMessage(
-    command="pingdc", info="Ping TG DCs",
+    command=("pingdc", plugin_category),
     outgoing=True, regex=r"pingdc(?: |$)(\d+)?"
 )
 async def pingdc(event):
-    """Ping DC function used to ping DC via shell for .pingdc"""
+    """Ping your or other data center's IP addresses."""
     if event.matches[0].group(1) in ('1', '2', '3', '4', '5'):
         dc = int(event.matches[0].group(1))
     else:
@@ -67,9 +82,9 @@ async def pingdc(event):
         out, err = await _sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
         average = (out.strip() + "ms")
     if err:
-        await event.edit(err)
+        await event.answer(err)
         return
-    await event.edit(f"DC {dc}'s average response: `{average}`")
+    await event.answer(f"DC {dc}'s average response: `{average}`")
 
 
 async def _sub_shell(cmd):

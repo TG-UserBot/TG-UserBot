@@ -21,15 +21,21 @@ from telethon.tl.functions.messages import ToggleDialogPinRequest
 from userbot import client
 from userbot.helper_funcs.time import string_to_secs
 
+plugin_category = "user"
+
 
 @client.onMessage(
-    command="remindme", info="Recieve a reminder in your saved messages",
-    outgoing=True, regex=r"remindme (\w+) ([\s\S]*)"
+    command=("remindme", plugin_category),
+    outgoing=True, regex=r"remindme(?: |$)(\w+)?(?: |$)([\s\S]*)"
 )
 async def remindme(event):
-    """Remind me function used to create a reminder for .remindme"""
+    """Set a reminder to be sent to your Saved Messages in x amount of time."""
     time = event.matches[0].group(1)
     text = event.matches[0].group(2)
+    if not time:
+        await event.answer("Remind you with what?")
+        return
+
     seconds = await string_to_secs(time)
 
     if seconds != 0:
@@ -41,25 +47,26 @@ async def remindme(event):
             text += (
                 "`\nThis may not work as expected, not fully certain though.`"
             )
-        await event.edit(text)
+        await event.answer(
+            text,
+            log=("remindme", f"Set a reminder. ETA: {time}")
+        )
     else:
-        await event.edit("`No kan do. ma'am.`")
+        await event.answer("`No kan do. ma'am.`")
 
 
 @client.onMessage(
-    command="dismiss", info="Dismiss the reminder in your saved messages",
+    command=("dismiss", plugin_category),
     outgoing=True, regex=r"(?i)^dismiss$", disable_prefix=True
 )
 async def dismiss(event):
-    """Dismiss function used to delete and unpin dialogs for dismiss"""
+    """Dismiss the current pinned message in Saved Messages."""
     reply = await event.get_reply_message()
     if reply:
         await reply.delete()
     await event.delete()
 
-    await client(
-        ToggleDialogPinRequest(peer="self", pinned=None)
-    )
+    await client.pin_message(event.chat_id, message=None)
 
 
 async def _reminderTask(delay, string):

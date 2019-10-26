@@ -16,6 +16,7 @@
 
 
 from io import BytesIO
+from telethon.utils import get_display_name
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
@@ -38,18 +39,21 @@ from userbot import client
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
 
+plugin_category = "user"
+
 
 @client.onMessage(
-    command="whois", info="Get information about a user or chat",
+    command=("whois", plugin_category),
     outgoing=True, regex=r"(?:who|what)is(?: |$)(.*)$"
 )
 async def whois(event):
+    """Get your or a user's/chat's information."""
     match = event.matches[0].group(1)
 
     if event.entities or match:
         user = await get_user_from_msg(event)
         if not user:
-            await event.edit("`Couldn't get user/chat from the message.`")
+            await event.answer("`Couldn't get user/chat from the message.`")
             return
     else:
         user = "self"
@@ -68,7 +72,10 @@ async def whois(event):
     try:
         input_entity = await client.get_input_entity(user)
     except Exception as e:
-        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+        await event.answer(
+            '`' + type(e).__name__ + ': ' + str(e) + '`',
+            reply=True
+        )
         return
 
     try:
@@ -88,105 +95,123 @@ async def whois(event):
             )
             string = await Parser.parse_full_user(full_user, event)
     except Exception as e:
-        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+        await event.answer(
+            '`' + type(e).__name__ + ': ' + str(e) + '`',
+            reply=True
+        )
         return
 
-    await event.edit(string)
+    await event.answer(string)
 
 
 @client.onMessage(
-    command="name", info="Change your name",
+    command=("name", plugin_category),
     outgoing=True, regex="name(?: |$)(.*)$"
 )
 async def name(event):
+    """Get your current name or update it."""
     match = event.matches[0].group(1)
     if not match:
         me = await client.get_me()
         text = f"**First name:** `{me.first_name}`"
         if me.last_name:
             text += f"\n**Last name:** `{me.last_name}`"
-        await event.edit(text)
+        await event.answer(text)
         return
 
     split = match.split("last=")
     first = split[0] if split[0] else None
     last = split[1] if len(split) == 2 else None
+    n1 = get_display_name(await client.get_me())
 
     try:
         await client(UpdateProfileRequest(
             first_name=first,
             last_name=last
         ))
-        await event.edit("`Name was successfully changed.`")
+        n2 = get_display_name(await client.get_me())
+        await event.answer(
+            "`Name was successfully changed.`",
+            log=("name", f"Name changed from {n1} to {n2}")
+        )
     except FirstNameInvalidError:
-        await event.edit("`The first name is invalid.`")
+        await event.answer("`The first name is invalid.`")
     except Exception as e:
-        await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+        await event.answer('`' + type(e).__name__ + ': ' + str(e) + '`')
 
 
 @client.onMessage(
-    command="bio", info="Change your bio",
+    command=("bio", plugin_category),
     outgoing=True, regex="bio(?: |$)(.*)$"
 )
 async def bio(event):
+    """Get your current bio or update it."""
     match = event.matches[0].group(1)
+    about = (await client(GetFullUserRequest("self"))).about
     if not match:
-        about = (await client(GetFullUserRequest("self"))).about
         if about:
-            await event.edit(f"**{about}**")
+            await event.answer(f"**{about}**")
         else:
-            await event.edit("`You currently have no bio.`")
+            await event.answer("`You currently have no bio.`")
         return
 
     try:
         await client(UpdateProfileRequest(about=match))
-        await event.edit("`Bio was successfully changed.`")
+        await event.answer(
+            "`Bio was successfully changed.`",
+            log=("bio", f"Bio changed from {about} to {match}")
+        )
     except AboutTooLongError:
-        await event.edit("`The about text is too long.`")
+        await event.answer("`The about text is too long.`")
 
 
 @client.onMessage(
-    command="username", info="Change your username",
+    command=("username", plugin_category),
     outgoing=True, regex="username(?: |$)(.*)$"
 )
 async def username(event):
+    """Get your current username or update it."""
     match = event.matches[0].group(1)
+    u1 = (await client.get_me()).username
     if not match:
-        username = (await client.get_me()).username
-        if username:
-            await event.edit(f"**{username}**")
+        if u1:
+            await event.answer(f"**{u1}**")
         else:
-            await event.edit("`You currently have no username.`")
+            await event.answer("`You currently have no username.`")
         return
 
     try:
         await client(UpdateUsernameRequest(username=match))
-        await event.edit(f"`Successfully changed username to {match}`")
+        await event.answer(
+            f"`Successfully changed username to {match}`",
+            log=("username", f"Username changed from {u1} to {match}")
+        )
     except UsernameOccupiedError:
-        await event.edit("`The username is already in use.`")
+        await event.answer("`The username is already in use.`")
     except UsernameNotModifiedError:
-        await event.edit("`The username was not modified.`")
+        await event.answer("`The username was not modified.`")
     except UsernameInvalidError:
-        await event.edit("`The username is invalid.`")
+        await event.answer("`The username is invalid.`")
 
 
 @client.onMessage(
-    command="pfp", info="Change your profile picture",
+    command=("pfp", plugin_category),
     outgoing=True, regex="pfp$"
 )
 async def pfp(event):
+    """Get your current profile picture or update it."""
     reply = await event.get_reply_message()
     if not reply:
         photo = (await client(GetFullUserRequest("self"))).profile_photo
         if photo:
             await event.delete()
-            await event.respond(file=photo)
+            await event.answer(file=photo)
         else:
-            await event.edit("`You currently have no profile picture.`")
+            await event.answer("`You currently have no profile picture.`")
         return
 
     if not reply.media:
-        await event.edit(
+        await event.answer(
             "`What do I use to update the profile picture, a text?`"
         )
         return
@@ -197,43 +222,50 @@ async def pfp(event):
             temp_file = BytesIO()
             await client.download_media(reply, temp_file)
         except Exception as e:
-            await event.reply('`' + type(e).__name__ + ': ' + str(e) + '`')
+            await event.answer(
+                '`' + type(e).__name__ + ': ' + str(e) + '`',
+                reply=True
+                )
             temp_file.close()
             return
         temp_file.seek(0)
         photo = await client.upload_file(temp_file)
         temp_file.close()
     else:
-        await event.edit("`Invalid media type.`")
+        await event.answer("`Invalid media type.`")
         return
 
     try:
         await client(UploadProfilePhotoRequest(photo))
-        await event.edit("`Profile photo was successfully changed.`")
+        await event.answer(
+            "`Profile photo was successfully changed.`",
+            log=("pfp", "Changed profile picture")
+        )
     except FilePartsInvalidError:
-        await event.edit("`The number of file parts is invalid.`")
+        await event.answer("`The number of file parts is invalid.`")
     except ImageProcessFailedError:
-        await event.edit("`Failure while processing image.`")
+        await event.answer("`Failure while processing image.`")
     except PhotoCropSizeSmallError:
-        await event.edit("`Photo is too small.`")
+        await event.answer("`Photo is too small.`")
     except PhotoExtInvalidError:
-        await event.edit("`The extension of the photo is invalid.`")
+        await event.answer("`The extension of the photo is invalid.`")
 
 
 @client.onMessage(
-    command="delpfp", info="Delete your profile picture(s)",
+    command=("delpfp", plugin_category),
     outgoing=True, regex=r"delpfp(?: |$)(\d*|all)$"
 )
 async def delpfp(event):
+    """Get your current profile picture count or delete them."""
     match = event.matches[0].group(1)
     if not match:
         count = (await client.get_profile_photos("self")).total
         amount = ("one profile picture." if count == 1
                   else f"{count} profile pictures.")
-        await event.edit(f"`You currently have {amount}`")
+        await event.answer(f"`You currently have {amount}`")
         return
 
-    await event.edit("`Processing all the profile pictures...`")
+    await event.answer("`Processing all the profile pictures...`")
     limit = None if match == "all" else int(match)
     photos = await client.get_profile_photos("self", limit)
     count = len(photos)
@@ -241,4 +273,7 @@ async def delpfp(event):
     amount = ("current profile picture." if count == 1
               else f"{count} profile pictures.")
     text = f"`Successfully deleted {amount}`"
-    await event.edit(text)
+    await event.answer(
+        text,
+        log=("delpfp", f"Deleted {count} profile pciture(s)")
+    )

@@ -19,49 +19,54 @@ import aiohttp
 
 from userbot import client
 
+plugin_category = "memes"
+
 
 @client.onMessage(
-    command="shibe", info="Get random pictures of shibes",
+    command=("shibe", plugin_category),
     outgoing=True, regex="shibe$"
 )
 async def shibes(event):
+    """Get random pictures of Shibes."""
     shibe = await _request('http://shibe.online/api/shibes')
     if not shibe:
-        await event.edit("`Couldn't fetch a shibe for you :(`")
+        await event.answer("`Couldn't fetch a shibe for you :(`")
         return
 
     _, json = shibe
-    await event.respond(file=json[0])
+    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 
 @client.onMessage(
-    command="cat", info="Get random pictures of cats",
+    command=("cat", plugin_category),
     outgoing=True, regex="cat$"
 )
 async def cats(event):
+    """Get random pictures of Cats."""
     shibe = await _request('http://shibe.online/api/cats')
     if not shibe:
-        await event.edit("`Couldn't fetch a cat for you :(`")
+        await event.answer("`Couldn't fetch a cat for you :(`")
         return
 
     _, json = shibe
-    await event.respond(file=json[0])
+    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 
 @client.onMessage(
-    command="bird", info="Get random pictures of birds",
+    command=("bird", plugin_category),
     outgoing=True, regex="bird$"
 )
 async def birds(event):
+    """Get random pictures of Birds."""
     shibe = await _request('http://shibe.online/api/birds')
     if not shibe:
-        await event.edit("`Couldn't fetch a bird for you :(`")
+        await event.answer("`Couldn't fetch a bird for you :(`")
         return
 
     _, json = shibe
-    await event.respond(file=json[0])
+    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 

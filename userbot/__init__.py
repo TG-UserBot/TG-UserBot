@@ -71,14 +71,13 @@ telethon = config['telethon']
 
 LOGGER_CHAT_ID = userbot.getint('logger_group_id', 0)
 CONSOLE_LOGGER = userbot.get('console_logger_level', 'INFO')
-USERBOT_LOGGER = True if LOGGER_CHAT_ID else False
 REDIS_ENDPOINT = telethon.get('redis_endpoint', None)
 REDIS_PASSWORD = telethon.get('redis_password', None)
 
 if not REDIS_ENDPOINT or not REDIS_PASSWORD:
-    LOGGER.warn(
+    LOGGER.info(
         "Consider making an account on redislab.com and updating your config "
-        "if you want to run on Heroku!"
+        "with the redis endpoint and password, if you want to run on Heroku!"
     )
     redis_session = False
     session = "userbot"
@@ -95,8 +94,6 @@ else:
         print()
         LOGGER.warning(
             "Make sure you have the correct Redis endpoint and password."
-            "\nOr you're missing redis-server? Install it with your package "
-            "manager"
         )
         exit(1)
     redis_session = True
@@ -137,8 +134,7 @@ client = UserBotClient(
     api_id=telethon.getint('api_id', None),
     api_hash=telethon.get('api_hash', None),
     loop=loop,
-    app_version=__version__,
-    auto_reconnect=False
+    app_version=__version__
 )
 
 client.version = __version__
@@ -147,7 +143,13 @@ client.prefix = userbot.get('prefix', None)
 
 
 def verifyLoggerGroup(client: UserBotClient) -> None:
-    global USERBOT_LOGGER
+    client.logger = True
+
+    def disable_logger(error: str):
+        if LOGGER_CHAT_ID != 0:
+            LOGGER.error(error)
+        client.logger = False
+
     try:
         entity = client.loop.run_until_complete(
             client.get_entity(LOGGER_CHAT_ID)
@@ -155,26 +157,22 @@ def verifyLoggerGroup(client: UserBotClient) -> None:
         if not isinstance(entity, User):
             if not entity.creator:
                 if entity.default_banned_rights.send_messages:
-                    LOGGER.error(
+                    disable_logger(
                         "Permissions missing to send messages "
                         "for the specified Logger group."
                     )
-                    USERBOT_LOGGER = False
     except ValueError:
-        LOGGER.error(
+        disable_logger(
             "Logger group ID cannot be found. "
             "Make sure it's correct."
         )
-        USERBOT_LOGGER = False
     except TypeError:
-        LOGGER.error(
+        disable_logger(
             "Logger group ID is unsupported. "
             "Make sure it's correct."
         )
-        USERBOT_LOGGER = False
     except Exception as e:
-        LOGGER.error(
+        disable_logger(
             "An Exception occured upon trying to verify "
             "the logger group.\n" + str(e)
         )
-        USERBOT_LOGGER = False
