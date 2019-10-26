@@ -15,13 +15,10 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from asyncio import get_event_loop
 from concurrent.futures import Executor
 import youtube_dl
 
 from .. import LOGGER
-
-loop = get_event_loop()
 
 
 class YTdlLogger(object):

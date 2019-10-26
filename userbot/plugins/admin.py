@@ -62,7 +62,10 @@ async def promote(event):
         if extra:
             text += f"\n`Title:` `{extra}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully promoted {e1} in {e2}"
         if extra:
             log_msg += f"\nTitle: {extra}"
@@ -114,7 +117,10 @@ async def demote(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully demoted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -164,7 +170,10 @@ async def ban(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully banned {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -221,7 +230,10 @@ async def unban(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully unbanned {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -270,7 +282,10 @@ async def kick(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully kicked {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -320,7 +335,10 @@ async def mute(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully muted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -372,7 +390,10 @@ async def unmute(event):
         if reason:
             text += f"\n`Reason:` `{reason}`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully un-muted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
@@ -418,7 +439,10 @@ async def tmute(event):
         seconds = None
         text = "`Successfully t-muted ``{}`` (``{}``)!`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully tmuted {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)
@@ -482,7 +506,10 @@ async def tban(event):
         seconds = None
         text = "`Successfully t-banned ``{}`` (``{}``)!`"
         e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = f"[{entity.title}](https://t.me/c/{entity.id}"
+        e2 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
         log_msg = f"Successfully t-banned {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)

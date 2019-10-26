@@ -178,7 +178,7 @@ async def helper(event):
             command = merged.get(arg)
             text = (
                 f"**{arg.title()} Command:**\n"
-                f"  **Built-in:** `{command.builtin}`\n"
+                f"  **Disableable:** `{not command.builtin}`\n"
                 f"  **Info:** `{command.info}`\n"
             )
             if arg1:
@@ -200,7 +200,7 @@ async def helper(event):
             return
     else:
         text = (
-            f"Documented Commands can be found [here]({link})\n"
+            f"Documented commands can be found [here]({link})\n"
             f"**Usage:**\n  __{client.prefix or '.'}help <category>__\n"
             f"  __{client.prefix or '.'}help <command>__\n\n"
             "**Available command categories:**"

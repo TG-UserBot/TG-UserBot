@@ -16,14 +16,18 @@
 
 
 from asyncio import create_subprocess_shell, subprocess
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from speedtest import Speedtest
 from sys import platform
+from telethon.utils import get_display_name
 from telethon.tl.functions.help import GetNearestDcRequest
 
 from userbot import client
 
 
 plugin_category = "www"
+loop = client.loop
 DCs = {
     1: "149.154.175.50",
     2: "149.154.167.51",
@@ -31,6 +35,10 @@ DCs = {
     4: "149.154.167.91",
     5: "91.108.56.149"
 }
+testing = "`Testing from %(isp)s (%(ip)s)`"
+hosted = "`Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: %(latency)s ms`"
+download = "`Download: %0.2f M%s/s`"
+upload = "`Upload: %0.2f M%s/s`"
 
 
 @client.onMessage(
@@ -87,6 +95,49 @@ async def pingdc(event):
     await event.answer(f"DC {dc}'s average response: `{average}`")
 
 
+@client.onMessage(
+    command=("speedtest", plugin_category),
+    outgoing=True, regex=r"speedtest(?: |$)(bit|byte)?$"
+)
+async def speedtest(event):
+    """Perform a speedtest with the best available server based on ping."""
+    n = 1
+    unit = "bit"
+    arg = event.matches[0].group(1)
+    if arg and arg.lower() == "byte":
+        n = 8
+        unit = "byte"
+
+    s = Speedtest()
+    speed_event = await event.answer(testing % s.results.client)
+    await _run_sync(s.get_servers)
+
+    await _run_sync(s.get_best_server)
+    text = (f"{speed_event.text}\n{hosted % s.results.server}")
+    speed_event = await event.answer(text)
+
+    await _run_sync(s.download)
+    down = (s.results.download / 1000.0 / 1000.0) / n
+    text = (f"{speed_event.text}\n{download % (down, unit)}")
+    speed_event = await event.answer(text)
+
+    await _run_sync(s.upload)
+    up = (s.results.upload / 1000.0 / 1000.0) / n
+    text = (f"{speed_event.text}\n{upload % (up, unit)}")
+    chat = await event.get_chat()
+    if event.is_private:
+        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
+    else:
+        extra = (
+            f"[{chat.title}] "
+            f"( {'@' + chat.username if chat.username else chat.id} )"
+        )
+    await event.answer(
+        text,
+        log=("speedtest", f"Performed a speedtest in {extra}.")
+    )
+
+
 async def _sub_shell(cmd):
     process = await create_subprocess_shell(
         cmd,
@@ -96,3 +147,7 @@ async def _sub_shell(cmd):
     stdout, stderr = await process.communicate()
 
     return stdout.decode("UTF-8"), stderr.decode("UTF-8")
+
+
+async def _run_sync(func: callable):
+    return await loop.run_in_executor(ThreadPoolExecutor(), func)

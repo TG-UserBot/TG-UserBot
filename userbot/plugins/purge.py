@@ -58,7 +58,10 @@ async def purge(event):
     if event.is_private:
         e1 = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
     else:
-        e1 = f"[{entity.title}] ( {entity.id} )"
+        e1 = (
+            f"[{entity.title}] "
+            f"( {'@' + entity.username if entity.username else entity.id} )"
+        )
     toast = await event.answer(
         f"`Successfully deleted {len(messages)} message(s)!`",
         log=("purge", f"Purged {len(messages)} message(s) in {e1}")

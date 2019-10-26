@@ -16,7 +16,8 @@
 
 
 from logging import StreamHandler, getLogger
-from sys import platform
+from sys import exit, platform
+from telethon.errors import AuthKeyError, InvalidBufferError
 
 import userbot
 import userbot.helper_funcs.log_formatter as log_formatter
@@ -51,7 +52,12 @@ if __name__ == "__main__":
     client.pluginManager = pluginManager.PluginManager(client)
     client.pluginManager.import_all()
     client.pluginManager.add_handlers()
-    client.start()
+    try:
+        client.start()
+    except (AuthKeyError, InvalidBufferError):
+        client.session.delete()
+        LOGGER.error("Your session has been deleted! Generate a new one.")
+        exit(1)
 
     userbot.verifyLoggerGroup(client)
     helpers.printUser(

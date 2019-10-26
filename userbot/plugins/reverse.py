@@ -20,6 +20,7 @@ import io
 import re
 import requests
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from urllib import request
 from telethon.utils import get_extension, get_display_name
@@ -28,6 +29,7 @@ from userbot import client
 
 
 opener = request.build_opener()
+loop = client.loop
 light_useragent = """Mozilla/5.0 (Linux; Android 6.0.1; SM-G920V Build/\
 MMB29K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.98 \
 Mobile Safari/537.36"""
@@ -61,9 +63,7 @@ async def reverse(event):
     photo.seek(0)
     name = "media" + ext
 
-    response = await client.loop.run_in_executor(
-        None, partial(_post, name, photo)
-    )
+    response = await _run_sync(partial(_post, name, photo))
 
     fetchUrl = response.headers['Location']
     photo.close()
@@ -130,9 +130,7 @@ async def _scrape_url(googleurl):
 
     opener.addheaders = [('User-agent', heavy_useragent)]
 
-    source = await client.loop.run_in_executor(
-        None, partial(opener.open, googleurl)
-    )
+    source = await _run_sync(partial(opener.open, googleurl))
     soup = BeautifulSoup(source.read(), 'html.parser')
 
     result = {
@@ -179,9 +177,7 @@ async def _get_similar_links(link: str, lim: int = 2):
 
     opener.addheaders = [('User-agent', light_useragent)]
 
-    source = await client.loop.run_in_executor(
-        None, partial(opener.open, link)
-    )
+    source = await _run_sync(partial(opener.open, link))
 
     links = []
     counter = 0
@@ -204,3 +200,7 @@ async def _get_similar_links(link: str, lim: int = 2):
                 break
 
     return links
+
+
+async def _run_sync(func: callable):
+    return await loop.run_in_executor(ThreadPoolExecutor(), func)
