@@ -50,13 +50,13 @@ class Message(custom.Message):
         if isinstance(response, str):
             is_reply = reply or kwargs.get('reply_to', False)
             if len(response) < 4096:
-                if is_reply or not message:
+                if is_reply or not (message and message.out):
                     kwargs.setdefault('reply_to', reply_to)
                     msg = await self.respond(response, *args, **kwargs)
                 else:
                     msg = await self.edit(response, *args, **kwargs)
             else:
-                if message:
+                if message and message.out:
                     await self.edit("`Output exceeded the limit.`")
                 kwargs.setdefault('reply_to', reply_to)
                 output = BytesIO(markdown.parse(response)[0].strip().encode())
@@ -68,12 +68,8 @@ class Message(custom.Message):
                 )
                 output.close()
         else:
-            try:
-                msg = await self.edit(response, *args, **kwargs)
-            except Exception as e:
-                kwargs.setdefault('reply_to', reply_to)
-                msg = await self.respond(response, *args, **kwargs)
-                LOGGER.exception(e)
+            kwargs.setdefault('reply_to', reply_to)
+            msg = await self.respond(response, *args, **kwargs)
 
         if log:
             if isinstance(log, tuple):

@@ -21,6 +21,7 @@ from userbot import client
 
 plugin_category = "helper"
 link = "https://tg-userbot.readthedocs.io/en/latest/userbot/commands.html"
+chunk: int = 5
 
 
 @client.onMessage(
@@ -130,10 +131,9 @@ async def commands(event):
     """A list of all the currently enabled commands."""
     response = "**Enabled commands:**"
     enabled = sorted(event.client.commands.keys())
-    chunk: int = 5
     for i in range(0, len(enabled), chunk):
         response += "\n  "
-        response += ", ".join("`" + c + "`" for c in enabled[i:i+chunk])
+        response += ", ".join('`' + c + '`' for c in enabled[i:i+chunk])
     await event.answer(response)
 
 
@@ -151,10 +151,9 @@ async def disabled(event):
 
     response = "**Disabled commands:**"
     enabled = sorted(disabled_commands.keys())
-    chunk: int = 5
     for i in range(0, len(enabled), chunk):
         response += "\n  "
-        response += ", ".join("`" + c + "`" for c in enabled[i:i+chunk])
+        response += ", ".join('`' + c + '`' for c in enabled[i:i+chunk])
     await event.answer(response)
 
 
@@ -173,24 +172,32 @@ async def helper(event):
         arg1 = True if arg.endswith(("dev", "details", "info")) else False
         if arg1:
             arg = ' '.join(arg.split(' ')[:-1])
-        if arg in [*enabled, *disabled]:
+        if arg == "all":
+            text = "**Enabled commands:**"
+            for name, command in sorted(enabled.items()):
+                text += f"\n**{name}**: `{command.info}`"
+            if disabled:
+                text += "\n**Disabled commands:**"
+                for name, command in sorted(disabled.items()):
+                    text += f"\n**{name}**: `{command.info}`"
+        elif arg in [*enabled, *disabled]:
             merged = {**enabled, **disabled}
             command = merged.get(arg)
             text = (
-                f"**{arg.title()} Command:**\n"
+                f"**{arg.title()} command:**\n"
                 f"  **Disableable:** `{not command.builtin}`\n"
                 f"  **Info:** `{command.info}`\n"
             )
             if arg1:
                 filename = relpath(command.func.__code__.co_filename)
                 text += (
-                    f"  **Registered Function:** `{command.func.__name__}`\n"
+                    f"  **Registered function:** `{command.func.__name__}`\n"
                     f"    **File:** `{filename}`\n"
                     f"    **Line:** `{command.func.__code__.co_firstlineno}`\n"
                 )
         elif arg in categories:
             category = categories.get(arg)
-            text = f"**{arg.title()} Commands:**"
+            text = f"**{arg.title()} commands:**"
             for com in sorted(category):
                 text += f"\n    **{com}**"
         else:
@@ -200,9 +207,11 @@ async def helper(event):
             return
     else:
         text = (
-            f"Documented commands can be found [here]({link})\n"
-            f"**Usage:**\n  __{client.prefix or '.'}help <category>__\n"
-            f"  __{client.prefix or '.'}help <command>__\n\n"
+            f"Documented commands can be found [HERE!]({link})\n"
+            f"**Usage:**\n"
+            f"  __{client.prefix or '.'}help <category>__\n"
+            f"  __{client.prefix or '.'}help <command>__\n"
+            f"  __{client.prefix or '.'}help all__\n\n"
             "**Available command categories:**"
         )
         for category in sorted(categories.keys()):

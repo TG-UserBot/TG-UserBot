@@ -50,7 +50,7 @@ async def purge(event):
     messages = await client.get_messages(
         entity,
         limit=int(amount) if amount else None,
-        offset_id=event.reply_to_msg_id or event.message.id,
+        offset_id=await _offset(event),
         reverse=True if event.reply_to_msg_id else False
     )
 
@@ -85,7 +85,7 @@ async def delme(event):
     messages = await client.get_messages(
         entity,
         limit=int(amount) if amount else None,
-        offset_id=event.reply_to_msg_id or event.message.id,
+        offset_id=await _offset(event),
         reverse=True if event.reply_to_msg_id else False,
         from_user="me"
     )
@@ -121,3 +121,9 @@ async def delete(event):
     else:
         await reply.delete()
     await event.delete()
+
+
+async def _offset(event):
+    if event.reply_to_msg_id:
+        return event.reply_to_msg_id - 1
+    return event.message.id

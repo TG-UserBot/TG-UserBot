@@ -102,9 +102,9 @@ class RedisSession(MemorySession):
     def _get_sessions(self, strip_prefix=False):
         key_pattern = "{}:auth".format(self.sess_prefix)
         try:
-            sessions = self.redis_connection.keys(key_pattern+"*")
+            sessions = self.redis_connection.keys(key_pattern + '*')
             return [
-                s.decode().replace(key_pattern, "")
+                s.decode().replace(key_pattern, '')
                 if strip_prefix else
                 s.decode() for s in sessions
             ]
@@ -125,7 +125,7 @@ class RedisSession(MemorySession):
             'takeout_id': self.takeout_id or b''
         }
 
-        key = "{}:auth".format(self.sess_prefix, self._dc_id)
+        key = "{}:auth".format(self.sess_prefix)
         try:
             self.redis_connection.hmset(key, s)
         except Exception as ex:

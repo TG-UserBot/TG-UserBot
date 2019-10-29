@@ -205,7 +205,7 @@ async def pfp(event):
         photo = (await client(GetFullUserRequest("self"))).profile_photo
         if photo:
             await event.delete()
-            await event.answer(file=photo)
+            await event.answer(photo)
         else:
             await event.answer("`You currently have no profile picture.`")
         return

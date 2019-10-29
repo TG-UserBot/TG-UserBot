@@ -17,6 +17,7 @@
 
 import os
 import sys
+import datetime
 from configparser import ConfigParser
 from heroku3 import from_key
 from logging import getLogger
@@ -143,3 +144,33 @@ def make_config(config: ConfigParser, section: str, section_dict: dict):
     for key, value in section_dict.items():
         if value is not None and value not in UNACCETPABLE:
             config[section][key] = str(value)
+
+
+async def _humanfriendly_seconds(seconds: int or float) -> str:
+    elapsed = datetime.timedelta(seconds=round(seconds)).__str__()
+    splat = elapsed.split(', ')
+    if len(splat) == 1:
+        return await _human_friendly_time(splat[0])
+    friendly_units = await _human_friendly_time(splat[1])
+    return ', '.join([splat[0], friendly_units])
+
+
+async def _human_friendly_time(timedelta: str) -> str:
+    splat = timedelta.split(':')
+    nulls = ['0', "00"]
+    h = splat[0]
+    m = splat[1]
+    s = splat[2]
+    text = ''
+    if h not in nulls:
+        unit = "hour" if h == 1 else "hours"
+        text += f"{h} {unit}"
+    if m not in nulls:
+        unit = "minute" if m == 1 else "minutes"
+        delimiter = ", " if len(text) > 1 else ''
+        text += f"{delimiter}{m} {unit}"
+    if s not in nulls:
+        unit = "second" if s == 1 else "seconds"
+        delimiter = " and " if len(text) > 1 else ''
+        text += f"{delimiter}{s} {unit}"
+    return text
