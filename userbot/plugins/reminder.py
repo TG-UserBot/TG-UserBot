@@ -15,6 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from asyncio import sleep
 from datetime import timedelta
 from telethon.utils import get_display_name
 from telethon.tl.types import User
@@ -51,7 +52,7 @@ async def remindme(event):
     if arg == "here":
         entity = event.chat_id
     else:
-        entity = client['userbot'].getint('logger_group_id', "self")
+        entity = client.config['userbot'].getint('logger_group_id', "self")
     entity = await client.get_entity(entity)
 
     if seconds >= 13:
@@ -66,10 +67,12 @@ async def remindme(event):
             who = '@' + entity.username if entity.username else entity.id
             link = f"[{entity.title}] ( {who} )"
         human_time = await _humanfriendly_seconds(seconds)
-        text = f"`Reminder will be sent in` {link} `after {human_time}.`"
+        message = f"`Reminder will be sent in` {link} `after {human_time}.`"
         await event.answer(
-            text,
+            message,
             log=("remindme", f"Set a reminder in {link}.\nETA: {human_time}")
         )
+        await sleep(2)
+        await event.delete()
     else:
         await event.answer("`No kan do. ma'am. Minimum time should be 13s.`")

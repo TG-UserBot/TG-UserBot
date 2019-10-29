@@ -36,10 +36,9 @@ class Message(custom.Message):
 
     async def answer(
         self,
-        response,
+        *args,
         log: str or Tuple[str, str] = None,
         reply: bool = False,
-        *args,
         **kwargs
     ) -> custom.Message:
         message = await self._client.get_messages(
@@ -47,19 +46,19 @@ class Message(custom.Message):
         )
         reply_to = self.reply_to_msg_id or self.id
 
-        if isinstance(response, str):
+        if len(args) == 1 and isinstance(*args, str):
             is_reply = reply or kwargs.get('reply_to', False)
-            if len(response) < 4096:
+            if len(*args) < 4096:
                 if is_reply or not (message and message.out):
                     kwargs.setdefault('reply_to', reply_to)
-                    msg = await self.respond(response, *args, **kwargs)
+                    msg = await self.respond(*args, **kwargs)
                 else:
-                    msg = await self.edit(response, *args, **kwargs)
+                    msg = await self.edit(*args, **kwargs)
             else:
                 if message and message.out:
                     await self.edit("`Output exceeded the limit.`")
                 kwargs.setdefault('reply_to', reply_to)
-                output = BytesIO(markdown.parse(response)[0].strip().encode())
+                output = BytesIO(markdown.parse(*args)[0].strip().encode())
                 output.name = "output.txt"
                 msg = await self.respond(
                     file=output,
@@ -69,7 +68,7 @@ class Message(custom.Message):
                 output.close()
         else:
             kwargs.setdefault('reply_to', reply_to)
-            msg = await self.respond(response, *args, **kwargs)
+            msg = await self.respond(*args, **kwargs)
 
         if log:
             if isinstance(log, tuple):
