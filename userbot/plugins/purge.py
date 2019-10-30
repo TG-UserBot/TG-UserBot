@@ -92,7 +92,7 @@ async def delme(event):
 
     await client.delete_messages(entity, messages)
     toast = await event.answer(
-        f"`Successfully deleted {len(messages)} messages!`"
+        f"`Successfully deleted {len(messages)} message(s)!`"
     )
     await sleep(2)
     await toast.delete()

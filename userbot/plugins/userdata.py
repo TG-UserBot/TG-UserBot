@@ -270,7 +270,7 @@ async def delpfp(event):
     photos = await client.get_profile_photos("self", limit)
     count = len(photos)
     await client(DeletePhotosRequest(photos))
-    amount = ("current profile picture." if count == 1
+    amount = ("the current profile picture." if count == 1
               else f"{count} profile pictures.")
     text = f"`Successfully deleted {amount}`"
     await event.answer(

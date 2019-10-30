@@ -49,20 +49,25 @@ class Message(custom.Message):
         if len(args) == 1 and isinstance(*args, str):
             is_reply = reply or kwargs.get('reply_to', False)
             if len(*args) < 4096:
-                if is_reply or not (message and message.out):
+                if (
+                    is_reply or self.media or self.fwd_from or
+                    not (message and message.out)
+                ):
                     kwargs.setdefault('reply_to', reply_to)
                     msg = await self.respond(*args, **kwargs)
                 else:
                     msg = await self.edit(*args, **kwargs)
             else:
-                if message and message.out:
+                if (
+                    message and message.out and
+                    not self.fwd_from and not message.media
+                ):
                     await self.edit("`Output exceeded the limit.`")
                 kwargs.setdefault('reply_to', reply_to)
                 output = BytesIO(markdown.parse(*args)[0].strip().encode())
                 output.name = "output.txt"
                 msg = await self.respond(
                     file=output,
-                    *args,
                     **kwargs
                 )
                 output.close()
