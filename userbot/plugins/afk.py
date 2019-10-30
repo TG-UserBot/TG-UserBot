@@ -93,14 +93,14 @@ async def out_listner(event):
             msg = "  `{} total mentions from `[{}](tg://user?id={})`.`"
             to_log.append(msg.format(len(value.mentions), value.title, key))
 
-        pr_text = "`Recieved {} message{} from {} private chat{}.`".format(
+        pr_text = "`Received {} message{} from {} private chat{}.`".format(
             *(await _correct_grammer(total_mentions, len(privates)))
         )
         pr_log = pr_log + "\n".join("  " + t for t in to_log)
     if groups:
         total_mentions = 0
         to_log = []
-        gr_log = "\n**Mentions recieved from groups:**\n"
+        gr_log = "\n**Mentions Received from groups:**\n"
         for key, value in groups.items():
             total_mentions += len(value.mentions)
             msg = f"[{value.title}](https://t.me/c/{key}/{value.unread_from}):"
@@ -113,7 +113,7 @@ async def out_listner(event):
             msg += ',   '.join(mentions) + '.'
             to_log.append(msg)
 
-        gr_text = "`Recieved {} mention{} from {} group{}.`".format(
+        gr_text = "`Received {} mention{} from {} group{}.`".format(
             *(await _correct_grammer(total_mentions, len(groups)))
         )
         gr_log = gr_log + "\n".join("  " + t for t in to_log)
@@ -121,7 +121,7 @@ async def out_listner(event):
     main_text = '\n'.join([pr_text, gr_text]).strip()
     if not client.logger:
         main_text += "\n`Use a logger group for more detailed AFK mentions!`"
-    status = await event.answer("`I am no longer AFK!`")
+    status = await event.answer("`I am no longer AFK!`", reply=True)
     toast = await event.answer(
         message=main_text or def_text,
         reply_to=status.id,
