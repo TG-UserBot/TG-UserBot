@@ -60,7 +60,7 @@ class Message(custom.Message):
             else:
                 if (
                     message and message.out and
-                    not self.fwd_from and not message.media
+                    not (message.fwd_from or message.media)
                 ):
                     await self.edit("`Output exceeded the limit.`")
                 kwargs.setdefault('reply_to', reply_to)

@@ -69,7 +69,7 @@ async def awayfromkeyboard(event):
     raise StopPropagation
 
 
-@client.onMessage(outgoing=True, forwards=True)
+@client.onMessage(outgoing=True, forwards=None)
 async def out_listner(event):
     """Handle your AFK status by listening to new outgoing messages."""
     if event.from_scheduled:
