@@ -22,11 +22,10 @@ import os
 import time
 from telethon.events import StopPropagation
 from telethon.tl import types
-from telethon.utils import get_display_name
 from typing import List, Tuple
 
 from userbot import client
-from userbot.utils.helpers import _humanfriendly_seconds
+from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
 
 reason = None
 pings = {}
@@ -56,15 +55,10 @@ async def awayfromkeyboard(event):
         global reason
         reason = arg.strip()
         text += f"\n`Reason:` `{arg}`"
-    log = "You just went AFK in [{}]({})!"
-    chat = await event.get_chat()
-    if isinstance(chat, types.User):
-        link = f"tg://user?id={chat.id}"
-    else:
-        link = f"https://t.me/c/{chat.id}/{event.id}"
+    extra = await get_chat_link(event, event.id)
     await event.answer(
         text,
-        log=("afk", log.format(get_display_name(chat), link))
+        log=("afk", f"You just went AFK in {extra}!")
     )
     raise StopPropagation
 
@@ -78,7 +72,7 @@ async def out_listner(event):
     if not afk:
         return
 
-    def_text = "`You recieved no messages nor were tagged at any time.`"
+    def_text = "`You received no messages nor were tagged at any time.`"
     pr_text = ''
     pr_log = ''
     gr_text = ''
@@ -87,7 +81,7 @@ async def out_listner(event):
     if privates:
         total_mentions = 0
         to_log = []
-        pr_log = "**Mentions recieved from private chats:**\n"
+        pr_log = "**Mentions received from private chats:**\n"
         for key, value in privates.items():
             total_mentions += len(value.mentions)
             msg = "  `{} total mentions from `[{}](tg://user?id={})`.`"

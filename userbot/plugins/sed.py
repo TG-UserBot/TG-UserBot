@@ -121,7 +121,10 @@ async def regex_ninja(event):
         REGEXNINJA = False
         value = "disabled"
 
-    await event.answer(f"`Successfully {value} ninja mode for regexbot!`")
+    await event.answer(
+        f"`Successfully {value} ninja mode for @regexbot!`",
+        log=("regexninja", f"{value.title()} ninja mode for @regexbot!")
+    )
     await sleep(2)
     await event.delete()
 

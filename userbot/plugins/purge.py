@@ -16,9 +16,9 @@
 
 
 from asyncio import sleep
-from telethon.utils import get_display_name
 
 from userbot import client
+from userbot.utils.helpers import get_chat_link
 
 plugin_category = "user"
 
@@ -55,16 +55,10 @@ async def purge(event):
     )
 
     await client.delete_messages(entity, messages)
-    if event.is_private:
-        e1 = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
-    else:
-        e1 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+    extra = await get_chat_link(entity)
     toast = await event.answer(
         f"`Successfully deleted {len(messages)} message(s)!`",
-        log=("purge", f"Purged {len(messages)} message(s) in {e1}")
+        log=("purge", f"Purged {len(messages)} message(s) in {extra}")
     )
     await sleep(2)
     await toast.delete()
@@ -91,8 +85,11 @@ async def delme(event):
     )
 
     await client.delete_messages(entity, messages)
+    extra = await get_chat_link(entity)
+    log = f"Successfully deleted {len(messages)} message(s) in {extra}!"
     toast = await event.answer(
-        f"`Successfully deleted {len(messages)} message(s)!`"
+        f"`Successfully deleted {len(messages)} message(s)!`",
+        log=("delme", log)
     )
     await sleep(2)
     await toast.delete()

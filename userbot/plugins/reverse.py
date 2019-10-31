@@ -23,9 +23,10 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from urllib import request
-from telethon.utils import get_extension, get_display_name
+from telethon.utils import get_extension
 
 from userbot import client
+from userbot.utils.helpers import get_chat_link
 
 
 opener = request.build_opener()
@@ -86,15 +87,8 @@ async def reverse(event):
             text += "\n\n**" + matching_text + ":**"
             for title, link in matching.items():
                 text += f"\n[{title.strip()}]({link.strip()})"
-        chat = await event.get_chat()
-        if event.is_private:
-            msg = (
-                f"media in [{get_display_name(chat)}]"
-                f"(tg://user?id={chat.id})"
-            )
-        else:
-            msg = f"[media](https://t.me/c/{chat.id}/{reply.id})"
-        extra = f"Successfully reversed {msg}: [{guess}]({fetchUrl})"
+        msg = await get_chat_link(event, event.id)
+        extra = f"Successfully reversed media in {msg}: [{guess}]({fetchUrl})"
         await event.answer(text, log=("reverse", extra))
     else:
         await event.answer("`Couldn't find anything for you.`")

@@ -16,7 +16,7 @@
 
 
 from io import BytesIO
-from telethon.utils import get_display_name
+from telethon.utils import get_display_name, get_peer_id
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
@@ -276,4 +276,29 @@ async def delpfp(event):
     await event.answer(
         text,
         log=("delpfp", f"Deleted {count} profile pciture(s)")
+    )
+
+
+@client.onMessage(
+    command=("id", plugin_category),
+    outgoing=True, regex=r"id(?: |$)(.*)$"
+)
+async def whichid(event):
+    """Get the ID of a chat/channel or user."""
+    match = event.matches[0].group(1).strip()
+    if not match:
+        entity = await event.get_chat()
+    else:
+        if match.isdigit():
+            await event.answer("`Nice try, fool!`")
+            return
+        try:
+            entity = await client.get_entity(match.strip())
+        except Exception as e:
+            await event.answer(
+                f"`Error trying to fetch the entity:`\n```{e}```"
+            )
+            return
+    await event.answer(
+        f"`{get_display_name(entity)}:` `{get_peer_id(entity)}`"
     )

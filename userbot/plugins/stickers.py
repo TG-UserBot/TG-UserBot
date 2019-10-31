@@ -21,9 +21,9 @@ from itertools import chain
 from PIL import Image
 
 from telethon.tl.types import DocumentAttributeSticker
-from telethon.utils import get_display_name
 
 from userbot import client, LOGGER
+from userbot.utils.helpers import get_chat_link
 
 plugin_category = "stickers"
 acceptable = []
@@ -360,19 +360,10 @@ async def kang(event):
             await client.send_read_acknowledge(conv.chat_id)
 
     pack = f"[{pack}](https://t.me/addstickers/{pack})"
-    chat = await event.get_chat()
-    if event.is_private:
-        sticker = (
-            f"a sticker from [{get_display_name(chat)}]"
-            f"(tg://user?id={chat.id})"
-        )
-    else:
-        sticker = (
-            f"[sticker](https://t.me/c/{chat.id}/{sticker_event.id})"
-        )
+    extra = await get_chat_link(event, sticker_event.id)
     await event.answer(
         f"`Successfully added the sticker to` {pack} `!`",
-        log=("kang", f"Successfully kanged {sticker} to {pack}")
+        log=("kang", f"Successfully kanged a sticker from {extra} to {pack}")
     )
     await _delete_sticker_messages(first_msg or new_first_msg)
 

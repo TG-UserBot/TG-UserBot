@@ -22,7 +22,7 @@ from configparser import ConfigParser
 from heroku3 import from_key
 from logging import getLogger
 
-from telethon.tl.types import User
+from telethon.tl.types import User, Chat, Channel
 from telethon.utils import get_display_name
 from telethon.errors.rpcerrorlist import (
     MessageAuthorRequiredError, MessageNotModifiedError, MessageIdInvalidError
@@ -150,12 +150,12 @@ async def _humanfriendly_seconds(seconds: int or float) -> str:
     elapsed = datetime.timedelta(seconds=round(seconds)).__str__()
     splat = elapsed.split(', ')
     if len(splat) == 1:
-        return await _human_friendly_time(splat[0])
-    friendly_units = await _human_friendly_time(splat[1])
+        return await _human_friendly_timedelta(splat[0])
+    friendly_units = await _human_friendly_timedelta(splat[1])
     return ', '.join([splat[0], friendly_units])
 
 
-async def _human_friendly_time(timedelta: str) -> str:
+async def _human_friendly_timedelta(timedelta: str) -> str:
     splat = timedelta.split(':')
     nulls = ['0', "00"]
     h = splat[0]
@@ -174,3 +174,23 @@ async def _human_friendly_time(timedelta: str) -> str:
         delimiter = " and " if len(text) > 1 else ''
         text += f"{delimiter}{s} {unit}"
     return text
+
+
+async def get_chat_link(arg, reply=None) -> str:
+    if isinstance(arg, (User, Chat, Channel)):
+        entity = arg
+    else:
+        entity = await arg.get_chat()
+
+    if isinstance(entity, User):
+        extra = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
+    else:
+        if hasattr(entity, 'username') and entity.username is not None:
+            username = '@' + entity.username
+        else:
+            username = entity.id
+        if reply is not None:
+            extra = f"[{entity.title}](https://t.me/c/{username}/{reply})"
+        else:
+            extra = f"{entity.title} ( `{username}` )"
+    return extra

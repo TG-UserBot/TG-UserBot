@@ -20,10 +20,10 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from speedtest import Speedtest
 from sys import platform
-from telethon.utils import get_display_name
 from telethon.tl.functions.help import GetNearestDcRequest
 
 from userbot import client
+from userbot.utils.helpers import get_chat_link
 
 
 plugin_category = "www"
@@ -124,14 +124,7 @@ async def speedtest(event):
     await _run_sync(s.upload)
     up = (s.results.upload / 1000.0 / 1000.0) / n
     text = (f"{speed_event.text}\n{upload % (up, unit)}")
-    chat = await event.get_chat()
-    if event.is_private:
-        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
-    else:
-        extra = (
-            f"[{chat.title}] "
-            f"( {'@' + chat.username if chat.username else chat.id} )"
-        )
+    extra = await get_chat_link(event, event.id)
     await event.answer(
         text,
         log=("speedtest", f"Performed a speedtest in {extra}.")

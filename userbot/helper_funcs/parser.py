@@ -18,6 +18,7 @@
 from telethon.tl.types import (
     ChannelFull, ChatFull, UserFull
 )
+from telethon.utils import get_peer_id
 
 
 class Parser:
@@ -27,7 +28,7 @@ class Parser:
     async def parse_full_user(usr_obj: UserFull, event) -> str:
         user = usr_obj.user
 
-        user_id = user.id
+        user_id = get_peer_id(user.id)
         is_self = user.is_self
         contact = user.contact
         mutual_contact = user.mutual_contact
@@ -105,7 +106,7 @@ class Parser:
             banned = full_chat.banned_count
             online = full_chat.online_count
 
-        chat_id = full_chat.id
+        chat_id = get_peer_id(full_chat.id)
         title = chats.title
         creator = chats.creator
         left = chats.left

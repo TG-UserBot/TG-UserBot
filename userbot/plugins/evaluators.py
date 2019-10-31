@@ -20,9 +20,9 @@ from inspect import isawaitable
 from asyncio import (
     create_subprocess_exec, create_subprocess_shell, subprocess, sleep
 )
-from telethon.utils import get_display_name
 
 from userbot import client
+from userbot.utils.helpers import get_chat_link
 
 plugin_category = "terminal"
 
@@ -50,12 +50,7 @@ async def evaluate(event):
         await event.answer('`' + type(e).__name__ + ': ' + str(e) + '`')
         return
 
-    chat = await event.get_chat()
-    if event.is_private:
-        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
-    else:
-        username = '@' + chat.username if chat.username else chat.id
-        extra = f"[{chat.title}] ( {username} )"
+    extra = await get_chat_link(event, event.id)
     await event.answer(
         "```" + result + "```",
         log=("eval", f"Successfully evaluated {expression} in {extra}!"),
@@ -108,12 +103,7 @@ async def execute(event):
     if stderr:
         text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
-    chat = await event.get_chat()
-    if event.is_private:
-        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
-    else:
-        username = '@' + chat.username if chat.username else chat.id
-        extra = f"[{chat.title}] ( {username} )"
+    extra = await get_chat_link(event, event.id)
     if stdout or stderr:
         await event.answer(
             "```" + text + "```",
@@ -169,12 +159,7 @@ async def terminal(event):
     if stderr:
         text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
-    chat = await event.get_chat()
-    if event.is_private:
-        extra = f"[{get_display_name(chat)}](tg://user?id={chat.id})"
-    else:
-        username = '@' + chat.username if chat.username else chat.id
-        extra = f"[{chat.title}] ( {username} )"
+    extra = await get_chat_link(event, event.id)
     if stdout or stderr:
         await event.answer(
             "```" + text + "```",
@@ -216,17 +201,10 @@ async def killandterminate(event):
             running_process.kill()
         else:
             running_process.terminate()
-        chat = await reply.get_chat()
-        if event.is_private:
-            proc = (
-                f"proccess in [{get_display_name(chat)}]"
-                f"(tg://user?id={chat.id})"
-            )
-        else:
-            proc = f"[process](https://t.me/c/{chat.id}/{reply.id})"
+        extra = await get_chat_link(event, reply.id)
         await event.answer(
             f"`Successfully {option}ed the process.`",
-            log=(option, f"Successfully {option}ed a {proc}!"),
+            log=(option, f"Successfully {option}ed a process in {extra}!"),
             reply=True
         )
         await sleep(2)

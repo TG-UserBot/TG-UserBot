@@ -16,11 +16,11 @@
 
 
 from datetime import timedelta
-from telethon.utils import get_display_name
 
 from userbot import client, LOGGER
 from userbot.helper_funcs.ids import get_entity_from_msg
 from userbot.helper_funcs.time import split_extra_string
+from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
 
 plugin_category = "admin"
 
@@ -58,20 +58,17 @@ async def promote(event):
             is_admin=True,
             title=extra
         )
-        text = "`Successfully promoted ``{}`` (``{}``)!`"
+        text = "`Successfully promoted `{}` (``{}``)!`"
         if extra:
             text += f"\n`Title:` `{extra}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully promoted {e1} in {e2}"
         if extra:
             log_msg += f"\nTitle: {extra}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("promote", log_msg)
         )
     except Exception as e:
@@ -113,20 +110,17 @@ async def demote(event):
             user=user,
             is_admin=False
         )
-        text = "`Successfully demoted ``{}`` (``{}``)!`"
+        text = "`Successfully demoted `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully demoted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("demote", log_msg)
         )
     except Exception as e:
@@ -166,20 +160,17 @@ async def ban(event):
             user=user,
             view_messages=False
         )
-        text = "`Successfully banned ``{}`` (``{}``)!`"
+        text = "`Successfully banned `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully banned {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("ban", log_msg)
         )
     except Exception as e:
@@ -226,20 +217,17 @@ async def unban(event):
             send_inline=True,
             send_polls=True
         )
-        text = "`Successfully un-banned ``{}`` (``{}``)!`"
+        text = "`Successfully un-banned `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully unbanned {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("unban", log_msg)
         )
     except Exception as e:
@@ -278,20 +266,17 @@ async def kick(event):
             entity=entity,
             user=user
         )
-        text = "`Successfully kicked ``{}`` (``{}``)!`"
+        text = "`Successfully kicked `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully kicked {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("kick", log_msg)
         )
     except Exception as e:
@@ -331,20 +316,17 @@ async def mute(event):
             user=user,
             send_messages=False
         )
-        text = "`Successfully muted ``{}`` (``{}``)!`"
+        text = "`Successfully muted `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully muted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("mute", log_msg)
         )
     except Exception as e:
@@ -386,20 +368,17 @@ async def unmute(event):
             user=user,
             send_messages=True
         )
-        text = "`Successfully un-muted ``{}`` (``{}``)!`"
+        text = "`Successfully un-muted `{}` (``{}``)!`"
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully un-muted {e1} in {e2}"
         if reason:
             log_msg += f"\nReason: {reason}"
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("unmute", log_msg)
         )
     except Exception as e:
@@ -437,12 +416,9 @@ async def tmute(event):
         time = None
         reason = None
         seconds = None
-        text = "`Successfully t-muted ``{}`` (``{}``)!`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        text = "`Successfully t-muted `{}` (``{}``)!`"
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully tmuted {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)
@@ -451,8 +427,8 @@ async def tmute(event):
                 log_msg += f"\nReason: {reason}"
             if seconds:
                 time = timedelta(seconds=seconds)
-                text += f"\n`Time:` `{time}`"
-                log_msg += f"\nTime: {time}"
+                text += f"\n`Time:` `{await _humanfriendly_seconds(seconds)}`"
+                log_msg += f"\nTime: {await _humanfriendly_seconds(seconds)}"
 
         if not seconds:
             await event.answer("`Provide the total time limit for t-mute!`")
@@ -466,7 +442,7 @@ async def tmute(event):
         )
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("tmute", log_msg)
         )
     except Exception as e:
@@ -504,12 +480,9 @@ async def tban(event):
         time = None
         reason = None
         seconds = None
-        text = "`Successfully t-banned ``{}`` (``{}``)!`"
-        e1 = f"[{get_display_name(user)}](tg://user?id={user.id})"
-        e2 = (
-            f"[{entity.title}] "
-            f"( {'@' + entity.username if entity.username else entity.id} )"
-        )
+        text = "`Successfully t-banned `{}` (``{}``)!`"
+        e1 = await get_chat_link(user)
+        e2 = await get_chat_link(entity, event.id)
         log_msg = f"Successfully t-banned {e1} in {e2}"
         if extra:
             reason, seconds = await split_extra_string(extra)
@@ -518,8 +491,8 @@ async def tban(event):
                 log_msg += f"\nReason: {reason}"
             if seconds:
                 time = timedelta(seconds=seconds)
-                text += f"\n`Time:` `{time}`"
-                log_msg += f"Time: {time}"
+                text += f"\n`Time:` `{await _humanfriendly_seconds(seconds)}`"
+                log_msg += f"Time: {await _humanfriendly_seconds(seconds)}"
 
         if not seconds:
             await event.answer("`Provide the total time limit for t-ban!`")
@@ -533,7 +506,7 @@ async def tban(event):
         )
 
         await event.answer(
-            text.format(get_display_name(user), user.id),
+            text.format(e1, user.id),
             log=("tban", log_msg)
         )
     except Exception as e:

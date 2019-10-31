@@ -17,12 +17,10 @@
 
 from asyncio import sleep
 from datetime import timedelta
-from telethon.utils import get_display_name
-from telethon.tl.types import User
 
 from userbot import client
 from userbot.helper_funcs.time import string_to_secs
-from userbot.utils.helpers import _humanfriendly_seconds
+from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
 
 plugin_category = "user"
 
@@ -61,16 +59,12 @@ async def remindme(event):
             message=reply if media else text,
             schedule=timedelta(seconds=seconds)
         )
-        if isinstance(entity, User):
-            link = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
-        else:
-            who = '@' + entity.username if entity.username else entity.id
-            link = f"[{entity.title}] ( {who} )"
+        extra = await get_chat_link(entity)
         human_time = await _humanfriendly_seconds(seconds)
-        message = f"`Reminder will be sent in` {link} `after {human_time}.`"
+        message = f"`Reminder will be sent in` {extra} `after {human_time}.`"
         await event.answer(
             message,
-            log=("remindme", f"Set a reminder in {link}.\nETA: {human_time}")
+            log=("remindme", f"Set a reminder in {extra}.\nETA: {human_time}")
         )
         await sleep(2)
         await event.delete()
