@@ -123,6 +123,7 @@ async def update(event):
     if not client.logger:
         await event.answer(changelog.strip(), reply_to=toast.id)
 
+    os.environ['userbot_update'] = True
     heroku_api_key = client.config['userbot'].get('api_key_heroku', False)
     if os.getenv("DYNO", False) and heroku_api_key:
         heroku_conn = heroku3.from_key(heroku_api_key)
