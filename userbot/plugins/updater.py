@@ -15,16 +15,21 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import os
-import heroku3
+import datetime
 import git
+import heroku3
+import os
 import sys
 from asyncio import create_subprocess_shell, sleep
 
 from userbot import client, LOGGER
-from userbot.utils.helpers import restart
+from userbot.utils.helpers import restart, _humanfriendly_seconds
 
 basedir = os.path.abspath(os.path.curdir)
+author_link = "[{author}]({url}commits?author={author})"
+summary = "\n[{rev}]({url}commit/{sha}) `{summary}`\n"
+commited = "{committer}` committed {elapsed} ago`\n"
+authored = "{author}` authored and `{committer}` committed {elapsed} ago`\n"
 
 
 @client.onMessage(
@@ -53,7 +58,7 @@ async def update(event):
                 "`The main repository does not exist. Remote is invalid!`"
             )
             return
-        origin.fetch()
+        fetched_itmes = origin.fetch()
         repo.create_head('master', origin.refs.master).set_tracking_branch(
             origin.refs.master
         ).checkout()
@@ -81,6 +86,42 @@ async def update(event):
     if old_commit == new_commit:
         await event.answer("`Already up-to-date!`")
         return
+
+    remote_url = repo.remote().url
+    now = datetime.datetime.now(datetime.timezone.utc)
+    changelog = "**TG-UserBot changelog:**"
+    for commit in fetched_itmes:
+        changelog += summary.format(
+            rev=repo.git.rev_parse(commit.hexsha, short=7),
+            summary=commit.summary, url=remote_url, sha=commit.hexsha
+        )
+        ago = (now - commit.committed_datetime).total_seconds()
+        elspased = (await _humanfriendly_seconds(ago)).split(',')[0]
+        committers_link = author_link.format(
+            author=commit.committer, url=remote_url
+        )
+        authors_link = author_link.format(
+            author=commit.author, url=remote_url
+        )
+        if commit.author == commit.committer:
+            committed = commited.format(
+                committer=committers_link,
+                elapsed=elspased
+            )
+        else:
+            committed = authored.format(
+                author=authors_link,
+                committer=committers_link,
+                elapsed=elspased
+            )
+        changelog += f"{committed:>{len(committed) + 8}}"
+
+    toast = await event.answer(
+        "`Successfully pulled the new commits. Updating the bot!`",
+        log=("update", changelog.strip())
+    )
+    if not client.logger:
+        await event.answer(changelog.strip(), reply_to=toast.id)
 
     heroku_api_key = client.config['userbot'].get('api_key_heroku', False)
     if os.getenv("DYNO", False) and heroku_api_key:
@@ -141,7 +182,7 @@ async def updated_pip_modules(event, pull, repo, new_commit):
     if pulled and pulled.old_commit:
         for f in new_commit.diff(pulled.old_commit):
             if f.b_path == "requirements.txt":
-                await event.answer("`Updating the requirements.`")
+                await event.answer("`Updating the pip requirements!`")
                 await update_requirements()
 
 
@@ -150,6 +191,6 @@ async def update_requirements():
     try:
         await create_subprocess_shell(
             ' '.join(sys.executable, "-m", "pip", "install", "-r", str(reqs))
-        )
+        ).communicate()
     except Exception as e:
         LOGGER.exception(e)
