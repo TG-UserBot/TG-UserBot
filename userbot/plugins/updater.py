@@ -40,6 +40,7 @@ async def update(event):
     """Pull newest changes from the official repo and update the script/app."""
     arg = event.matches[0].group(1)
     main_repo = "https://github.com/kandnub/TG-UserBot.git"
+    fetched_itmes = None
     try:
         repo = git.Repo(basedir)
     except git.exc.NoSuchPathError as path:
@@ -71,6 +72,7 @@ async def update(event):
         repo.index.commit("[TG-UserBot] Updater: Untracked files")
     elif arg == "reset":
         repo.head.reset('--hard')
+
     try:
         pull = repo.remotes.origin.pull()
     except git.exc.GitCommandError as command:
@@ -82,10 +84,13 @@ async def update(event):
         prefix = client.prefix if client.prefix is not None else '.'
         await event.answer(text.format(command, prefix))
         return
+
     new_commit = repo.head.commit
     if old_commit == new_commit:
         await event.answer("`Already up-to-date!`")
         return
+    if fetched_itmes is None:
+        fetched_itmes = origin.fetch()
 
     remote_url = repo.remote().url
     now = datetime.datetime.now(datetime.timezone.utc)
