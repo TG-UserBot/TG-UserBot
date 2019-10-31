@@ -50,7 +50,7 @@ async def awayfromkeyboard(event):
     arg = event.matches[0].group(1)
     rn = time.time().__str__()
     os.environ.setdefault('userbot_afk', rn)
-    text = "`I'm AFK!`"
+    text = "`I am AFK!`"
     if arg:
         global reason
         reason = arg.strip()

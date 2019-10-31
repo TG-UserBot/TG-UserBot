@@ -40,9 +40,9 @@ async def update(event):
     """Pull newest changes from the official repo and update the script/app."""
     arg = event.matches[0].group(1)
     main_repo = "https://github.com/kandnub/TG-UserBot.git"
-    fetched_itmes = None
     try:
         repo = git.Repo(basedir)
+        fetched_itmes = repo.remotes.origin.fetch()
     except git.exc.NoSuchPathError as path:
         await event.answer(f"`Couldn't find {path}!`")
         return
@@ -63,6 +63,7 @@ async def update(event):
         repo.create_head('master', origin.refs.master).set_tracking_branch(
             origin.refs.master
         ).checkout()
+    fetched_commits = repo.iter_commits(f"HEAD..{fetched_itmes[0].ref.name}")
 
     await event.answer("`Checking for updates!`")
     untracked_files = repo.untracked_files
@@ -89,13 +90,11 @@ async def update(event):
     if old_commit == new_commit:
         await event.answer("`Already up-to-date!`")
         return
-    if fetched_itmes is None:
-        fetched_itmes = origin.fetch()
 
     remote_url = repo.remote().url
     now = datetime.datetime.now(datetime.timezone.utc)
-    changelog = "**TG-UserBot changelog:**"
-    for commit in fetched_itmes:
+    def_changelog = changelog = "**TG-UserBot changelog:**"
+    for commit in fetched_commits:
         changelog += summary.format(
             rev=repo.git.rev_parse(commit.hexsha, short=7),
             summary=commit.summary, url=remote_url, sha=commit.hexsha
@@ -120,15 +119,21 @@ async def update(event):
                 elapsed=elspased
             )
         changelog += f"{committed:>{len(committed) + 8}}"
+    if changelog == def_changelog:
+        changelog = "`No changelog for you! IDK what happened.`"
 
     toast = await event.answer(
         "`Successfully pulled the new commits. Updating the bot!`",
         log=("update", changelog.strip())
     )
     if not client.logger:
-        await event.answer(changelog.strip(), reply_to=toast.id)
+        await event.answer(
+            changelog.strip(),
+            reply_to=toast.id,
+            link_preview=False
+        )
 
-    os.environ['userbot_update'] = True
+    os.environ['userbot_update'] = "True"
     heroku_api_key = client.config['userbot'].get('api_key_heroku', False)
     if os.getenv("DYNO", False) and heroku_api_key:
         heroku_conn = heroku3.from_key(heroku_api_key)

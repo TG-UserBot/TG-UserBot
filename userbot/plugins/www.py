@@ -88,6 +88,11 @@ async def pingdc(event):
         average = out.split("Average = ")[1]
     else:
         out, err = await _sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
+        if (out.strip()):
+            await event.answer(
+                "`Make sure your system's routing access isn't deprecated.`"
+            )
+            return
         average = (out.strip() + "ms")
     if err:
         await event.answer(err)

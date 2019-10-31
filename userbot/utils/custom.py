@@ -88,7 +88,11 @@ class Message(custom.Message):
                     'logger_group_id', False
                 )
                 if entity:
-                    await self._client.send_message(entity, text)
+                    await self._client.send_message(
+                        entity=entity,
+                        message=text,
+                        link_preview=False
+                    )
 
         return msg
 
