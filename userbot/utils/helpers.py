@@ -104,6 +104,7 @@ async def isRestart(client):
     else:
         text = '`Successfully restarted the userbot!`'
     if userbot_restarted:
+        del os.environ['userbot_restarted']
         LOGGER.debug('Userbot was restarted! Editing the message.')
         entity = int(userbot_restarted.split('/')[0])
         message = int(userbot_restarted.split('/')[1])
@@ -135,8 +136,8 @@ async def isRestart(client):
                 'userbot_disabled_commands', False
             )
 
-        del os.environ['userbot_restarted']
-        del os.environ['userbot_disabled_commands']
+        if "userbot_disabled_commands" in os.environ:
+            del os.environ['userbot_disabled_commands']
         if disabled_commands:
             await disable_commands(client, disabled_commands)
 

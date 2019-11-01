@@ -91,7 +91,10 @@ async def update(event):
         await event.answer("`Already up-to-date!`")
         return
 
-    remote_url = repo.remote().url
+    remote_url = repo.remote().url.replace(".git", '/')
+    if remote_url[-1] != '/':
+        remote_url = remote_url + '/'
+
     now = datetime.datetime.now(datetime.timezone.utc)
     def_changelog = changelog = "**TG-UserBot changelog:**"
     for commit in fetched_commits:
