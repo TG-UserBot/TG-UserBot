@@ -14,7 +14,7 @@ including it's description with an example if any.
 
 Prerequisites?
 --------------
-* Python_ 3.7 or above.
+* Python_ 3.7.3 or above.
 * Git_.
 * Telegram API key (API ID and hash) from https://my.telegram.org/apps.
 * FFMPEG_ (optional) for YouTube-DL_. Guide covers this requirement.

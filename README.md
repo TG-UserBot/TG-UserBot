@@ -6,7 +6,7 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 
 ### Requirements
 
-- Python 3.7 or above.
+- Python 3.7.3 or above.
 - A Telegram [API key][tg-apps] (API ID and hash).
 
 ### Procedure

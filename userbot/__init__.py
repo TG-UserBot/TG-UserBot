@@ -20,7 +20,6 @@ import userbot.utils.client
 
 from configparser import ConfigParser
 from os.path import abspath, basename, dirname, isfile, join
-from packaging.version import parse
 from sys import exit, platform, version_info
 from logging import (
     getLogger, DEBUG, INFO, ERROR, CRITICAL
@@ -35,11 +34,10 @@ config = ConfigParser()
 
 config_file = join(dirname(dirname(__file__)), 'config.ini')
 sql_session = join(dirname(dirname(__file__)), 'userbot.session')
-pyversion = ".".join(str(num) for num in version_info if isinstance(num, int))
 
-if parse(pyversion) < parse('3.7'):
+if version_info < (3, 7, 3):
     print(
-        "Please run this script with Python 3.7 or above."
+        "Please run this script with Python 3.7.3 or above."
         "\nExiting the script."
     )
     exit(1)
