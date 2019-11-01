@@ -16,6 +16,7 @@
 
 
 from io import BytesIO
+from PIL import Image
 from telethon.utils import get_display_name, get_peer_id
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
@@ -26,9 +27,7 @@ from telethon.tl.functions.account import (
 from telethon.tl.functions.photos import (
     DeletePhotosRequest, UploadProfilePhotoRequest
 )
-from telethon.tl.types import (
-    InputPeerChat, InputPeerChannel, MessageMediaPhoto, MessageMediaDocument
-)
+from telethon.tl.types import InputPeerChat, InputPeerChannel
 from telethon.errors import (
     AboutTooLongError, FirstNameInvalidError, UsernameInvalidError,
     UsernameNotModifiedError, UsernameOccupiedError, FilePartsInvalidError,
@@ -216,8 +215,10 @@ async def pfp(event):
         )
         return
 
-    allowed = [MessageMediaDocument, MessageMediaPhoto]
-    if type(reply.media) in allowed:
+    if (
+        (reply.document and reply.document.mime_type.startswith("image")) or
+        reply.photo or reply.sticker
+    ):
         try:
             temp_file = BytesIO()
             await client.download_media(reply, temp_file)
@@ -229,8 +230,19 @@ async def pfp(event):
             temp_file.close()
             return
         temp_file.seek(0)
-        photo = await client.upload_file(temp_file)
-        temp_file.close()
+        if reply.sticker:
+            sticker = BytesIO()
+            pilImg = Image.open(temp_file)
+            pilImg.save(sticker, format="PNG")
+            pilImg.close()
+            sticker.seek(0)
+            sticker.name = "sticcer.png"
+            photo = await client.upload_file(sticker)
+            temp_file.close()
+            sticker.close()
+        else:
+            photo = await client.upload_file(temp_file)
+            temp_file.close()
     else:
         await event.answer("`Invalid media type.`")
         return
@@ -286,8 +298,11 @@ async def delpfp(event):
 async def whichid(event):
     """Get the ID of a chat/channel or user."""
     match = event.matches[0].group(1).strip()
-    if not match:
+    if not match and not event.reply_to_msg_id:
         entity = await event.get_chat()
+    elif event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        entity = await reply.get_sender()
     else:
         if match.isdigit():
             await event.answer("`Nice try, fool!`")

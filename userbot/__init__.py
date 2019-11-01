@@ -34,6 +34,7 @@ UserBotClient = userbot.utils.client.UserBotClient
 config = ConfigParser()
 
 config_file = join(dirname(dirname(__file__)), 'config.ini')
+sql_session = join(dirname(dirname(__file__)), 'userbot.session')
 pyversion = ".".join(str(num) for num in version_info if isinstance(num, int))
 
 if parse(pyversion) < parse('3.7'):
@@ -74,14 +75,10 @@ CONSOLE_LOGGER = userbot.get('console_logger_level', 'INFO')
 REDIS_ENDPOINT = telethon.get('redis_endpoint', None)
 REDIS_PASSWORD = telethon.get('redis_password', None)
 
-if not REDIS_ENDPOINT or not REDIS_PASSWORD:
-    LOGGER.info(
-        "Consider making an account on redislab.com and updating your config "
-        "with the redis endpoint and password, if you want to run on Heroku!"
-    )
+if isfile(sql_session):
     redis_session = False
     session = "userbot"
-else:
+elif REDIS_ENDPOINT and REDIS_PASSWORD:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
     REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
     redis_connection = redis.Redis(
@@ -98,6 +95,12 @@ else:
         exit(1)
     redis_session = True
     session = RedisSession("userbot", redis_connection)
+else:
+    LOGGER.info(
+        "Make an account on redislabs.com and update your config with the "
+        "redis endpoint and password, if you want to use a Redis session!"
+    )
+    exit(1)
 
 LEVELS = {
     'DEBUG': DEBUG,

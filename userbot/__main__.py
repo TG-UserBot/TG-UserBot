@@ -56,7 +56,10 @@ if __name__ == "__main__":
         client.start()
     except (AuthKeyError, InvalidBufferError):
         client.session.delete()
-        LOGGER.error("Your session has been deleted! Generate a new one.")
+        LOGGER.error(
+            "Your old session is invalid and has been automatically deleted! "
+            "Run the script again to generate a new session."
+        )
         exit(1)
 
     userbot.verifyLoggerGroup(client)
