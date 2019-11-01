@@ -275,7 +275,7 @@ async def delpfp(event):
     text = f"`Successfully deleted {amount}`"
     await event.answer(
         text,
-        log=("delpfp", f"Deleted {count} profile pciture(s)")
+        log=("delpfp", f"Deleted {count} profile picture(s)")
     )
 
 
