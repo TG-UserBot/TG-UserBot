@@ -134,7 +134,8 @@ client = UserBotClient(
     api_id=telethon.getint('api_id', None),
     api_hash=telethon.get('api_hash', None),
     loop=loop,
-    app_version=__version__
+    app_version=__version__,
+    auto_reconnect=False
 )
 
 client.version = __version__

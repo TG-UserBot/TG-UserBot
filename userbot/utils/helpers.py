@@ -202,7 +202,11 @@ async def get_chat_link(arg, reply=None) -> str:
         entity = await arg.get_chat()
 
     if isinstance(entity, User):
-        extra = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
+        if entity.is_self:
+            title = "Saved Messages"
+        else:
+            title = get_display_name(entity)
+        extra = f"[{title}](tg://user?id={entity.id})"
     else:
         if hasattr(entity, 'username') and entity.username is not None:
             username = '@' + entity.username
