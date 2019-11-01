@@ -19,8 +19,8 @@ from os.path import relpath
 
 from userbot import client
 
-plugin_category = "helper"
-link = "https://tg-userbot.readthedocs.io/en/latest/userbot/commands.html"
+plugin_category: str = "helper"
+link: str = "https://tg-userbot.readthedocs.io/en/latest/userbot/commands.html"
 chunk: int = 5
 
 
@@ -78,20 +78,23 @@ async def resetprefix(event):
 
 @client.onMessage(
     command=("enable", plugin_category),
-    outgoing=True, regex=r"enable (\w+)$", builtin=True
+    outgoing=True, regex=r"enable(?: |$)(\w+)?$", builtin=True
 )
 async def enable(event):
     """Enable a command IF it's already disabled."""
-    command = event.matches[0].group(1)
-    if event.client.disabled_commands.get(command, False):
-        com = event.client.disabled_commands.get(command)
-        for handler in com.handlers:
-            event.client.add_event_handler(com.func, handler)
-        event.client.commands.update({command: com})
-        del event.client.disabled_commands[command]
+    arg = event.matches[0].group(1)
+    if not arg:
+        await event.edit("`Enable what? The void?`")
+        return
+    command = event.client.disabled_commands.get(arg, False)
+    if command:
+        for handler in command.handlers:
+            event.client.add_event_handler(command.func, handler)
+        event.client.commands.update({arg: command})
+        del event.client.disabled_commands[arg]
         await event.answer(
-            f"`Successfully enabled {command}`",
-            log=("enable", f"Enabled command: {command}")
+            f"`Successfully enabled {arg}`",
+            log=("enable", f"Enabled command: {arg}")
         )
     else:
         await event.answer(
@@ -102,22 +105,25 @@ async def enable(event):
 
 @client.onMessage(
     command=("disable", plugin_category),
-    outgoing=True, regex=r"disable (\w+)$", builtin=True
+    outgoing=True, regex=r"disable(?: |$)(\w+)?$", builtin=True
 )
 async def disable(event):
     """Disable a command IF it's already enabled."""
-    command = event.matches[0].group(1)
-    if event.client.commands.get(command, False):
-        com = event.client.commands.get(command)
-        if com.builtin:
+    arg = event.matches[0].group(1)
+    if not arg:
+        await event.edit("`Disable what? The void?`")
+        return
+    command = event.client.commands.get(arg, False)
+    if command:
+        if command.builtin:
             await event.answer("`Cannot disable a builtin command.`")
         else:
-            event.client.remove_event_handler(com.func)
-            event.client.disabled_commands.update({command: com})
-            del event.client.commands[command]
+            event.client.remove_event_handler(command.func)
+            event.client.disabled_commands.update({arg: command})
+            del event.client.commands[arg]
             await event.answer(
-                f"`Successfully disabled {command}`",
-                log=("disable", f"Disabled command: {command}")
+                f"`Successfully disabled {arg}`",
+                log=("disable", f"Disabled command: {arg}")
             )
     else:
         await event.answer("`Couldn't find the specified command.`")

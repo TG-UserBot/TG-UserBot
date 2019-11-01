@@ -21,14 +21,12 @@
 # explanation on how we could make it work and what we'd need to check.
 
 
+import os
 from asyncio import sleep
 from re import match, DOTALL, MULTILINE, IGNORECASE
 
 from userbot import client
 from userbot.helper_funcs.sed import sub_matches
-
-
-REGEXNINJA = False
 
 pattern = (
     r'(?:^|;.+?)'  # Ensure that the expression doesn't go blatant
@@ -104,21 +102,21 @@ async def sed_substitute(event):
     outgoing=True, regex=r"regexninja(?: |$)(on|off)?$"
 )
 async def regex_ninja(event):
-    global REGEXNINJA
     arg = event.matches[0].group(1)
+    ninja = os.environ.get("userbot_regexninja", False)
 
     if not arg:
-        if REGEXNINJA:
+        if ninja:
             await event.answer("`Regex ninja is enabled.`")
         else:
             await event.answer("`Regex ninja is disabled.`")
         return
 
     if arg == "on":
-        REGEXNINJA = True
+        os.environ["userbot_regexninja"] = "True"
         value = "enabled"
     else:
-        REGEXNINJA = False
+        del os.environ["userbot_regexninja"]
         value = "disabled"
 
     await event.answer(
@@ -134,6 +132,7 @@ async def regex_ninja(event):
     regex=(r'^s/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?', IGNORECASE)
 )
 async def ninja(event):
-    if REGEXNINJA:
+    ninja = os.environ.get("userbot_regexninja", False)
+    if ninja:
         await sleep(0.5)
         await event.delete()

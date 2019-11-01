@@ -25,7 +25,7 @@ from types import ModuleType
 from typing import List
 
 
-LOGGER = getLogger("Plugin Manager")
+LOGGER = getLogger(__name__)
 
 
 @dataclass

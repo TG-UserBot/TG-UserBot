@@ -97,6 +97,7 @@ async def isRestart(client):
     userbot_restarted = os.environ.get('userbot_restarted', False)
     heroku = os.environ.get('api_key_heroku', False)
     updated = os.environ.get('userbot_update', False)
+    disabled_commands = False
     if updated:
         text = '`Successfully updated and restarted the userbot!`'
         del os.environ['userbot_update']
@@ -126,16 +127,28 @@ async def isRestart(client):
                         return
                 await success_edit()
                 del app.config()['userbot_restarted']
+                disabled_commands = app.config()['userbot_disabled_commands']
+                del app.config()['userbot_disabled_commands']
         else:
             await success_edit()
-            del os.environ['userbot_restarted']
+            disabled_commands = os.environ.get(
+                'userbot_disabled_commands', False
+            )
+
+        del os.environ['userbot_restarted']
+        del os.environ['userbot_disabled_commands']
+        if disabled_commands:
+            await disable_commands(client, disabled_commands)
 
 
 async def restart(event):
     args = [sys.executable, "-m", "userbot"]
+    restart_message = f"{event.chat_id}/{event.message.id}"
+    os.environ.setdefault('userbot_restarted', restart_message)
+    if event.client.disabled_commands:
+        disabled_list = ", ".join(event.client.disabled_commands.keys())
+        os.environ.setdefault('userbot_disabled_commands', disabled_list)
 
-    env = os.environ
-    env.setdefault('userbot_restarted', f"{event.chat_id}/{event.message.id}")
     if sys.platform.startswith('win'):
         os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
     else:
@@ -195,7 +208,24 @@ async def get_chat_link(arg, reply=None) -> str:
         else:
             username = entity.id
         if reply is not None:
-            extra = f"[{entity.title}](https://t.me/c/{username}/{reply})"
+            if isinstance(username, str) and username.startswith('@'):
+                username = username[1:]
+            else:
+                username = f"c/{username}"
+            extra = f"[{entity.title}](https://t.me/{username}/{reply})"
         else:
-            extra = f"{entity.title} ( `{username}` )"
+            if isinstance(username, int):
+                username = f"`{username}`"
+            extra = f"{entity.title} ( {username} )"
     return extra
+
+
+async def disable_commands(client, commands: str) -> None:
+    commands = commands.split(", ")
+    for command in commands:
+        target = client.commands.get(command, False)
+        if target:
+            client.remove_event_handler(target.func)
+            client.disabled_commands.update({command: target})
+            del client.commands[command]
+            LOGGER.debug("Disabled command: %s", command)

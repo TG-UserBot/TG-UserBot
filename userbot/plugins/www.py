@@ -35,7 +35,7 @@ DCs = {
     4: "149.154.167.91",
     5: "91.108.56.149"
 }
-testing = "`Testing from %(isp)s (%(ip)s)`"
+testing = "`Testing from %(isp)s`"
 hosted = "`Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: %(latency)s ms`"
 download = "`Download: %0.2f M%s/s`"
 upload = "`Upload: %0.2f M%s/s`"
@@ -88,12 +88,14 @@ async def pingdc(event):
         average = out.split("Average = ")[1]
     else:
         out, err = await _sub_shell(cmd + " | awk -F '/' 'END {print $5}'")
-        if (out.strip()):
-            await event.answer(
-                "`Make sure your system's routing access isn't deprecated.`"
-            )
-            return
         average = (out.strip() + "ms")
+
+    if len(out.strip()) == 0:
+        await event.answer(
+            "`Make sure your system's routing access isn't deprecated.`"
+        )
+        return
+
     if err:
         await event.answer(err)
         return
@@ -102,7 +104,7 @@ async def pingdc(event):
 
 @client.onMessage(
     command=("speedtest", plugin_category),
-    outgoing=True, regex=r"speedtest(?: |$)(bit|byte)?$"
+    outgoing=True, regex=r"speedtest(?: |$)(bit|byte)?(?:s$|$)"
 )
 async def speedtest(event):
     """Perform a speedtest with the best available server based on ping."""

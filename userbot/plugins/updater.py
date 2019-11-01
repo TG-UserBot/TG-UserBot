@@ -158,6 +158,12 @@ async def update(event):
             app.config().update(
                 {'userbot_restarted': f"{event.chat_id}/{event.message.id}"}
             )
+            if event.client.disabled_commands:
+                disabled_list = ", ".join(client.disabled_commands.keys())
+                app.config().update(
+                    {'userbot_disabled_commands': disabled_list}
+                )
+
             url = f"https://api:{heroku_api_key}@git.heroku.com/{app.name}.git"
             if "heroku" in repo.remotes:
                 repo.remotes['heroku'].set_url(url)
@@ -173,7 +179,7 @@ async def update(event):
             remote = repo.remotes['heroku']
             try:
                 remote.push(
-                    refspec=f'{str(repo.active_branch)}:master',
+                    refspec=f'{repo.active_branch.name}:master',
                     force=True
                 )
                 await event.answer("`There was nothing to push to Heroku?`")
@@ -189,7 +195,7 @@ async def update(event):
 
 
 async def updated_pip_modules(event, pull, repo, new_commit):
-    pulled = getattr(pull, str(repo.active_branch), False)
+    pulled = getattr(pull, repo.active_branch.name, False)
     if pulled and pulled.old_commit:
         for f in new_commit.diff(pulled.old_commit):
             if f.b_path == "requirements.txt":
