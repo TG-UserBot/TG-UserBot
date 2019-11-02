@@ -19,7 +19,7 @@ import redis
 import userbot.utils.client
 
 from configparser import ConfigParser
-from os.path import abspath, basename, dirname, isfile, join
+from os.path import dirname, isfile, join
 from sys import exit, platform, version_info
 from logging import (
     getLogger, DEBUG, INFO, ERROR, CRITICAL
@@ -42,14 +42,7 @@ if version_info < (3, 7, 3):
     )
     exit(1)
 
-if basename(abspath('.')) == 'source':  # To avoid errors from Sphinx
-    sphinx = True
-else:
-    sphinx = False
-
-if isfile(config_file) or sphinx:
-    if sphinx:
-        config_file = join(dirname(dirname(__file__)), 'sample_config.ini')
+if isfile(config_file):
     config.read(config_file)
 else:
     try:

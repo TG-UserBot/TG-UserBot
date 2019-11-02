@@ -29,15 +29,6 @@ Log formatter
     :show-inheritance:
 
 
-Messages
-========
-
-.. automodule:: userbot.helper_funcs.messages
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Parser
 ======
 

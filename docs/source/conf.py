@@ -59,7 +59,6 @@ html_theme = "sphinx_rtd_theme"
 html_logo = "_images/logo.svg"
 html_favicon = "_images/favicon.ico"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_style = "css/lights_out.css"
 templates_path = ['_templates']
 html_static_path = ['_static']
 show_authors = True
@@ -97,7 +96,3 @@ html_context = {
     'github_version': 'master',
     'conf_py_path': '/docs/source/'
 }
-
-
-def setup(app):
-    app.add_stylesheet("css/lights_out.css")
