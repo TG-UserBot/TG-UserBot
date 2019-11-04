@@ -54,7 +54,7 @@ async def awayfromkeyboard(event: NewMessage.Event) -> None:
     os.environ.setdefault('userbot_afk', rn)
     text = "`I am AFK!`"
     if arg:
-        os.environ.setdefault('userbot_afk_reason', arg.strip())
+        os.environ['userbot_afk_reason'] = arg.strip()
         text += f"\n`Reason:` `{arg.strip()}`"
     extra = await get_chat_link(event, event.id)
     await event.answer(
