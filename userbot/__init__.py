@@ -83,6 +83,7 @@ API_ID = telethon.getint('api_id', False)
 API_HASH = telethon.get('api_hash', False)
 REDIS_ENDPOINT = telethon.get('redis_endpoint', False)
 REDIS_PASSWORD = telethon.get('redis_password', False)
+REDIS = bool(REDIS_ENDPOINT) and bool(REDIS_PASSWORD)
 
 if "userbot" not in config:
     config['userbot'] = {}
@@ -107,10 +108,10 @@ else:
 if not API_ID and not API_HASH:
     print("You need to set your API keys in your config or environment!")
     sys.exit(1)
-elif (os.path.isfile(sql_session) and not (REDIS_ENDPOINT and REDIS_PASSWORD)):
+elif (os.path.isfile(sql_session) and not REDIS) or (API_ID and API_HASH):
     redis_session = False
     session = "userbot"
-elif REDIS_ENDPOINT and REDIS_PASSWORD:
+elif REDIS:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
     REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
     redis_connection = redis.Redis(
