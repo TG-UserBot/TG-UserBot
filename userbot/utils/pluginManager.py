@@ -14,51 +14,53 @@
 # You should have received a copy of the GNU General Public License
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
-from importlib import invalidate_caches, util
-from inspect import iscoroutinefunction
-from logging import getLogger
-from os.path import relpath
-from pathlib import Path
-from telethon.events import _get_handlers
-from types import ModuleType
-from typing import List
+
+import dataclasses
+import importlib
+import inspect
+import logging
+import os
+import pathlib
+import types
+from typing import List, Tuple, Union
+
+from telethon import events, TelegramClient
 
 
-LOGGER = getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclasses.dataclass
 class Callback:
     name: str
     callback: callable
 
 
-@dataclass
+@dataclasses.dataclass
 class Plugin:
     name: str
     callbacks: List[Callback]
     path: str
-    module: ModuleType
+    module: types.ModuleType
 
 
 class PluginManager:
     active_plugins: List[Plugin] = []
     inactive_plugins: List[Plugin] = []
 
-    def __init__(self, client):
+    def __init__(self, client: TelegramClient):
         self.client = client
         if "plugins" not in client.config:
             client.config["plugins"] = {}
         config = client.config["plugins"]
-        self.plugin_path: str = relpath(
+        self.plugin_path: str = os.path.relpath(
             config.setdefault("root", "./userbot/plugins")
         )
         self.include: list = self._split_plugins(config.get("include", []))
         self.exclude: list = self._split_plugins(config.get("exclude", []))
 
-    def import_all(self):
-        invalidate_caches()
+    def import_all(self) -> None:
+        importlib.invalidate_caches()
         for plugin_name, path in self._list_plugins():
             if self.include and not self.exclude:
                 if plugin_name in self.include:
@@ -78,7 +80,7 @@ class PluginManager:
             else:
                 self._import_module(plugin_name, path)
 
-    def add_handlers(self):
+    def add_handlers(self) -> None:
         for plugin in self.active_plugins:
             for callback in plugin.callbacks:
                 self.client.add_event_handler(callback.callback)
@@ -86,7 +88,7 @@ class PluginManager:
                     "Added event handler for %s.", callback.callback.__name__
                 )
 
-    def remove_handlers(self):
+    def remove_handlers(self) -> None:
         for plugin in self.active_plugins:
             for callback in plugin.callbacks:
                 self.client.remove_event_handler(callback.callback)
@@ -95,17 +97,18 @@ class PluginManager:
                     callback.callback.__name__
                 )
 
-    def _list_plugins(self):
-        plugins: List[str, str] = []
+    def _list_plugins(self) -> List[Union[Tuple[str, str], None]]:
+        plugins: List[Tuple[str, str]] = []
         if self.client.config["plugins"].getboolean("enabled", True):
-            for f in Path(self.plugin_path).glob("**/*.py"):
+            for f in pathlib.Path(self.plugin_path).glob("**/*.py"):
                 if f.name != "__init__.py" and not f.name.startswith('_'):
                     name = f.name[:-3]
-                    path = relpath(f)[:-3].replace('\\', '.').replace('/', '.')
+                    path = os.path.relpath(f)[:-3]
+                    path = path.replace('\\', '.').replace('/', '.')
                     plugins.append((name, path))
         return plugins
 
-    def _import_module(self, name: str, path: str):
+    def _import_module(self, name: str, path: str) -> None:
         for plugin in self.active_plugins:
             if plugin.name == name:
                 LOGGER.error(
@@ -114,14 +117,14 @@ class PluginManager:
                 )
                 exit(1)
         try:
-            spec = util.find_spec(path)
-            module = util.module_from_spec(spec)
+            spec = importlib.util.find_spec(path)
+            module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             # To make plugins impoartable use "sys.modules[path] = module".
             callbacks: List[Callback] = []
             for n, cb in vars(module).items():
-                if iscoroutinefunction(cb) and not n.startswith('_'):
-                    if _get_handlers(cb):
+                if inspect.iscoroutinefunction(cb) and not n.startswith('_'):
+                    if events._get_handlers(cb):
                         callbacks.append(Callback(n, cb))
             self.active_plugins.append(Plugin(name, callbacks, path, module))
             LOGGER.info("Successfully Imported %s", name)
@@ -132,7 +135,7 @@ class PluginManager:
             )
             LOGGER.exception(E)
 
-    def _split_plugins(self, to_split: str or list):
+    def _split_plugins(self, to_split: str or list) -> None:
         if isinstance(to_split, str):
             if ',' in to_split:
                 sep = ','

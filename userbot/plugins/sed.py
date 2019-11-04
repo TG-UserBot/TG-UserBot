@@ -21,12 +21,14 @@
 # explanation on how we could make it work and what we'd need to check.
 
 
+import asyncio
 import os
-from asyncio import sleep
-from re import match, DOTALL, MULTILINE, IGNORECASE
+import re
 
 from userbot import client
 from userbot.helper_funcs.sed import sub_matches
+from userbot.utils.events import NewMessage
+
 
 pattern = (
     r'(?:^|;.+?)'  # Ensure that the expression doesn't go blatant
@@ -40,15 +42,16 @@ pattern = (
     r'((?<!;)\w+)?'  # flags: Don't capture if it starts with a semicolon
     r'(?=;|$)'  # Ensure it ends with a semicolon for the next match
 )
+ub_sed_pattern = r"^(?:[1-9]+sed|[1-9]+s|sed)"
 
 
 @client.onMessage(
-    command="sed", outgoing=True,
-    disable_prefix=True, regex=(pattern, MULTILINE | IGNORECASE | DOTALL)
+    command="sed", outgoing=True, disable_prefix=True,
+    regex=(pattern, re.MULTILINE | re.IGNORECASE | re.DOTALL)
 )
-async def sed_substitute(event):
+async def sed_substitute(event: NewMessage.Event) -> None:
     """Perfom a GNU like SED substitution of the matched text."""
-    if not match(r"^(?:[1-9]+sed|[1-9]+s|sed)", event.raw_text, IGNORECASE):
+    if not re.match(ub_sed_pattern, event.raw_text, re.IGNORECASE):
         return
 
     matches = event.matches
@@ -101,7 +104,7 @@ async def sed_substitute(event):
     command="regexninja",
     outgoing=True, regex=r"regexninja(?: |$)(on|off)?$"
 )
-async def regex_ninja(event):
+async def regex_ninja(event: NewMessage.Event) -> None:
     arg = event.matches[0].group(1)
     ninja = os.environ.get("userbot_regexninja", False)
 
@@ -123,16 +126,16 @@ async def regex_ninja(event):
         f"`Successfully {value} ninja mode for @regexbot!`",
         log=("regexninja", f"{value.title()} ninja mode for @regexbot!")
     )
-    await sleep(2)
+    await asyncio.sleep(2)
     await event.delete()
 
 
 @client.onMessage(
     outgoing=True, disable_prefix=True,
-    regex=(r'^s/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?', IGNORECASE)
+    regex=(r'^s/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?', re.IGNORECASE)
 )
-async def ninja(event):
+async def ninja(event: NewMessage.Event) -> None:
     ninja = os.environ.get("userbot_regexninja", False)
     if ninja:
-        await sleep(0.5)
+        await asyncio.sleep(0.5)
         await event.delete()

@@ -15,11 +15,12 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from re import compile as reCompile
+import re
+from typing import Tuple, Union
 
 
-regexp = reCompile(r"(\d+)(w|d|h|m|s)?")
-adminregexp = reCompile(r"\d+(?:w|d|h|m|s)?")
+regexp = re.compile(r"(\d+)(w|d|h|m|s)?")
+adminregexp = re.compile(r"\d+(?:w|d|h|m|s)?")
 
 
 async def amount_to_secs(amount: tuple) -> int:
@@ -87,7 +88,9 @@ async def string_to_secs(string: str) -> int:
         return total
 
 
-async def split_extra_string(string: str) -> (str, int):
+async def split_extra_string(string: str) -> Tuple[
+    Union[str, None], Union[int, None]
+]:
     reason = string
     time = adminregexp.findall(string)
     for u in time:

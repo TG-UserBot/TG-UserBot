@@ -15,10 +15,12 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from asyncio import sleep
+import asyncio
 
 from userbot import client
 from userbot.utils.helpers import get_chat_link
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "user"
 
@@ -27,7 +29,7 @@ plugin_category = "user"
     command=("purge", "admin"),
     outgoing=True, regex=r"purge(?: |$)(\d*)", require_admin=True
 )
-async def purge(event):
+async def purge(event: NewMessage.Event) -> None:
     """Delete (AKA purge) multiple messages from a chat all together."""
     if (
         (event.is_channel or event.is_group) and
@@ -43,7 +45,7 @@ async def purge(event):
 
     if not event.reply_to_msg_id and not amount:
         await event.answer("`Purge yourself!`")
-        await sleep(2)
+        await asyncio.sleep(2)
         await event.delete()
         return
 
@@ -60,7 +62,7 @@ async def purge(event):
         f"`Successfully deleted {len(messages)} message(s)!`",
         log=("purge", f"Purged {len(messages)} message(s) in {extra}")
     )
-    await sleep(2)
+    await asyncio.sleep(2)
     await toast.delete()
 
 
@@ -68,7 +70,7 @@ async def purge(event):
     command=("delme", plugin_category),
     outgoing=True, regex=r"delme(?: |$)(\d*)"
 )
-async def delme(event):
+async def delme(event: NewMessage.Event) -> None:
     """Delete YOUR messages in a chat. Similar to purge's logic."""
     entity = await event.get_chat()
     amount = event.matches[0].group(1)
@@ -85,13 +87,10 @@ async def delme(event):
     )
 
     await client.delete_messages(entity, messages)
-    extra = await get_chat_link(entity)
-    log = f"Successfully deleted {len(messages)} message(s) in {extra}!"
     toast = await event.answer(
-        f"`Successfully deleted {len(messages)} message(s)!`",
-        log=("delme", log)
+        f"`Successfully deleted {len(messages)} message(s)!`"
     )
-    await sleep(2)
+    await asyncio.sleep(2)
     await toast.delete()
 
 
@@ -99,7 +98,7 @@ async def delme(event):
     command="del",
     outgoing=True, regex=r"del$"
 )
-async def delete(event):
+async def delete(event: NewMessage.Event) -> None:
     """Delete your or other's replied to message."""
     reply = await event.get_reply_message()
     if not reply:
@@ -120,7 +119,7 @@ async def delete(event):
     await event.delete()
 
 
-async def _offset(event):
+async def _offset(event: NewMessage.Event) -> int:
     if event.reply_to_msg_id:
         return event.reply_to_msg_id - 1
     return event.message.id

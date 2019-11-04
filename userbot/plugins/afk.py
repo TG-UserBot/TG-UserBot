@@ -15,26 +15,28 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from asyncio import sleep
-from dataclasses import dataclass
+import asyncio
+import dataclasses
 import datetime
 import os
 import time
+
 from telethon.events import StopPropagation
 from telethon.tl import types
 from typing import List, Tuple
 
 from userbot import client
 from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
+from userbot.utils.events import NewMessage
 
-reason = None
+
 pings = {}
 privates = {}
 groups = {}
 sent = {}
 
 
-@dataclass
+@dataclasses.dataclass
 class Chat:
     title: str
     unread_from: int
@@ -45,16 +47,15 @@ class Chat:
     command="afk",
     outgoing=True, regex="afk(?: |$)(.*)?$"
 )
-async def awayfromkeyboard(event):
+async def awayfromkeyboard(event: NewMessage.Event) -> None:
     """Set your status as AFK until you send a message again."""
     arg = event.matches[0].group(1)
     rn = time.time().__str__()
     os.environ.setdefault('userbot_afk', rn)
     text = "`I am AFK!`"
     if arg:
-        global reason
-        reason = arg.strip()
-        text += f"\n`Reason:` `{arg}`"
+        os.environ.setdefault('userbot_afk_reason', arg.strip())
+        text += f"\n`Reason:` `{arg.strip()}`"
     extra = await get_chat_link(event, event.id)
     await event.answer(
         text,
@@ -64,7 +65,7 @@ async def awayfromkeyboard(event):
 
 
 @client.onMessage(outgoing=True, forwards=None)
-async def out_listner(event):
+async def out_listner(event: NewMessage.Event) -> None:
     """Handle your AFK status by listening to new outgoing messages."""
     if event.from_scheduled:
         return
@@ -122,21 +123,21 @@ async def out_listner(event):
         log=("afk", '\n'.join([pr_log, gr_log]).strip() or def_text)
     )
     del os.environ['userbot_afk']
+    if "userbot_afk_reason" in os.environ:
+        del os.environ['userbot_afk_reason']
 
-    global reason
-    reason = None
     for chat, msg in sent.items():
         await client.delete_messages(chat, msg)
     privates.clear()
     groups.clear()
     sent.clear()
-    await sleep(4)
+    await asyncio.sleep(4)
     await toast.delete()
     await status.delete()
 
 
 @client.onMessage(incoming=True, edited=False)
-async def inc_listner(event):
+async def inc_listner(event: NewMessage.Event) -> None:
     """Handle tags and new messages by listening to new incoming messages."""
     sender = await event.get_sender()
     if event.from_scheduled or (isinstance(sender, types.User) and sender.bot):
@@ -151,6 +152,7 @@ async def inc_listner(event):
         tz=datetime.timezone.utc
     )
     now = datetime.datetime.now(datetime.timezone.utc)
+    reason = os.environ.get('userbot_afk_reason', False)
     elapsed = await _humanfriendly_seconds((now - since).total_seconds())
     text = "`I am currently AFK{}.`\n`Last seen: {} ago.`".format(
         ' because ' + reason if reason else '', elapsed
@@ -198,7 +200,9 @@ async def _append_msg(variable: dict, chat: int, event: int) -> None:
         messages.clear()
 
 
-async def _correct_grammer(mentions: int, chats: int) -> Tuple[str]:
+async def _correct_grammer(
+    mentions: int, chats: int
+) -> Tuple[str, str, str, str]:
     a1 = "one" if mentions == 1 else mentions
     a2 = '' if mentions == 1 else 's'
     a3 = "one" if chats == 1 else chats

@@ -15,19 +15,22 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from asyncio import create_subprocess_shell, subprocess
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+import asyncio
+import concurrent
+import datetime
+import sys
+from typing import Tuple
+
 from speedtest import Speedtest
-from sys import platform
-from telethon.tl.functions.help import GetNearestDcRequest
+
+from telethon.tl import functions
 
 from userbot import client
 from userbot.utils.helpers import get_chat_link
+from userbot.utils.events import NewMessage
 
 
 plugin_category = "www"
-loop = client.loop
 DCs = {
     1: "149.154.175.50",
     2: "149.154.167.51",
@@ -45,11 +48,11 @@ upload = "`Upload: %0.2f M%s/s`"
     command=("ping", plugin_category),
     outgoing=True, regex="ping$"
 )
-async def ping(event):
+async def ping(event: NewMessage.Event) -> None:
     """Check how long it takes to get an update and respond to it."""
-    start = datetime.now()
+    start = datetime.datetime.now()
     await event.answer("**PONG**")
-    duration = (datetime.now() - start)
+    duration = (datetime.datetime.now() - start)
     milliseconds = duration.microseconds / 1000
     await event.answer(f"**PONG:** `{milliseconds}ms`")
 
@@ -58,9 +61,9 @@ async def ping(event):
     command=("nearestdc", plugin_category),
     outgoing=True, regex="nearestdc$"
 )
-async def nearestdc(event):
+async def nearestdc(event: NewMessage.Event) -> None:
     """Get information of your country and data center information."""
-    result = await client(GetNearestDcRequest())
+    result = await client(functions.help.GetNearestDcRequest())
     text = (
         f"**Country:** `{result.country}`\n" +
         f"**This DC:** `{result.this_dc}`\n" +
@@ -73,17 +76,17 @@ async def nearestdc(event):
     command=("pingdc", plugin_category),
     outgoing=True, regex=r"pingdc(?: |$)(\d+)?"
 )
-async def pingdc(event):
+async def pingdc(event: NewMessage.Event) -> None:
     """Ping your or other data center's IP addresses."""
     if event.matches[0].group(1) in ('1', '2', '3', '4', '5'):
         dc = int(event.matches[0].group(1))
     else:
-        raw_dc = await client(GetNearestDcRequest())
+        raw_dc = await client(functions.help.GetNearestDcRequest())
         dc = raw_dc.this_dc
-    param = "-n" if platform.startswith("win") else "-c"
+    param = "-n" if sys.platform.startswith("win") else "-c"
     cmd = f"ping {param} 1 {DCs[dc]}"
 
-    if platform.startswith("win"):
+    if sys.platform.startswith("win"):
         out, err = await _sub_shell(cmd)
         average = out.split("Average = ")[1]
     else:
@@ -106,7 +109,7 @@ async def pingdc(event):
     command=("speedtest", plugin_category),
     outgoing=True, regex=r"speedtest(?: |$)(bit|byte)?(?:s$|$)"
 )
-async def speedtest(event):
+async def speedtest(event: NewMessage.Event) -> None:
     """Perform a speedtest with the best available server based on ping."""
     n = 1
     unit = "bit"
@@ -138,11 +141,11 @@ async def speedtest(event):
     )
 
 
-async def _sub_shell(cmd):
-    process = await create_subprocess_shell(
+async def _sub_shell(cmd: str) -> Tuple[str, str]:
+    process = await asyncio.create_subprocess_shell(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
     stdout, stderr = await process.communicate()
 
@@ -150,4 +153,6 @@ async def _sub_shell(cmd):
 
 
 async def _run_sync(func: callable):
-    return await loop.run_in_executor(ThreadPoolExecutor(), func)
+    return await client.loop.run_in_executor(
+        concurrent.futures.ThreadPoolExecutor(), func
+    )

@@ -16,9 +16,10 @@
 
 
 import re
+from typing import Tuple
+
 from telethon import events
 from telethon.tl import types
-from typing import Tuple
 
 from userbot.utils.custom import Message
 

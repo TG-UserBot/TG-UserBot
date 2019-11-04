@@ -15,17 +15,23 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from telethon.tl.types import (
-    ChannelFull, ChatFull, UserFull
-)
+from typing import Union
+
+from telethon.tl import types
 from telethon.utils import get_peer_id
+
+from ..utils.events import NewMessage
 
 
 class Parser:
     """Parse UserFull, ChannelFull and ChatFull objects."""
 
     @staticmethod
-    async def parse_full_user(usr_obj: UserFull, event) -> str:
+    async def parse_full_user(
+        usr_obj: types.UserFull,
+        event: NewMessage.Event
+    ) -> str:
+        """Human-friendly string of an User obj's attributes"""
         user = usr_obj.user
 
         user_id = get_peer_id(user.id)
@@ -83,16 +89,19 @@ class Parser:
             text += f"\n**Scam:** `{scam}`"
         if total_pics:
             text += f"\n**Total profile pictures:** `{total_pics}`"
-
         return text
 
     @staticmethod
-    async def parse_full_chat(chat_obj: (ChatFull, ChannelFull), event) -> str:
+    async def parse_full_chat(
+        chat_obj: Union[types.ChatFull, types.ChannelFull],
+        event: NewMessage.Event
+    ) -> str:
+        """Human-friendly string of a Chat/Channel obj's attributes"""
         full_chat = chat_obj.full_chat
         chats = chat_obj.chats[0]
         profile_pic = full_chat.chat_photo
 
-        if isinstance(full_chat, ChatFull):
+        if isinstance(full_chat, types.ChatFull):
             obj_type = "CHAT"
             participants = len(chats.participants)
         else:
@@ -153,5 +162,4 @@ class Parser:
 
         if total_pics:
             text += f"\n**Total profile pictures:** `{total_pics}`"
-
         return text

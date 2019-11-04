@@ -21,6 +21,8 @@ from userbot import client, LOGGER
 from userbot.helper_funcs.ids import get_entity_from_msg
 from userbot.helper_funcs.time import split_extra_string
 from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "admin"
 
@@ -29,7 +31,7 @@ plugin_category = "admin"
     command=("promote", plugin_category),
     outgoing=True, regex=r"promote(?: |$)(.*)$", require_admin=True
 )
-async def promote(event):
+async def promote(event: NewMessage.Event) -> None:
     """Promote a user in a group or channel."""
     if (
         not event.is_private and
@@ -80,7 +82,7 @@ async def promote(event):
     command=("demote", plugin_category),
     outgoing=True, regex=r"demote(?: |$)(.*)$", require_admin=True
 )
-async def demote(event):
+async def demote(event: NewMessage.Event) -> None:
     """Demote a user in a group or channel."""
     if (
         not event.is_private and
@@ -132,7 +134,7 @@ async def demote(event):
     command=("ban", plugin_category),
     outgoing=True, regex=r"ban(?: |$)(.*)$", require_admin=True
 )
-async def ban(event):
+async def ban(event: NewMessage.Event) -> None:
     """Ban a user in a group or channel."""
     if (
         not event.is_private and
@@ -182,7 +184,7 @@ async def ban(event):
     command=("unban", plugin_category),
     outgoing=True, regex=r"unban(?: |$)(.*)$", require_admin=True
 )
-async def unban(event):
+async def unban(event: NewMessage.Event) -> None:
     """Un-ban a user in a group or channel."""
     if (
         not event.is_private and
@@ -239,7 +241,7 @@ async def unban(event):
     command=("kick", plugin_category),
     outgoing=True, regex=r"kick(?: |$)(.*)$", require_admin=True
 )
-async def kick(event):
+async def kick(event: NewMessage.Event) -> None:
     """Kick a user in a group or channel."""
     if (
         not event.is_private and
@@ -288,7 +290,7 @@ async def kick(event):
     command=("mute", plugin_category),
     outgoing=True, regex=r"mute(?: |$)(.*)$", require_admin=True
 )
-async def mute(event):
+async def mute(event: NewMessage.Event) -> None:
     """Mute a user in a group or channel."""
     if (
         not event.is_private and
@@ -338,7 +340,7 @@ async def mute(event):
     command=("unmute", plugin_category),
     outgoing=True, regex=r"unmute(?: |$)(.*)$", require_admin=True
 )
-async def unmute(event):
+async def unmute(event: NewMessage.Event) -> None:
     """Un-mute a user in a group or channel."""
     if (
         not event.is_private and
@@ -390,7 +392,7 @@ async def unmute(event):
     command=("tmute", plugin_category),
     outgoing=True, regex=r"tmute(?: |$)(.*)$", require_admin=True
 )
-async def tmute(event):
+async def tmute(event: NewMessage.Event) -> None:
     """Temporary mute a user in a group or channel."""
     if (
         not event.is_private and
@@ -454,7 +456,7 @@ async def tmute(event):
     command=("tban", plugin_category),
     outgoing=True, regex=r"tban(?: |$)(.*)$", require_admin=True
 )
-async def tban(event):
+async def tban(event: NewMessage.Event) -> None:
     """Temporary ban a user in a group or channel."""
     if (
         not event.is_private and

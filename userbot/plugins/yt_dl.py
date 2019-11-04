@@ -15,16 +15,14 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import concurrent
 import subprocess
-from concurrent.futures import ThreadPoolExecutor
 
 from userbot import client
 from userbot.helper_funcs.yt_dl import (
     extract_info, hook, list_formats, YTdlLogger
 )
 
-
-executor = ThreadPoolExecutor()
 
 audioFormats = [
     "aac",
@@ -61,7 +59,9 @@ try:
     subprocess.Popen(
         ['ffmpeg'],
         stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    ).communicate()
     ffmpeg = True
 except OSError:
     ffmpeg = False
@@ -79,7 +79,9 @@ async def yt_dl(event):
     if fmt:
         fmt = fmt.strip()
         if fmt == 'listformats':
-            info = await extract_info(executor, params, url)
+            info = await extract_info(
+                concurrent.futures.ThreadPoolExecutor(), params, url
+            )
             if isinstance(info, dict):
                 fmts = await list_formats(info)
                 await event.answer(fmts)
@@ -112,7 +114,9 @@ async def yt_dl(event):
                     params['postprocessors'].append({'key': 'EmbedThumbnail'})
 
     await event.answer("`Processing...`")
-    output = await extract_info(executor, params, url, download=True)
+    output = await extract_info(
+        concurrent.futures.ThreadPoolExecutor, params, url, download=True
+    )
     warning = (
         "`WARNING: FFMPEG is not installed!`"
         " `If you requested multiple formats, they won't be merged.`\n\n"

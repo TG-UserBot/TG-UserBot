@@ -15,34 +15,36 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import redis
-import userbot.utils.client
+import configparser
+import logging
+import os.path
+import sys
 
-from configparser import ConfigParser
-from os.path import dirname, isfile, join
-from sys import exit, platform, version_info
-from logging import (
-    getLogger, DEBUG, INFO, ERROR, CRITICAL
+import redis
+from telethon.tl import types
+
+from .utils.sessions import RedisSession
+from .utils.helpers import resolve_env
+from .utils.client import UserBotClient
+
+
+config = configparser.ConfigParser()
+
+config_file = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), 'config.ini'
+)
+sql_session = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), 'userbot.session'
 )
 
-from telethon.tl.types import User
-from userbot.utils.sessions import RedisSession
-from userbot.utils.helpers import resolve_env
-
-UserBotClient = userbot.utils.client.UserBotClient
-config = ConfigParser()
-
-config_file = join(dirname(dirname(__file__)), 'config.ini')
-sql_session = join(dirname(dirname(__file__)), 'userbot.session')
-
-if version_info < (3, 7, 3):
+if sys.version_info < (3, 7, 3):
     print(
         "Please run this script with Python 3.7.3 or above."
         "\nExiting the script."
     )
-    exit(1)
+    sys.exit(1)
 
-if isfile(config_file):
+if os.path.isfile(config_file):
     config.read(config_file)
 else:
     try:
@@ -53,10 +55,10 @@ else:
             "or the required environment variables set."
             "\nExiting the script."
         )
-        exit(1)
+        sys.exit(1)
 
-ROOT_LOGGER = getLogger()
-LOGGER = getLogger(__name__)
+ROOT_LOGGER = logging.getLogger()
+LOGGER = logging.getLogger(__name__)
 
 userbot = config['userbot']
 telethon = config['telethon']
@@ -66,7 +68,7 @@ CONSOLE_LOGGER = userbot.get('console_logger_level', 'INFO')
 REDIS_ENDPOINT = telethon.get('redis_endpoint', None)
 REDIS_PASSWORD = telethon.get('redis_password', None)
 
-if isfile(sql_session):
+if os.path.isfile(sql_session):
     redis_session = False
     session = "userbot"
 elif REDIS_ENDPOINT and REDIS_PASSWORD:
@@ -83,7 +85,7 @@ elif REDIS_ENDPOINT and REDIS_PASSWORD:
         LOGGER.warning(
             "Make sure you have the correct Redis endpoint and password."
         )
-        exit(1)
+        sys.exit(1)
     redis_session = True
     session = RedisSession("userbot", redis_connection)
 else:
@@ -91,13 +93,13 @@ else:
         "Make an account on redislabs.com and update your config with the "
         "redis endpoint and password, if you want to use a Redis session!"
     )
-    exit(1)
+    sys.exit(1)
 
 LEVELS = {
-    'DEBUG': DEBUG,
-    'INFO': INFO,
-    'ERROR': ERROR,
-    'CRITICAL': CRITICAL
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL
 }
 
 
@@ -107,7 +109,7 @@ if CONSOLE_LOGGER.upper() in LEVELS:
     LOGGER.setLevel(level)
 
 
-if platform.startswith('win'):
+if sys.platform.startswith('win'):
     from asyncio import ProactorEventLoop
     from os import system
 
@@ -129,7 +131,7 @@ client = UserBotClient(
     api_hash=telethon.get('api_hash', None),
     loop=loop,
     app_version=__version__,
-    auto_reconnect=False
+    auto_reconnect=True
 )
 
 client.version = __version__
@@ -149,7 +151,7 @@ def verifyLoggerGroup(client: UserBotClient) -> None:
         entity = client.loop.run_until_complete(
             client.get_entity(LOGGER_CHAT_ID)
         )
-        if not isinstance(entity, User):
+        if not isinstance(entity, types.User):
             if not entity.creator:
                 if entity.default_banned_rights.send_messages:
                     disable_logger(

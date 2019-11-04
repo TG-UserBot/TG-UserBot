@@ -17,7 +17,7 @@
 
 import re
 from enum import Enum
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 
 class UnknownFlagError(Exception):
@@ -63,7 +63,7 @@ async def resolve_flags(fl: str) -> Tuple[int, Union[int, Enum]]:
             to stop any farther execution.
 
     Returns:
-        (``int``, (``int`` | :obj:`Enum<enum>`)):
+        (``int``, (``int`` | :obj:`enum.Enum<enum>`)):
             Count and all the other re flags as an Enum type, if any.
     """
     count = 1
@@ -98,7 +98,7 @@ async def substitute(
     original: str,
     line: (str, int, None) = None,
     count: int = 1,
-    flags: (Enum, int) = 0
+    flags: Union[Enum, int] = 0
 ) -> Union[str, None]:
     """Substitute a (specific) string.
     Match the regular-expression against the content of the pattern space.
@@ -115,7 +115,7 @@ async def substitute(
             Line to use for substitution. Defaults to None.
         count (``int``, optional):
             The amount of repetitions to do. Defaults to 1.
-        flags (``int`` | :obj:`Enum<enum>`, optional):
+        flags (``int`` | :obj:`enum.Enum<enum>`, optional):
             Flags to use. Defaults to 0.
 
     Returns:

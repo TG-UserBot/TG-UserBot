@@ -15,12 +15,14 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from asyncio import sleep
-from datetime import timedelta
+import asyncio
+import datetime
 
 from userbot import client
 from userbot.helper_funcs.time import string_to_secs
 from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "user"
 
@@ -29,7 +31,7 @@ plugin_category = "user"
     command=("remindme/remindhere", plugin_category),
     outgoing=True, regex=r"remind(me|here)(?: |$)(\w+)?(?: |$)([\s\S]*)"
 )
-async def remindme(event):
+async def remindme(event: NewMessage.Event) -> None:
     """Set a reminder to be sent to your Saved Messages in x amount of time."""
     arg = event.matches[0].group(1)
     time = event.matches[0].group(2)
@@ -57,7 +59,7 @@ async def remindme(event):
         await client.send_message(
             entity=entity,
             message=reply if media else text,
-            schedule=timedelta(seconds=seconds)
+            schedule=datetime.timedelta(seconds=seconds)
         )
         extra = await get_chat_link(entity)
         human_time = await _humanfriendly_seconds(seconds)
@@ -66,7 +68,7 @@ async def remindme(event):
             message,
             log=("remindme", f"Set a reminder in {extra}.\nETA: {human_time}")
         )
-        await sleep(2)
+        await asyncio.sleep(2)
         await event.delete()
     else:
         await event.answer("`No kan do. ma'am. Minimum time should be 13s.`")

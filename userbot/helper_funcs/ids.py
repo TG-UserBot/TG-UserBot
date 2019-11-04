@@ -16,18 +16,19 @@
 
 
 import re
-from logging import getLogger
-from typing import Union
+import logging
+from typing import Tuple, Union
 
-from telethon.tl.types import (
-    Message, MessageEntityMention, MessageEntityMentionName
-)
+from telethon.tl import types
 
-
-LOGGER = getLogger(__name__)
+from ..utils.events import NewMessage
 
 
-async def get_user_from_msg(event: Message) -> Union[int, str, None]:
+LOGGER = logging.getLogger(__name__)
+
+
+async def get_user_from_msg(event: NewMessage.Event) -> Union[int, str, None]:
+    """Get a user's ID or username from the event's regex pattern match"""
     user = None
     match = event.matches[0].group(1)
 
@@ -36,9 +37,9 @@ async def get_user_from_msg(event: Message) -> Union[int, str, None]:
 
     if event.entities:
         for entity in event.entities:
-            if isinstance(entity, MessageEntityMentionName):
+            if isinstance(entity, types.MessageEntityMentionName):
                 return entity.user_id
-            elif isinstance(entity, MessageEntityMention):
+            elif isinstance(entity, types.MessageEntityMention):
                 offset = entity.offset
                 length = entity.length
                 maxlen = offset + length
@@ -53,7 +54,10 @@ async def get_user_from_msg(event: Message) -> Union[int, str, None]:
     return user
 
 
-async def get_entity_from_msg(event: Message) -> Union[int, str, None]:
+async def get_entity_from_msg(event: NewMessage.Event) -> Tuple[
+    Union[None, types.User], Union[None, bool, str], Union[None, bool, str]
+]:
+    """Get a User entity and/or a reason from the event's regex pattern"""
     exception = False
     entity = None
     match = event.matches[0].group(1)

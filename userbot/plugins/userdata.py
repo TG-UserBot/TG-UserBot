@@ -15,28 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from io import BytesIO
-from PIL import Image
+import io
+import PIL
+
+from telethon import errors
 from telethon.utils import get_display_name, get_peer_id
-from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.functions.channels import GetFullChannelRequest
-from telethon.tl.functions.messages import GetFullChatRequest
-from telethon.tl.functions.account import (
-    UpdateProfileRequest, UpdateUsernameRequest
-)
-from telethon.tl.functions.photos import (
-    DeletePhotosRequest, UploadProfilePhotoRequest
-)
-from telethon.tl.types import InputPeerChat, InputPeerChannel
-from telethon.errors import (
-    AboutTooLongError, FirstNameInvalidError, UsernameInvalidError,
-    UsernameNotModifiedError, UsernameOccupiedError, FilePartsInvalidError,
-    ImageProcessFailedError, PhotoCropSizeSmallError, PhotoExtInvalidError
-)
+from telethon.tl import functions, types
 
 from userbot import client
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "user"
 
@@ -45,7 +35,7 @@ plugin_category = "user"
     command=("whois", plugin_category),
     outgoing=True, regex=r"(?:who|what)is(?: |$)(.*)$"
 )
-async def whois(event):
+async def whois(event: NewMessage.Event) -> None:
     """Get your or a user's/chat's information."""
     match = event.matches[0].group(1)
 
@@ -78,19 +68,19 @@ async def whois(event):
         return
 
     try:
-        if isinstance(input_entity, InputPeerChat):
+        if isinstance(input_entity, types.InputPeerChat):
             full_chat = await client(
-                GetFullChatRequest(chat_id=input_entity)
+                functions.messages.GetFullChatRequest(chat_id=input_entity)
             )
             string = await Parser.parse_full_chat(full_chat, event)
-        elif isinstance(input_entity, InputPeerChannel):
+        elif isinstance(input_entity, types.InputPeerChannel):
             full_channel = await client(
-                GetFullChannelRequest(channel=input_entity)
+                functions.channels.GetFullChannelRequest(channel=input_entity)
             )
             string = await Parser.parse_full_chat(full_channel, event)
         else:
             full_user = await client(
-                GetFullUserRequest(id=input_entity)
+                functions.users.GetFullUserRequest(id=input_entity)
             )
             string = await Parser.parse_full_user(full_user, event)
     except Exception as e:
@@ -107,7 +97,7 @@ async def whois(event):
     command=("name", plugin_category),
     outgoing=True, regex="name(?: |$)(.*)$"
 )
-async def name(event):
+async def name(event: NewMessage.Event) -> None:
     """Get your current name or update it."""
     match = event.matches[0].group(1)
     if not match:
@@ -124,7 +114,7 @@ async def name(event):
     n1 = get_display_name(await client.get_me())
 
     try:
-        await client(UpdateProfileRequest(
+        await client(functions.account.UpdateProfileRequest(
             first_name=first,
             last_name=last
         ))
@@ -133,7 +123,7 @@ async def name(event):
             "`Name was successfully changed.`",
             log=("name", f"Name changed from {n1} to {n2}")
         )
-    except FirstNameInvalidError:
+    except errors.FirstNameInvalidError:
         await event.answer("`The first name is invalid.`")
     except Exception as e:
         await event.answer('`' + type(e).__name__ + ': ' + str(e) + '`')
@@ -143,10 +133,10 @@ async def name(event):
     command=("bio", plugin_category),
     outgoing=True, regex="bio(?: |$)(.*)$"
 )
-async def bio(event):
+async def bio(event: NewMessage.Event) -> None:
     """Get your current bio or update it."""
     match = event.matches[0].group(1)
-    about = (await client(GetFullUserRequest("self"))).about
+    about = (await client(functions.users.GetFullUserRequest("self"))).about
     if not match:
         if about:
             await event.answer(f"**{about}**")
@@ -155,12 +145,12 @@ async def bio(event):
         return
 
     try:
-        await client(UpdateProfileRequest(about=match))
+        await client(functions.account.UpdateProfileRequest(about=match))
         await event.answer(
             "`Bio was successfully changed.`",
             log=("bio", f"Bio changed from {about} to {match}")
         )
-    except AboutTooLongError:
+    except errors.AboutTooLongError:
         await event.answer("`The about text is too long.`")
 
 
@@ -168,7 +158,7 @@ async def bio(event):
     command=("username", plugin_category),
     outgoing=True, regex="username(?: |$)(.*)$"
 )
-async def username(event):
+async def username(event: NewMessage.Event) -> None:
     """Get your current username or update it."""
     match = event.matches[0].group(1)
     u1 = (await client.get_me()).username
@@ -180,16 +170,16 @@ async def username(event):
         return
 
     try:
-        await client(UpdateUsernameRequest(username=match))
+        await client(functions.account.UpdateUsernameRequest(username=match))
         await event.answer(
             f"`Successfully changed username to {match}`",
             log=("username", f"Username changed from {u1} to {match}")
         )
-    except UsernameOccupiedError:
+    except errors.UsernameOccupiedError:
         await event.answer("`The username is already in use.`")
-    except UsernameNotModifiedError:
+    except errors.UsernameNotModifiedError:
         await event.answer("`The username was not modified.`")
-    except UsernameInvalidError:
+    except errors.UsernameInvalidError:
         await event.answer("`The username is invalid.`")
 
 
@@ -197,11 +187,12 @@ async def username(event):
     command=("pfp", plugin_category),
     outgoing=True, regex="pfp$"
 )
-async def pfp(event):
+async def pfp(event: NewMessage.Event) -> None:
     """Get your current profile picture or update it."""
     reply = await event.get_reply_message()
     if not reply:
-        photo = (await client(GetFullUserRequest("self"))).profile_photo
+        photo = await client(functions.users.GetFullUserRequest("self"))
+        photo = photo.profile_photo
         if photo:
             await event.delete()
             await event.answer(file=photo)
@@ -220,7 +211,7 @@ async def pfp(event):
         reply.photo or reply.sticker
     ):
         try:
-            temp_file = BytesIO()
+            temp_file = io.BytesIO()
             await client.download_media(reply, temp_file)
         except Exception as e:
             await event.answer(
@@ -231,8 +222,8 @@ async def pfp(event):
             return
         temp_file.seek(0)
         if reply.sticker:
-            sticker = BytesIO()
-            pilImg = Image.open(temp_file)
+            sticker = io.BytesIO()
+            pilImg = PIL.Image.open(temp_file)
             pilImg.save(sticker, format="PNG")
             pilImg.close()
             sticker.seek(0)
@@ -248,18 +239,18 @@ async def pfp(event):
         return
 
     try:
-        await client(UploadProfilePhotoRequest(photo))
+        await client(functions.photos.UploadProfilePhotoRequest(photo))
         await event.answer(
             "`Profile photo was successfully changed.`",
             log=("pfp", "Changed profile picture")
         )
-    except FilePartsInvalidError:
+    except errors.FilePartsInvalidError:
         await event.answer("`The number of file parts is invalid.`")
-    except ImageProcessFailedError:
+    except errors.ImageProcessFailedError:
         await event.answer("`Failure while processing image.`")
-    except PhotoCropSizeSmallError:
+    except errors.PhotoCropSizeSmallError:
         await event.answer("`Photo is too small.`")
-    except PhotoExtInvalidError:
+    except errors.PhotoExtInvalidError:
         await event.answer("`The extension of the photo is invalid.`")
 
 
@@ -267,7 +258,7 @@ async def pfp(event):
     command=("delpfp", plugin_category),
     outgoing=True, regex=r"delpfp(?: |$)(\d*|all)$"
 )
-async def delpfp(event):
+async def delpfp(event: NewMessage.Event) -> None:
     """Get your current profile picture count or delete them."""
     match = event.matches[0].group(1)
     if not match:
@@ -281,7 +272,7 @@ async def delpfp(event):
     limit = None if match == "all" else int(match)
     photos = await client.get_profile_photos("self", limit)
     count = len(photos)
-    await client(DeletePhotosRequest(photos))
+    await client(functions.photos.DeletePhotosRequest(photos))
     amount = ("the current profile picture." if count == 1
               else f"{count} profile pictures.")
     text = f"`Successfully deleted {amount}`"
@@ -295,7 +286,7 @@ async def delpfp(event):
     command=("id", plugin_category),
     outgoing=True, regex=r"id(?: |$)(.*)$"
 )
-async def whichid(event):
+async def whichid(event: NewMessage.Event) -> None:
     """Get the ID of a chat/channel or user."""
     match = event.matches[0].group(1).strip()
     if not match and not event.reply_to_msg_id:

@@ -15,15 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import asyncio
 import datetime
+import os.path
+import sys
+
 import git
 import heroku3
-import os
-import sys
-from asyncio import create_subprocess_shell, sleep
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import restart, _humanfriendly_seconds
+from userbot.utils.events import NewMessage
+
 
 basedir = os.path.abspath(os.path.curdir)
 author_link = "[{author}]({url}commits?author={author})"
@@ -36,7 +39,7 @@ authored = "{author}` authored and `{committer}` committed {elapsed} ago`\n"
     command="update",
     outgoing=True, regex="update(?: |$)(reset|add)?$", builtin=True
 )
-async def update(event):
+async def updater(event: NewMessage.Event) -> None:
     """Pull newest changes from the official repo and update the script/app."""
     arg = event.matches[0].group(1)
     main_repo = "https://github.com/kandnub/TG-UserBot.git"
@@ -151,7 +154,7 @@ async def update(event):
                 "with an invalid environment. Couldn't update the app.`\n"
                 "`The changes will be reverted upon dyno restart.`"
             )
-            await sleep(2)
+            await asyncio.sleep(2)
             await updated_pip_modules(event, pull, repo, new_commit)
             await restart(event)
         else:
@@ -209,7 +212,7 @@ async def updated_pip_modules(event, pull, repo, new_commit):
 async def update_requirements():
     reqs = os.path.join(basedir, "requirements.txt")
     try:
-        await create_subprocess_shell(
+        await asyncio.create_subprocess_shell(
             ' '.join(sys.executable, "-m", "pip", "install", "-r", str(reqs))
         ).communicate()
     except Exception as e:

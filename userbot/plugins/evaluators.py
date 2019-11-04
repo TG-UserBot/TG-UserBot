@@ -15,14 +15,14 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from sys import executable
-from inspect import isawaitable
-from asyncio import (
-    create_subprocess_exec, create_subprocess_shell, subprocess, sleep
-)
+import asyncio
+import inspect
+import sys
 
 from userbot import client
 from userbot.utils.helpers import get_chat_link
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "terminal"
 
@@ -31,7 +31,7 @@ plugin_category = "terminal"
     command=("eval", plugin_category),
     outgoing=True, regex=r"eval(?: |$)([\s\S]*)"
 )
-async def evaluate(event):
+async def evaluate(event: NewMessage.Event) -> None:
     """Evaluate something in the running script."""
     expression = event.matches[0].group(1).strip()
     reply = await event.get_reply_message()
@@ -43,7 +43,7 @@ async def evaluate(event):
         result = eval(
             expression, {'client': client, 'event': event, 'reply': reply}
         )
-        if isawaitable(result):
+        if inspect.isawaitable(result):
             result = await result
         result = str(result)
     except Exception as e:
@@ -62,7 +62,7 @@ async def evaluate(event):
     command=("exec", plugin_category),
     outgoing=True, regex=r"exec(?: |$)([\s\S]*)"
 )
-async def execute(event):
+async def execute(event: NewMessage.Event) -> None:
     """Execute Python code in a subprocess."""
     message = (
         str(event.chat_id) +
@@ -81,10 +81,10 @@ async def execute(event):
         await event.answer("Executed the void.")
         return
 
-    process = await create_subprocess_exec(
-        executable, '-c', code,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+    process = await asyncio.create_subprocess_exec(
+        sys.executable, '-c', code,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
 
     client.running_processes.update({
@@ -118,7 +118,7 @@ async def execute(event):
     command=("term", plugin_category),
     outgoing=True, regex=r"term(?: |$)([\s\S]*)"
 )
-async def terminal(event):
+async def terminal(event: NewMessage.Event) -> None:
     """Execute terminal commands in a subprocess."""
     message = (
         str(event.chat_id) +
@@ -137,10 +137,10 @@ async def terminal(event):
         await event.answer("Executed the void.")
         return
 
-    process = await create_subprocess_shell(
+    process = await asyncio.create_subprocess_shell(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
 
     client.running_processes.update({
@@ -175,7 +175,7 @@ async def terminal(event):
     outgoing=True, regex=r"(kill|terminate)$",
     info="Kill or Terminate a subprocess which is still running"
 )
-async def killandterminate(event):
+async def killandterminate(event: NewMessage.Event) -> None:
     """Kill or terminate a running subprocess."""
     if not event.reply_to_msg_id:
         await event.answer(
@@ -207,7 +207,7 @@ async def killandterminate(event):
             log=(option, f"Successfully {option}ed a process in {extra}!"),
             reply=True
         )
-        await sleep(2)
+        await asyncio.sleep(2)
         await event.delete()
     else:
         await event.answer("`There is no process running for this message.`")

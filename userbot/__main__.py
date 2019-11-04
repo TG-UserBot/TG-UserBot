@@ -15,18 +15,18 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from logging import StreamHandler, getLogger
-from sys import exit, platform
+import logging
+import sys
+
 from telethon.errors import AuthKeyError, InvalidBufferError
 
 import userbot
-import userbot.helper_funcs.log_formatter as log_formatter
-import userbot.utils.pluginManager as pluginManager
-import userbot.utils.helpers as helpers
+from userbot import client
+from .utils import helpers, log_formatter, pluginManager
 
-client = userbot.client
-handler = StreamHandler()
-LOGGER = getLogger('userbot')
+
+handler = logging.StreamHandler()
+LOGGER = logging.getLogger('userbot')
 
 handler.setFormatter(log_formatter.CustomFormatter())
 userbot.ROOT_LOGGER.addHandler(handler)
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             "Your old session is invalid and has been automatically deleted! "
             "Run the script again to generate a new session."
         )
-        exit(1)
+        sys.exit(1)
 
     userbot.verifyLoggerGroup(client)
     helpers.printUser(
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     client.loop.create_task(helpers.isRestart(client))
 
     try:
-        if platform.startswith('win'):
+        if sys.platform.startswith('win'):
             client.loop.call_later(0.1, wakeup)  # Needed for SIGINT handling
         client.loop.run_until_complete(_run_until_complete())
     except NotImplementedError:

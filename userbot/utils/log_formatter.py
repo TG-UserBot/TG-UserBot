@@ -15,7 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from logging import Formatter, DEBUG, INFO, WARNING, ERROR, CRITICAL
+import logging
 
 
 CCRI = '\033[48;5;124m'
@@ -29,7 +29,7 @@ CBOT = '\033[94'
 CUSR = '\033[38;5;118m'
 
 
-class CustomFormatter(Formatter):
+class CustomFormatter(logging.Formatter):
     """Convert a :obj:`LogRecord<logging.LogRecord>` to a string.
 
     Uses ANSI escape codes to colour some specific strings.
@@ -60,15 +60,15 @@ class CustomFormatter(Formatter):
             second_half = " %(name)s: %(message)s"
 
         FORMATS = {
-            CRITICAL: CCRI + first_half + CEND + second_half,
-            ERROR: CERR + first_half + CEND + second_half,
-            WARNING: CWAR + first_half + CEND + second_half,
-            INFO: CINF + first_half + CEND + second_half,
-            DEBUG: CDEB + first_half + CEND + second_half,
+            logging.CRITICAL: CCRI + first_half + CEND + second_half,
+            logging.ERROR: CERR + first_half + CEND + second_half,
+            logging.WARNING: CWAR + first_half + CEND + second_half,
+            logging.INFO: CINF + first_half + CEND + second_half,
+            logging.DEBUG: CDEB + first_half + CEND + second_half,
             'DEFAULT': first_half + second_half
         }
 
         log_fmt = FORMATS.get(record.levelno, FORMATS['DEFAULT'])
-        formatter = Formatter(fmt=log_fmt, datefmt='%X', style='%')
+        formatter = logging.Formatter(fmt=log_fmt, datefmt='%X', style='%')
 
         return formatter.format(record)

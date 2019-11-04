@@ -16,14 +16,17 @@
 
 
 import aiohttp
+import functools
 import io
+import PIL
 import requests
-from functools import partial
-from PIL import Image
+from typing import BinaryIO
+
 from telethon.utils import get_extension
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import restart as shell_restart
+from userbot.utils.events import NewMessage
 
 
 plugin_category = "misc"
@@ -33,7 +36,7 @@ plugin_category = "misc"
     command=("shutdown", plugin_category),
     outgoing=True, regex="shutdown$", builtin=True
 )
-async def shutdown(event):
+async def shutdown(event: NewMessage.Event) -> None:
     """Shutdown the userbot script."""
     await event.answer("`Disconnecting the client and exiting. Ciao!`")
     print()
@@ -45,7 +48,7 @@ async def shutdown(event):
     command=("restart", plugin_category),
     outgoing=True, regex="restart(?: |$)(client)?$", builtin=True
 )
-async def restart(event):
+async def restart(event: NewMessage.Event) -> None:
     """Restart the userbot script or the client only if specified."""
     arg = event.matches[0].group(1)
     if arg:
@@ -62,7 +65,7 @@ async def restart(event):
     command=("rmbg", plugin_category),
     outgoing=True, regex="rmbg(?: |$)(.*)$"
 )
-async def rmbg(event):
+async def rmbg(event: NewMessage.Event) -> None:
     """Remove the background from an image or sticker."""
     API_KEY = client.config['api_keys'].get('api_key_removebg', False)
     if not API_KEY:
@@ -104,7 +107,7 @@ async def rmbg(event):
         if ext in [".bmp", ".tif", ".webp"]:
             media.seek(0)
             new_media = io.BytesIO()
-            pilImg = Image.open(media)
+            pilImg = PIL.Image.open(media)
             pilImg.save(new_media, format="PNG")
             pilImg.close()
             media.close()
@@ -114,7 +117,7 @@ async def rmbg(event):
         return
 
     response = await client.loop.run_in_executor(
-        None, partial(removebg_post, API_KEY, media)
+        None, functools.partial(removebg_post, API_KEY, media)
     )
     if not isinstance(media, str):
         media.close()
@@ -133,7 +136,7 @@ async def rmbg(event):
         await event.answer(text)
 
 
-def removebg_post(API_KEY: str, media: io.BytesIO or str):
+def removebg_post(API_KEY: str, media: BinaryIO or str):
     image_parameter = 'image_url' if isinstance(media, str) else 'image_file'
     if not isinstance(media, str):
         media.seek(0)

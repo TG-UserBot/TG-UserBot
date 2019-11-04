@@ -15,25 +15,24 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from configparser import ConfigParser
-from dataclasses import dataclass
-from importlib import reload
-from logging import getLogger
-from sys import modules
+import configparser
+import dataclasses
+import importlib
+import logging
+import sys
+from typing import Dict, List, Union
+
 from telethon import TelegramClient, events
-from typing import Dict, List
 
-import userbot.utils.pluginManager as PluginManager
-import userbot.utils.events as custom_events
+from .pluginManager import PluginManager
+from .events import MessageEdited, NewMessage
 
 
-LOGGER = getLogger(__name__)
-NewMessage = custom_events.NewMessage
-MessageEdited = custom_events.MessageEdited
+LOGGER = logging.getLogger(__name__)
 no_info = "There is no help available for this command!"
 
 
-@dataclass
+@dataclasses.dataclass
 class Command:
     func: callable
     handlers: list
@@ -45,11 +44,11 @@ class UserBotClient(TelegramClient):
     """UserBot client with additional attributes inheriting TelegramClient"""
     commandcategories: Dict[str, List[str]] = {}
     commands: Dict[str, Command] = {}
-    config: ConfigParser = None
+    config: configparser.ConfigParser = None
     disabled_commands: Dict[str, Command] = {}
     failed_imports: list = []
     logger: bool = False
-    pluginManager: PluginManager.PluginManager = None
+    pluginManager: PluginManager = None
     plugins: list = []
     prefix: str = None
     restarting: bool = False
@@ -69,7 +68,7 @@ class UserBotClient(TelegramClient):
 
         kwargs.setdefault('forwards', False)
 
-        def wrapper(func):
+        def wrapper(func: callable) -> callable:
             events.register(NewMessage(**kwargs))(func)
 
             if edited:
@@ -107,7 +106,11 @@ class UserBotClient(TelegramClient):
 
         return wrapper
 
-    async def _restarter(self, event):
+    async def _restarter(
+        self,
+        event: Union[MessageEdited.Event, NewMessage.Event]
+    ) -> None:
+        """Remove all event handlers and stop then start the client again"""
         if self.restarting:
             await event.answer("`Previous restart is still in proccess!`")
             return
@@ -128,10 +131,10 @@ class UserBotClient(TelegramClient):
         self.disabled_commands.clear()
         await self.disconnect()
 
-        for module in modules.copy():
+        for module in sys.modules.copy():
             # Required to update helper and util file.
             if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
-                reload(modules[module])
+                importlib.reload(sys.modules[module])
 
         await self.connect()
         await event.answer(
@@ -161,12 +164,14 @@ class UserBotClient(TelegramClient):
         )
         print()
 
-    def _updateconfig(self):
+    def _updateconfig(self) -> bool:
+        """Update the config. Sync method to avoid issues."""
         with open('config.ini', 'w+') as configfile:
             self.config.write(configfile)
         return True
 
-    def _kill_running_processes(self):
+    def _kill_running_processes(self) -> None:
+        """Kill all the running asyncio subprocessess"""
         for _, process in self.running_processes.items():
             process.kill()
             LOGGER.debug("Killed %d which was still running.", process.pid)

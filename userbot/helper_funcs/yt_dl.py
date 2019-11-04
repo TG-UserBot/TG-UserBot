@@ -15,7 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from concurrent.futures import Executor
+import concurrent
 import youtube_dl
 
 from .. import LOGGER
@@ -23,24 +23,24 @@ from .. import LOGGER
 
 class YTdlLogger(object):
     """Logger used for YoutubeDL which logs to UserBot logger."""
-    def debug(self, msg):
+    def debug(self, msg: str) -> None:
         """Logs debug messages with youtube-dl tag to UserBot logger."""
         LOGGER.debug("youtube-dl: " + msg)
 
-    def warning(self, msg):
+    def warning(self, msg: str) -> None:
         """Logs warning messages with youtube-dl tag to UserBot logger."""
         LOGGER.warning("youtube-dl: " + msg)
 
-    def error(self, msg):
+    def error(self, msg: str) -> None:
         """Logs error messages with youtube-dl tag to UserBot logger."""
         LOGGER.error("youtube-dl: " + msg)
 
-    def critical(self, msg):
+    def critical(self, msg: str) -> None:
         """Logs critical messages with youtube-dl tag to UserBot logger."""
         LOGGER.critical("youtube-dl: " + msg)
 
 
-def hook(d):
+def hook(d: dict) -> None:
     """YoutubeDL's hook which logs progress and erros to UserBot logger."""
     if d['status'] == 'downloading':
         filen = d['filename']
@@ -101,7 +101,7 @@ async def list_formats(info_dict: dict) -> str:
 
 
 async def extract_info(
-    executor: Executor,
+    executor: concurrent.futures.Executor,
     params: dict,
     url: str,
     download: bool = False
@@ -109,7 +109,7 @@ async def extract_info(
     """Runs YoutubeDL's extract_info method without blocking the event loop.
 
     Args:
-        executor (:obj:`Executor <concurrent.futures>`):
+        executor (:obj:`concurrent.futures.Executor <concurrent.futures>`):
             Either ``ThreadPoolExecutor`` or ``ProcessPoolExecutor``.
         params (``dict``):
             Parameters/Keyword arguments to use for YoutubeDL.

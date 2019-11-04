@@ -16,14 +16,17 @@
 
 
 import re
-from io import BytesIO
-from itertools import chain
-from PIL import Image
+import io
+import itertools
+import PIL
+from typing import BinaryIO, List, Sequence, Tuple, Union
 
-from telethon.tl.types import DocumentAttributeSticker
+from telethon.tl import types
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import get_chat_link
+from userbot.utils.events import NewMessage
+
 
 plugin_category = "stickers"
 acceptable = []
@@ -47,7 +50,7 @@ or use {}stickerpack reset for deafult packs.`"""
     command=("getsticker", plugin_category),
     outgoing=True, regex="getsticker(?: |$)(file|document)?$"
 )
-async def getsticker(event):
+async def getsticker(event: NewMessage.Event) -> None:
     """Convert a sticker to a png and also send it as a file if specified."""
     if not event.reply_to_msg_id:
         await event.answer("`Reply to a sticker first.`")
@@ -63,11 +66,11 @@ async def getsticker(event):
         await event.answer("`No point in uploading animated stickers.`")
         return
     else:
-        sticker_bytes = BytesIO()
+        sticker_bytes = io.BytesIO()
         await reply.download_media(sticker_bytes)
         sticker_bytes.seek(0)
-        sticker = BytesIO()
-        pilImg = Image.open(sticker_bytes)
+        sticker = io.BytesIO()
+        pilImg = PIL.Image.open(sticker_bytes)
         pilImg.save(sticker, format="PNG")
         pilImg.close()
         sticker.seek(0)
@@ -86,12 +89,14 @@ async def getsticker(event):
     command=("stickerpack", plugin_category),
     outgoing=True, regex="stickerpack(?: |$)(.*)$"
 )
-async def stickerpack(event):
+async def stickerpack(event: NewMessage.Event) -> None:
     """Get your default kang's sticker packs or update them."""
     match = event.matches[0].group(1).strip()
     if not match:
         basic, animated = await _get_default_packs()
-        text = "`Default kang packs:`\n**Basic:** `{}`\n**Animated:** `{}`"
+        basic = f"[{basic}](https://t.me/addstickers/{basic})"
+        animated = f"[{animated}](https://t.me/addstickers/{animated})"
+        text = "`Default kang packs:`\n**Basic:** {}\n**Animated:** {}"
         await event.answer(text.format(basic, animated))
         return
 
@@ -112,7 +117,7 @@ async def stickerpack(event):
     command=("kang", plugin_category),
     outgoing=True, regex="kang(?: |$)(.*)$"
 )
-async def kang(event):
+async def kang(event: NewMessage.Event) -> None:
     """Steal (AKA kang) stickers and images to your Sticker packs."""
     if event.reply_to_msg_id:
         sticker_event = await event.get_reply_message()
@@ -168,7 +173,7 @@ async def kang(event):
                 attribute_emoji = (
                     attribute.alt
                     for attribute in sticker_event.media.document.attributes
-                    if isinstance(attribute, DocumentAttributeSticker)
+                    if isinstance(attribute, types.DocumentAttributeSticker)
                 )
             emojis = new_emojis or attribute_emoji or default_emoji
         else:
@@ -288,14 +293,14 @@ async def kang(event):
                 await _delete_sticker_messages(first_msg or new_first_msg)
                 return
 
-        sticker = BytesIO()
+        sticker = io.BytesIO()
         sticker.name = name
         await sticker_event.download_media(file=sticker)
         sticker.seek(0)
         if sticker_event.sticker:
             await conv.send_message(file=sticker, force_document=True)
         else:
-            new_sticker = BytesIO()
+            new_sticker = io.BytesIO()
             resized_sticker = await _resize_image(sticker, new_sticker)
             new_sticker.name = name
             new_sticker.seek(0)
@@ -406,11 +411,13 @@ async def _set_default_packs(string: str, delimiter: str) -> str:
     return text
 
 
-async def _delete_sticker_messages(offset):
-    messages = [offset]
+async def _delete_sticker_messages(
+    message: types.Message
+) -> Sequence[types.messages.AffectedMessages]:
+    messages = [message]
     async for msg in client.iter_messages(
         entity="@Stickers",
-        offset_id=offset.id,
+        offset_id=message.id,
         reverse=True
     ):
         messages.append(msg)
@@ -418,7 +425,7 @@ async def _delete_sticker_messages(offset):
     return await client.delete_messages('@Stickers', messages)
 
 
-async def _get_new_ub_pack(packs: list, is_animated: bool):
+async def _get_new_ub_pack(packs: list, is_animated: bool) -> Tuple[str, str]:
     ub_packs = []
     for pack in packs:
         if "_kang_pack" in pack:
@@ -444,7 +451,7 @@ async def _get_new_ub_pack(packs: list, is_animated: bool):
     return pack, packnick
 
 
-async def _verify_cs_name(packname: str or None, packs: list):
+async def _verify_cs_name(packname: str or None, packs: list) -> str:
     if not packs:
         return
     if not packname:
@@ -458,7 +465,9 @@ async def _verify_cs_name(packname: str or None, packs: list):
     return correct_pack
 
 
-async def _resolve_pack_name(text: str, is_animated: bool):
+async def _resolve_pack_name(
+    text: str, is_animated: bool
+) -> Tuple[str, str, Union[str, None]]:
     if ':' in text:
         delimiter = ':'
     else:
@@ -499,8 +508,8 @@ async def _resolve_pack_name(text: str, is_animated: bool):
     return packname, packnickname, emojis or None
 
 
-async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
-    image = Image.open(image)
+async def _resize_image(image: BinaryIO, new_image: BinaryIO) -> BinaryIO:
+    image = PIL.Image.open(image)
     w, h = (image.width, image.height)
 
     if w == h:
@@ -520,7 +529,7 @@ async def _resize_image(image: BytesIO, new_image: BytesIO) -> BytesIO:
     return new_image
 
 
-async def _list_packs():
+async def _list_packs() -> Tuple[List[str], types.Message]:
     async with client.conversation(**conversation_args) as conv:
         first = await conv.send_message('/cancel')
         r1 = await conv.get_response()
@@ -532,7 +541,7 @@ async def _list_packs():
         if r2.text.startswith("You don't have any sticker packs yet."):
             return [], first
         await client.send_read_acknowledge(conv.chat_id)
-        buttons = list(chain.from_iterable(r2.buttons))
+        buttons = list(itertools.chain.from_iterable(r2.buttons))
         await conv.send_message('/cancel')
         r3 = await conv.get_response()
         LOGGER.debug("Stickers:" + r3.text)
@@ -541,7 +550,7 @@ async def _list_packs():
         return [button.text for button in buttons], first
 
 
-async def _extract_emojis(string):
+async def _extract_emojis(string: str) -> str:
     text_emojis = re.findall(r'[^\w\s,]', string)
     emojis = []
     for emoji in text_emojis:
@@ -551,13 +560,15 @@ async def _extract_emojis(string):
     return ''.join(emojis) if len(emojis) > 0 else None
 
 
-async def _extract_pack_name(string):
+async def _extract_pack_name(string: str) -> Union[str, None]:
     name = string.encode('ascii', 'ignore').decode('ascii').strip()
 
     return name.strip() if len(name) > 0 else None
 
 
-async def _resolve_messages(event, sticker_event):
+async def _resolve_messages(
+    event: NewMessage.Event, sticker_event: types.Message
+) -> Tuple[Union[str, None], str, str, bool]:
     sticker_name = "sticker.png"
     text = event.matches[0].group(1).strip()
     is_animated = False
@@ -566,7 +577,7 @@ async def _resolve_messages(event, sticker_event):
     if sticker_event.sticker:
         document = sticker_event.media.document
         for attribute in document.attributes:
-            if isinstance(attribute, DocumentAttributeSticker):
+            if isinstance(attribute, types.DocumentAttributeSticker):
                 attribute_emoji = attribute.alt
         if document.mime_type == "application/x-tgsticker":
             sticker_name = 'AnimatedSticker.tgs'
@@ -590,7 +601,7 @@ async def _resolve_messages(event, sticker_event):
     return pack, emojis, sticker_name, is_animated
 
 
-async def _get_default_packs():
+async def _get_default_packs() -> Tuple[str, str]:
     user = await client.get_me()
     basic_default = f"u{user.id}s_kang_pack"
     animated_default = f"u{user.id}s_animated_kang_pack"
@@ -609,7 +620,7 @@ async def _get_default_packs():
     return basic, animated
 
 
-async def _is_sticker_event(event) -> bool:
+async def _is_sticker_event(event: NewMessage.Event) -> bool:
     if event.sticker or event.photo:
         return True
     if event.document and "image" in event.media.document.mime_type:

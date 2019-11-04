@@ -16,8 +16,10 @@
 
 
 import aiohttp
+from typing import Tuple, Union
 
 from userbot import client
+from userbot.utils.events import NewMessage
 
 plugin_category = "memes"
 
@@ -26,7 +28,7 @@ plugin_category = "memes"
     command=("shibe", plugin_category),
     outgoing=True, regex="shibe$"
 )
-async def shibes(event):
+async def shibes(event: NewMessage.Event) -> None:
     """Get random pictures of Shibes."""
     shibe = await _request('http://shibe.online/api/shibes')
     if not shibe:
@@ -42,7 +44,7 @@ async def shibes(event):
     command=("cat", plugin_category),
     outgoing=True, regex="cat$"
 )
-async def cats(event):
+async def cats(event: NewMessage.Event) -> None:
     """Get random pictures of Cats."""
     shibe = await _request('http://shibe.online/api/cats')
     if not shibe:
@@ -58,7 +60,7 @@ async def cats(event):
     command=("bird", plugin_category),
     outgoing=True, regex="bird$"
 )
-async def birds(event):
+async def birds(event: NewMessage.Event) -> None:
     """Get random pictures of Birds."""
     shibe = await _request('http://shibe.online/api/birds')
     if not shibe:
@@ -70,7 +72,7 @@ async def birds(event):
     await event.delete()
 
 
-async def _request(url):
+async def _request(url: str) -> Union[Tuple[str, dict], None]:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:

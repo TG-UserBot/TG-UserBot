@@ -15,28 +15,29 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import configparser
+import datetime
+import logging
 import os
 import sys
-import datetime
-from configparser import ConfigParser
-from heroku3 import from_key
-from logging import getLogger
+from typing import Union
 
+from heroku3 import from_key
+
+from telethon import errors
 from telethon.tl.types import User, Chat, Channel
 from telethon.utils import get_display_name
-from telethon.errors.rpcerrorlist import (
-    MessageAuthorRequiredError, MessageNotModifiedError, MessageIdInvalidError
-)
 
-import userbot.helper_funcs.log_formatter as log_formatter
+from .client import UserBotClient
+from .log_formatter import CEND, CUSR
+from .events import NewMessage
 
 
-LOGGER = getLogger(__name__)
-CUSR = log_formatter.CUSR
-CEND = log_formatter.CEND
+LOGGER = logging.getLogger(__name__)
 
 
 def printUser(entity: User) -> None:
+    """Print the user's first name + last name upon start"""
     user = get_display_name(entity)
     print(
         "\nSuccessfully logged in as {0}{2}{1}".format(CUSR, CEND, user)
@@ -44,6 +45,7 @@ def printUser(entity: User) -> None:
 
 
 def printVersion(version: int, prefix: str) -> None:
+    """Print the version of the bot with the default prefix"""
     if not prefix:
         prefix = '.'
     print(
@@ -52,8 +54,8 @@ def printVersion(version: int, prefix: str) -> None:
     )
 
 
-def resolve_env(config):
-
+def resolve_env(config: configparser.ConfigParser):
+    """Check the environment variables and add them a configparser obj"""
     api_id = os.getenv('api_id', None)
     api_hash = os.getenv('api_hash', None)
     redis_endpoint = os.getenv('redis_endpoint', None)
@@ -93,7 +95,8 @@ def resolve_env(config):
     make_config(config, 'api_keys', api_keys)
 
 
-async def isRestart(client):
+async def isRestart(client: UserBotClient) -> None:
+    """Check if the script restarted itself and edit the last message"""
     userbot_restarted = os.environ.get('userbot_restarted', False)
     heroku = os.environ.get('api_key_heroku', False)
     updated = os.environ.get('userbot_update', False)
@@ -113,8 +116,9 @@ async def isRestart(client):
             try:
                 await client.edit_message(entity, message, text)
             except (
-                MessageAuthorRequiredError, MessageNotModifiedError,
-                MessageIdInvalidError
+                errors.MessageAuthorRequiredError,
+                errors.MessageNotModifiedError,
+                errors.MessageIdInvalidError
             ):
                 pass
 
@@ -142,7 +146,7 @@ async def isRestart(client):
             await disable_commands(client, disabled_commands)
 
 
-async def restart(event):
+async def restart(event: NewMessage.Event) -> None:
     args = [sys.executable, "-m", "userbot"]
     restart_message = f"{event.chat_id}/{event.message.id}"
     os.environ.setdefault('userbot_restarted', restart_message)
@@ -157,7 +161,10 @@ async def restart(event):
     await event.client.disconnect()
 
 
-def make_config(config: ConfigParser, section: str, section_dict: dict):
+def make_config(
+    config: configparser.ConfigParser,
+    section: str, section_dict: dict
+) -> None:
     UNACCETPABLE = ['', '0', 'None', 'none']
     config[section] = {}
     for key, value in section_dict.items():
@@ -195,18 +202,14 @@ async def _human_friendly_timedelta(timedelta: str) -> str:
     return text
 
 
-async def get_chat_link(arg, reply=None) -> str:
+async def get_chat_link(arg: Union[User, Chat, Channel], reply=None) -> str:
     if isinstance(arg, (User, Chat, Channel)):
         entity = arg
     else:
         entity = await arg.get_chat()
 
     if isinstance(entity, User):
-        if entity.is_self:
-            title = "Saved Messages"
-        else:
-            title = get_display_name(entity)
-        extra = f"[{title}](tg://user?id={entity.id})"
+        extra = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
     else:
         if hasattr(entity, 'username') and entity.username is not None:
             username = '@' + entity.username
@@ -225,7 +228,7 @@ async def get_chat_link(arg, reply=None) -> str:
     return extra
 
 
-async def disable_commands(client, commands: str) -> None:
+async def disable_commands(client: UserBotClient, commands: str) -> None:
     commands = commands.split(", ")
     for command in commands:
         target = client.commands.get(command, False)
