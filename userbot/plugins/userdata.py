@@ -147,7 +147,7 @@ async def bio(event: NewMessage.Event) -> None:
     try:
         await client(functions.account.UpdateProfileRequest(about=match))
         await event.answer(
-            "`Bio was successfully changed.`",
+            f"`Bio was successfully changed to {match}.`",
             log=("bio", f"Bio changed from {about} to {match}")
         )
     except errors.AboutTooLongError:
@@ -172,7 +172,7 @@ async def username(event: NewMessage.Event) -> None:
     try:
         await client(functions.account.UpdateUsernameRequest(username=match))
         await event.answer(
-            f"`Successfully changed username to {match}`",
+            f"`Username was successfully changed to {match}`",
             log=("username", f"Username changed from {u1} to {match}")
         )
     except errors.UsernameOccupiedError:
