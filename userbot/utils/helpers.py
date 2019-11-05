@@ -98,11 +98,11 @@ def resolve_env(config: configparser.ConfigParser):
 async def isRestart(client: UserBotClient) -> None:
     """Check if the script restarted itself and edit the last message"""
     userbot_restarted = os.environ.get('userbot_restarted', False)
-    heroku = os.environ.get('api_key_heroku', False)
+    heroku = client.config['api_keys'].get('api_key_heroku', False)
     updated = os.environ.get('userbot_update', False)
     disabled_commands = False
     if updated:
-        text = '`Successfully updated and restarted the userbot!`'
+        text, updated_str = "`Successfully updated and restarted the userbot!`"
         del os.environ['userbot_update']
     else:
         text = '`Successfully restarted the userbot!`'
@@ -112,7 +112,7 @@ async def isRestart(client: UserBotClient) -> None:
         entity = int(userbot_restarted.split('/')[0])
         message = int(userbot_restarted.split('/')[1])
 
-        async def success_edit():
+        async def success_edit(text, entity=entity, message=message):
             try:
                 await client.edit_message(entity, message, text)
             except (
@@ -130,12 +130,16 @@ async def isRestart(client: UserBotClient) -> None:
                 for build in app.builds():
                     if build.status == "pending":
                         return
-                await success_edit()
+                if app.config()['userbot_update']:
+                    del app.config()['userbot_update']
+                    await success_edit(updated_str)
+                else:
+                    await success_edit(text)
                 del app.config()['userbot_restarted']
                 disabled_commands = app.config()['userbot_disabled_commands']
                 del app.config()['userbot_disabled_commands']
         else:
-            await success_edit()
+            await success_edit(text)
             disabled_commands = os.environ.get(
                 'userbot_disabled_commands', False
             )

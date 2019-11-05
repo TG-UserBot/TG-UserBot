@@ -161,9 +161,10 @@ async def updater(event: NewMessage.Event) -> None:
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
             app.config().update(dict(userbot_config))
-            app.config().update(
-                {'userbot_restarted': f"{event.chat_id}/{event.message.id}"}
-            )
+            app.config().update({
+                'userbot_restarted': f"{event.chat_id}/{event.message.id}",
+                'userbot_update': "True"
+            })
             if event.client.disabled_commands:
                 disabled_list = ", ".join(client.disabled_commands.keys())
                 app.config().update(
@@ -180,7 +181,7 @@ async def updater(event: NewMessage.Event) -> None:
                 repo.index.commit("[TG-UserBot] Updater: Untracked files")
             app.enable_feature('runtime-dyno-metadata')
             await event.answer(
-                "`Pushing all the changes to the Heroku. Might take a while.`"
+                "`Pushing all the changes to Heroku. Might take a while.`"
             )
             remote = repo.remotes['heroku']
             try:
