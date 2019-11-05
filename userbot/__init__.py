@@ -59,16 +59,17 @@ if platform.python_version_tuple() < ('3', '7', '3'):
 
 if os.path.isfile(config_file):
     config.read(config_file)
-else:
-    try:
-        resolve_env(config)
-    except ValueError:
-        print(
-            "Please make sure you have a proper config.ini in this directory "
-            "or the required environment variables set."
-            "\nExiting the script."
-        )
-        sys.exit(1)
+    resolve_env(config)
+
+try:
+    resolve_env(config)
+except ValueError:
+    print(
+        "Please make sure you have a proper config.ini in this directory "
+        "or the required environment variables set."
+        "\nExiting the script."
+    )
+    sys.exit(1)
 
 ROOT_LOGGER = logging.getLogger()
 LOGGER = logging.getLogger(__name__)
@@ -86,8 +87,6 @@ REDIS_ENDPOINT = telethon.get('redis_endpoint', False)
 REDIS_PASSWORD = telethon.get('redis_password', False)
 REDIS = bool(REDIS_ENDPOINT) and bool(REDIS_PASSWORD)
 
-if "userbot" not in config:
-    config['userbot'] = {}
 userbot = config['userbot']
 LOGGER_CHAT_ID = userbot.getint('logger_group_id', 0)
 CONSOLE_LOGGER = userbot.get('console_logger_level', 'INFO')
@@ -152,7 +151,7 @@ client = UserBotClient(
 
 client.version = __version__
 client.config = config
-client.prefix = userbot.get('prefix', None)
+client.prefix = userbot.get('userbot_prefix', None)
 
 
 def verifyLoggerGroup(client: UserBotClient) -> None:

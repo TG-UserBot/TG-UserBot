@@ -19,6 +19,7 @@ import configparser
 import datetime
 import logging
 import os
+import os.path
 import sys
 from typing import Union
 
@@ -34,6 +35,9 @@ from .events import NewMessage
 
 
 LOGGER = logging.getLogger(__name__)
+sample_config_file = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), 'sample_config.ini'
+)
 
 
 def printUser(entity: User) -> None:
@@ -61,10 +65,20 @@ def resolve_env(config: configparser.ConfigParser):
     redis_endpoint = os.getenv('redis_endpoint', None)
     redis_password = os.getenv('redis_password', None)
 
+    if "telethon" in config.sections():
+        if not api_id and not api_hash:
+            api_id = config['telethon'].get('api_id', False)
+            api_hash = config['telethon'].get('api_hash', False)
+
     if not api_id or not api_hash:
         raise ValueError
 
-    config['telethon'] = {}
+    sample_config = configparser.ConfigParser()
+    sample_config.read(sample_config_file)
+    for section in sample_config.sections():
+        if section not in config:
+            config[section] = {}
+
     config['telethon']['api_id'] = api_id
     config['telethon']['api_hash'] = api_hash
     if redis_endpoint:
@@ -75,7 +89,7 @@ def resolve_env(config: configparser.ConfigParser):
     userbot = {
         'console_logger_level': os.getenv('console_logger_level', None),
         'logger_group_id': int(os.getenv('logger_group_id', 0)),
-        'prefix': os.getenv('prefix', None),
+        'userbot_prefix': os.getenv('userbot_prefix', None),
         'default_sticker_pack': os.getenv('default_sticker_pack', None),
         'default_animated_sticker_pack': os.getenv(
             'default_animated_sticker_pack', None
@@ -116,7 +130,6 @@ async def isRestart(client: UserBotClient) -> None:
 
     if updated:
         text = "`Successfully updated and restarted the userbot!`"
-        updated_str = text
         del os.environ['userbot_update']
     else:
         text = '`Successfully restarted the userbot!`'
@@ -133,7 +146,10 @@ async def isRestart(client: UserBotClient) -> None:
                         return
                 if app.config()['userbot_update']:
                     del app.config()['userbot_update']
-                    await success_edit(updated_str)
+                    await success_edit(
+                        "`Successfully deployed a new image to heroku "
+                        "and restarted the userbot.`"
+                    )
                 else:
                     await success_edit(text)
                 del app.config()['userbot_restarted']
@@ -171,7 +187,6 @@ def make_config(
     section: str, section_dict: dict
 ) -> None:
     UNACCETPABLE = ['', '0', 'None', 'none']
-    config[section] = {}
     for key, value in section_dict.items():
         if value is not None and value not in UNACCETPABLE:
             config[section][key] = str(value)

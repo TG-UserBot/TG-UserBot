@@ -35,7 +35,7 @@ async def setprefix(event: NewMessage.Event) -> None:
     match = event.matches[0].group(1).strip()
     old_prefix = client.prefix
     event.client.prefix = match
-    event.client.config['userbot']['prefix'] = match
+    event.client.config['userbot']['userbot_prefix'] = match
     if old_prefix is None:
         await event.answer(
             "`Successfully changed the prefix to `**{0}**`. "
@@ -63,9 +63,9 @@ async def setprefix(event: NewMessage.Event) -> None:
 )
 async def resetprefix(event: NewMessage.Event) -> None:
     """Reset the bot's prefix to the default ones."""
-    prefix = event.client.config['userbot'].get('prefix', None)
+    prefix = event.client.config['userbot'].get('userbot_prefix', None)
     if prefix:
-        del client.config['userbot']['prefix']
+        del client.config['userbot']['userbot_prefix']
         event.client.prefix = None
         await event.answer(
             "`Succesffully reset your prefix to the deafult ones!`",
