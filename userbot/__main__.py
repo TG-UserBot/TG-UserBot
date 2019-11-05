@@ -28,7 +28,7 @@ from .utils import helpers, log_formatter, pluginManager
 handler = logging.StreamHandler()
 LOGGER = logging.getLogger('userbot')
 
-handler.setFormatter(log_formatter.CustomFormatter())
+handler.setFormatter(log_formatter.CustomFormatter(datefmt="%X"))
 userbot.ROOT_LOGGER.addHandler(handler)
 
 print(userbot.__copyright__)

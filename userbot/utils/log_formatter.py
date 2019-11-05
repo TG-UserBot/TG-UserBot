@@ -31,46 +31,42 @@ CBOT = '\033[94;1m' if not HEROKU else ''
 CUSR = '\033[38;5;118m' if not HEROKU else ''
 
 
-class CustomFormatter(logging.Formatter):
-    """Convert a :obj:`LogRecord<logging.LogRecord>` to a string.
+class CustomPercentStyle(logging.PercentStyle):
+    """Replace the default_format to our own and override the format method."""
+    default_format = "[%(levelname)s / %(asctime)s] %(name)s: %(message)s"
 
-    Uses ANSI escape codes to colour some specific strings.
-    """
-
-    def format(self, record: logging.LogRecord) -> str:
-        """Format the record dictionary to a readable string.
-
-        Args:
-            record (:obj:`LogRecord<logging.LogRecord>`):
-                The attribute dictionary.
-
-        Returns:
-            ``str``:
-                Formatted string for userbot and pyrogram logs.
-        """
+    def format(self, record):
+        """Use ANSI escape code for the default format, else ignore it"""
         super().format(record)
-        record.message = record.getMessage()
-        time = self.formatTime(record, "%X")
-        if HEROKU:
-            first = "[%s] " % (record.levelname[:1])
+        if self._fmt == self.default_format:
+            if HEROKU:
+                first = "[%s] " % (record.levelname[:1])
+            else:
+                first = "[%(asctime)s / %(levelname)s] "
+
+            if record.name.startswith('telethon'):
+                second = f"{CBOT}%(name)s:{CEND} %(message)s"
+            elif record.name.startswith('userbot'):
+                second = f"{CORA}%(name)s:{CEND} %(message)s"
+            else:
+                second = "%(name)s: %(message)s"
+
+            FORMATS = {
+                logging.CRITICAL: CCRI + first + CEND + second,
+                logging.ERROR: CERR + first + CEND + second,
+                logging.WARNING: CWAR + first + CEND + second,
+                logging.INFO: CINF + first + CEND + second,
+                logging.DEBUG: CDEB + first + CEND + second,
+                'DEFAULT': self.default_format
+            }
+            fmt = FORMATS.get(record.levelno, FORMATS['DEFAULT'])
         else:
-            first = "[%s / %s] " % (time, record.levelname)
+            fmt = self._fmt
+        return fmt % record.__dict__
 
-        if record.name.startswith('telethon'):
-            second = f"{CBOT}%(name)s:{CEND} %(message)s"
-        elif record.name.startswith('userbot'):
-            second = f"{CORA}%(name)s:{CEND} %(message)s"
-        else:
-            second = "%(name)s: %(message)s"
 
-        FORMATS = {
-            logging.CRITICAL: CCRI + first + CEND + second,
-            logging.ERROR: CERR + first + CEND + second,
-            logging.WARNING: CWAR + first + CEND + second,
-            logging.INFO: CINF + first + CEND + second,
-            logging.DEBUG: CDEB + first + CEND + second,
-            'DEFAULT': first + second
-        }
-
-        log_fmt = FORMATS.get(record.levelno, FORMATS['DEFAULT'])
-        return log_fmt % record.__dict__
+class CustomFormatter(logging.Formatter):
+    """Update the default Formatter's _STYLES dict to use our custom one"""
+    _STYLES = logging._STYLES.update({
+        '%': (CustomPercentStyle, logging.BASIC_FORMAT)
+    })

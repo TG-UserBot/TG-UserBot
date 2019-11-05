@@ -26,6 +26,7 @@ from userbot import client
 from userbot.helper_funcs.ids import get_user_from_msg
 from userbot.helper_funcs.parser import Parser
 from userbot.utils.events import NewMessage
+from userbot.utils.helpers import get_chat_link
 
 
 plugin_category = "user"
@@ -306,5 +307,5 @@ async def whichid(event: NewMessage.Event) -> None:
             )
             return
     await event.answer(
-        f"`{get_display_name(entity)}:` `{get_peer_id(entity)}`"
+        f"{await get_chat_link(entity)}: `{get_peer_id(entity)}`"
     )

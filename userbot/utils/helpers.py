@@ -101,6 +101,19 @@ async def isRestart(client: UserBotClient) -> None:
     heroku = client.config['api_keys'].get('api_key_heroku', False)
     updated = os.environ.get('userbot_update', False)
     disabled_commands = False
+
+    async def success_edit(text):
+        entity = int(userbot_restarted.split('/')[0])
+        message = int(userbot_restarted.split('/')[1])
+        try:
+            await client.edit_message(entity, message, text)
+        except (
+            errors.MessageAuthorRequiredError,
+            errors.MessageNotModifiedError, errors.MessageIdInvalidError
+        ):
+            LOGGER.debug(f"Failed to edit message ({message}) in {entity}.")
+            pass
+
     if updated:
         text, updated_str = "`Successfully updated and restarted the userbot!`"
         del os.environ['userbot_update']
@@ -109,19 +122,6 @@ async def isRestart(client: UserBotClient) -> None:
     if userbot_restarted:
         del os.environ['userbot_restarted']
         LOGGER.debug('Userbot was restarted! Editing the message.')
-        entity = int(userbot_restarted.split('/')[0])
-        message = int(userbot_restarted.split('/')[1])
-
-        async def success_edit(text, entity=entity, message=message):
-            try:
-                await client.edit_message(entity, message, text)
-            except (
-                errors.MessageAuthorRequiredError,
-                errors.MessageNotModifiedError,
-                errors.MessageIdInvalidError
-            ):
-                pass
-
         if os.environ.get('DYNO', False) and heroku:
             heroku_conn = from_key(heroku)
             HEROKU_APP = os.environ.get('HEROKU_APP_NAME', False)
