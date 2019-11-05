@@ -16,17 +16,19 @@
 
 
 import logging
+import os
 
 
-CCRI = '\033[48;5;124m'
-CERR = '\033[38;5;124m'
-CWAR = '\033[38;5;202m'
-CINF = '\033[38;5;15m'
-CDEB = '\033[38;5;28m'
-CEND = '\033[0m'
-CPYR = '\033[33;1m'
-CBOT = '\033[94'
-CUSR = '\033[38;5;118m'
+HEROKU = os.environ.get('DYNO', False)
+CCRI = '\033[48;5;124m' if not HEROKU else ''
+CERR = '\033[38;5;124m' if not HEROKU else ''
+CWAR = '\033[38;5;202m' if not HEROKU else ''
+CINF = '\033[38;5;15m' if not HEROKU else ''
+CDEB = '\033[38;5;28m' if not HEROKU else ''
+CEND = '\033[0m' if not HEROKU else ''
+CORA = '\033[33;1m' if not HEROKU else ''
+CBOT = '\033[94;1m' if not HEROKU else ''
+CUSR = '\033[38;5;118m' if not HEROKU else ''
 
 
 class CustomFormatter(logging.Formatter):
@@ -46,29 +48,29 @@ class CustomFormatter(logging.Formatter):
             ``str``:
                 Formatted string for userbot and pyrogram logs.
         """
-        first_half = "[%(asctime)s / %(levelname)s]"
+        super().format(record)
+        record.message = record.getMessage()
+        time = self.formatTime(record, "%X")
+        if HEROKU:
+            first = "[%s] " % (record.levelname[:1])
+        else:
+            first = "[%s / %s] " % (time, record.levelname)
 
         if record.name.startswith('telethon'):
-            second_half = (
-                " {0};1m%(name)s:{1} %(message)s".format(CBOT, CEND)
-            )
+            second = f"{CBOT}%(name)s:{CEND} %(message)s"
         elif record.name.startswith('userbot'):
-            second_half = (
-                " {0}%(name)s:{1} %(message)s".format(CPYR, CEND)
-            )
+            second = f"{CORA}%(name)s:{CEND} %(message)s"
         else:
-            second_half = " %(name)s: %(message)s"
+            second = "%(name)s: %(message)s"
 
         FORMATS = {
-            logging.CRITICAL: CCRI + first_half + CEND + second_half,
-            logging.ERROR: CERR + first_half + CEND + second_half,
-            logging.WARNING: CWAR + first_half + CEND + second_half,
-            logging.INFO: CINF + first_half + CEND + second_half,
-            logging.DEBUG: CDEB + first_half + CEND + second_half,
-            'DEFAULT': first_half + second_half
+            logging.CRITICAL: CCRI + first + CEND + second,
+            logging.ERROR: CERR + first + CEND + second,
+            logging.WARNING: CWAR + first + CEND + second,
+            logging.INFO: CINF + first + CEND + second,
+            logging.DEBUG: CDEB + first + CEND + second,
+            'DEFAULT': first + second
         }
 
         log_fmt = FORMATS.get(record.levelno, FORMATS['DEFAULT'])
-        formatter = logging.Formatter(fmt=log_fmt, datefmt='%X', style='%')
-
-        return formatter.format(record)
+        return log_fmt % record.__dict__
