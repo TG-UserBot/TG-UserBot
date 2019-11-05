@@ -115,7 +115,8 @@ async def isRestart(client: UserBotClient) -> None:
             pass
 
     if updated:
-        text, updated_str = "`Successfully updated and restarted the userbot!`"
+        text = "`Successfully updated and restarted the userbot!`"
+        updated_str = text
         del os.environ['userbot_update']
     else:
         text = '`Successfully restarted the userbot!`'
