@@ -18,6 +18,7 @@
 import configparser
 import logging
 import os.path
+import platform
 import sys
 
 import redis
@@ -49,7 +50,7 @@ sql_session = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 'userbot.session'
 )
 
-if sys.version_info < (3, 7, 3):
+if platform.python_version_tuple() < ('3', '7', '3'):
     print(
         "Please run this script with Python 3.7.3 or above."
         "\nExiting the script."
@@ -108,9 +109,6 @@ else:
 if not API_ID and not API_HASH:
     print("You need to set your API keys in your config or environment!")
     sys.exit(1)
-elif (os.path.isfile(sql_session) and not REDIS) or (API_ID and API_HASH):
-    redis_session = False
-    session = "userbot"
 elif REDIS:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
     REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
@@ -129,6 +127,9 @@ elif REDIS:
         sys.exit(1)
     redis_session = True
     session = RedisSession("userbot", redis_connection)
+elif os.path.isfile(sql_session) or (API_ID and API_HASH):
+    redis_session = False
+    session = "userbot"
 else:
     LOGGER.error(
         "Make a proper config with your API keys to at least run the scrip or "

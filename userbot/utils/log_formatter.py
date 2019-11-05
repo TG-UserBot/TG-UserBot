@@ -17,8 +17,12 @@
 
 import logging
 import os
+import subprocess
 
 
+OSTYPE = subprocess.run(
+    "echo $OSTYPE", shell=True, stdout=subprocess.PIPE
+).stdout.decode('utf-8').strip()
 HEROKU = os.environ.get('DYNO', False)
 CCRI = '\033[48;5;124m' if not HEROKU else ''
 CERR = '\033[38;5;124m' if not HEROKU else ''
@@ -53,6 +57,8 @@ class CustomFormatter(logging.Formatter):
         time = self.formatTime(record, "%X")
         if HEROKU:
             first = "[%s] " % (record.levelname[:1])
+        elif OSTYPE == "linux-android":
+            first = "[%s / %s] " % (time[:5], record.levelname[:1])
         else:
             first = "[%s / %s] " % (time, record.levelname)
 

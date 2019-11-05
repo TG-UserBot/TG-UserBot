@@ -110,7 +110,7 @@ async def name(event: NewMessage.Event) -> None:
 
     split = match.split("last=")
     first = split[0] if split[0] else None
-    last = split[1] if len(split) == 2 else None
+    last = ' '.join(split[1:]) if len(split) > 1 else ''
     n1 = get_display_name(await client.get_me())
 
     try:
@@ -120,7 +120,7 @@ async def name(event: NewMessage.Event) -> None:
         ))
         n2 = get_display_name(await client.get_me())
         await event.answer(
-            "`Name was successfully changed.`",
+            f"`Name was successfully changed to {n2}.`",
             log=("name", f"Name changed from {n1} to {n2}")
         )
     except errors.FirstNameInvalidError:
