@@ -36,7 +36,8 @@ from .events import NewMessage
 
 LOGGER = logging.getLogger(__name__)
 sample_config_file = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), 'sample_config.ini'
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    'sample_config.ini'
 )
 
 
@@ -65,10 +66,9 @@ def resolve_env(config: configparser.ConfigParser):
     redis_endpoint = os.getenv('redis_endpoint', None)
     redis_password = os.getenv('redis_password', None)
 
-    if "telethon" in config.sections():
-        if not api_id and not api_hash:
-            api_id = config['telethon'].get('api_id', False)
-            api_hash = config['telethon'].get('api_hash', False)
+    if "telethon" in config.sections() and not api_id and not api_hash:
+        api_id = config['telethon'].get('api_id', False)
+        api_hash = config['telethon'].get('api_hash', False)
 
     if not api_id or not api_hash:
         raise ValueError
