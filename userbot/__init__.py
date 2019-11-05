@@ -108,6 +108,7 @@ else:
 
 if not API_ID and not API_HASH:
     print("You need to set your API keys in your config or environment!")
+    LOGGER.debug("No API keys!")
     sys.exit(1)
 elif REDIS:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
@@ -126,10 +127,12 @@ elif REDIS:
         )
         sys.exit(1)
     redis_session = True
+    LOGGER.debug("Redis connection and Redis session")
     session = RedisSession("userbot", redis_connection)
 elif os.path.isfile(sql_session) or (API_ID and API_HASH):
     redis_session = False
     session = "userbot"
+    LOGGER.debug("SQL session")
 else:
     LOGGER.error(
         "Make a proper config with your API keys to at least run the scrip or "
