@@ -143,12 +143,12 @@ async def updater(event: NewMessage.Event) -> None:
     heroku_api_key = client.config['api_keys'].get('api_key_heroku', False)
     if os.getenv("DYNO", False) and heroku_api_key:
         heroku_conn = heroku3.from_key(heroku_api_key)
-        heroku_app = None
-        for app in heroku_conn.apps():
-            if app.name == os.getenv('HEROKU_APP_NAME', ''):
-                heroku_app = app
+        app = None
+        for heroku_app in heroku_conn.apps():
+            if heroku_app.name == os.getenv('HEROKU_APP_NAME', ''):
+                app = heroku_app
                 break
-        if heroku_app is None:
+        if app is None:
             await event.answer(
                 "`You seem to be running on Heroku "
                 "with an invalid environment. Couldn't update the app.`\n"
@@ -158,6 +158,13 @@ async def updater(event: NewMessage.Event) -> None:
             await updated_pip_modules(event, pull, repo, new_commit)
             await restart(event)
         else:
+            for build in app.builds():
+                if build.status == "pending":
+                    await event.answer(
+                        "`There seems to be an ongoing build in your app.`"
+                        " `Try again after it's finished.`"
+                    )
+                    return
             # Don't update the telethon environment varaibles
             userbot_config = client.config['userbot']
             app.config().update(dict(userbot_config))

@@ -22,7 +22,7 @@ import os
 import time
 
 from telethon.events import StopPropagation
-from telethon.tl import types
+from telethon.tl import types, functions
 from typing import List, Tuple
 
 from userbot import client
@@ -30,6 +30,10 @@ from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
 from userbot.utils.events import NewMessage
 
 
+DEFAULT_MUTE_SETTINGS = types.InputPeerNotifySettings(
+    silent=True,
+    mute_until=datetime.timedelta(days=365)
+)
 pings = {}
 privates = {}
 groups = {}
@@ -41,6 +45,7 @@ class Chat:
     title: str
     unread_from: int
     mentions: List[int]
+    PeerNotifySettings: types.InputPeerNotifySettings
 
 
 @client.onMessage(
@@ -52,10 +57,10 @@ async def awayfromkeyboard(event: NewMessage.Event) -> None:
     arg = event.matches[0].group(1)
     rn = time.time().__str__()
     os.environ.setdefault('userbot_afk', rn)
-    text = "`I am AFK!`"
+    text = "**I am AFK!**"
     if arg:
         os.environ['userbot_afk_reason'] = arg.strip()
-        text += f"\n`Reason:` `{arg.strip()}`"
+        text += f"\n**Reason:** __{arg.strip()}__"
     extra = await get_chat_link(event, event.id)
     await event.answer(
         text,
@@ -84,6 +89,7 @@ async def out_listner(event: NewMessage.Event) -> None:
         to_log = []
         pr_log = "**Mentions received from private chats:**\n"
         for key, value in privates.items():
+            await _update_notif_settings(key, value.PeerNotifySettings)
             total_mentions += len(value.mentions)
             msg = "  `{} total mentions from `[{}](tg://user?id={})`.`"
             to_log.append(msg.format(len(value.mentions), value.title, key))
@@ -97,6 +103,7 @@ async def out_listner(event: NewMessage.Event) -> None:
         to_log = []
         gr_log = "\n**Mentions Received from groups:**\n"
         for key, value in groups.items():
+            await _update_notif_settings(key, value.PeerNotifySettings)
             total_mentions += len(value.mentions)
             msg = f"[{value.title}](https://t.me/c/{key}/{value.unread_from}):"
             msg += "\n    `Mentions: `"
@@ -122,7 +129,8 @@ async def out_listner(event: NewMessage.Event) -> None:
         reply_to=status.id,
         log=("afk", '\n'.join([pr_log, gr_log]).strip() or def_text)
     )
-    del os.environ['userbot_afk']
+    if "userbot_afk" in os.environ:
+        del os.environ['userbot_afk']
     if "userbot_afk_reason" in os.environ:
         del os.environ['userbot_afk_reason']
 
@@ -177,6 +185,11 @@ async def _append_msg(variable: dict, chat: int, event: int) -> None:
     if chat in variable:
         variable[chat].mentions.append(event)
     else:
+        notif = await client(functions.account.GetNotifySettingsRequest(
+            peer=chat
+        ))
+        notif = types.InputPeerNotifySettings(**vars(notif))
+        await _update_notif_settings(chat)
         async for dialog in client.iter_dialogs():
             if chat == dialog.entity.id:
                 title = getattr(dialog, 'title', dialog.name)
@@ -196,8 +209,18 @@ async def _append_msg(variable: dict, chat: int, event: int) -> None:
             if not message.out:
                 x = x + 1
                 messages.append(message.id)
-        variable[chat] = Chat(title, messages[-1], [event])
+        variable[chat] = Chat(title, messages[-1], [event], notif)
         messages.clear()
+
+
+async def _update_notif_settings(
+    peer: int,
+    settings: types.InputPeerNotifySettings = DEFAULT_MUTE_SETTINGS
+) -> None:
+    await client(functions.account.UpdateNotifySettingsRequest(
+        peer=peer,
+        settings=settings
+    ))
 
 
 async def _correct_grammer(

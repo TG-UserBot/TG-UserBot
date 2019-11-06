@@ -60,6 +60,7 @@ class Message(custom.Message):
                 ):
                     kwargs.setdefault('reply_to', reply_to)
                     try:
+                        kwargs.setdefault('silent', True)
                         msg = await self.respond(text, **kwargs)
                     except Exception as e:
                         LOGGER.exception(e)
@@ -77,6 +78,7 @@ class Message(custom.Message):
                         msg.append(first_msg)
                         for t in chunks[1:]:
                             try:
+                                kwargs.setdefault('silent', True)
                                 sent = await self.respond(t, **kwargs)
                                 msg.append(sent)
                             except Exception as e:
@@ -96,6 +98,7 @@ class Message(custom.Message):
                 output = io.BytesIO(msg.strip().encode())
                 output.name = "output.txt"
                 try:
+                    kwargs.setdefault('silent', True)
                     msg = await self.respond(
                         file=output,
                         **kwargs
@@ -107,6 +110,7 @@ class Message(custom.Message):
         else:
             kwargs.setdefault('reply_to', reply_to)
             try:
+                kwargs.setdefault('silent', True)
                 msg = await self.respond(*args, **kwargs)
             except Exception as e:
                 LOGGER.exception(e)
@@ -217,7 +221,7 @@ async def _reset_entities(entities: list, end: int, next_offset: int) -> None:
         entity.offset = entity.offset + increment - offset
 
 
-async def _next_offset(end, entities) -> Tuple[int, int]:
+async def _next_offset(end, entities) -> Tuple[int, bool]:
     """Find out how much length we need to skip ahead for the next entities"""
     last_chunk = False
     if len(entities) >= end+1:

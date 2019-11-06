@@ -35,6 +35,10 @@ from .events import NewMessage
 
 
 LOGGER = logging.getLogger(__name__)
+sample_config_file = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    'sample_config.ini'
+)
 
 
 def printUser(entity: User) -> None:
@@ -70,7 +74,7 @@ def resolve_env(config: configparser.ConfigParser):
         raise ValueError
 
     sample_config = configparser.ConfigParser()
-    sample_config.read('sample_config.ini')
+    sample_config.read(sample_config_file)
     for section in sample_config.sections():
         if section not in config:
             config[section] = {}
