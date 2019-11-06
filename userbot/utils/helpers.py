@@ -35,10 +35,6 @@ from .events import NewMessage
 
 
 LOGGER = logging.getLogger(__name__)
-sample_config_file = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    'sample_config.ini'
-)
 
 
 def printUser(entity: User) -> None:
@@ -74,7 +70,7 @@ def resolve_env(config: configparser.ConfigParser):
         raise ValueError
 
     sample_config = configparser.ConfigParser()
-    sample_config.read(sample_config_file)
+    sample_config.read('sample_config.ini')
     for section in sample_config.sections():
         if section not in config:
             config[section] = {}
@@ -88,7 +84,7 @@ def resolve_env(config: configparser.ConfigParser):
 
     userbot = {
         'console_logger_level': os.getenv('console_logger_level', None),
-        'logger_group_id': int(os.getenv('logger_group_id', 0)),
+        'logger_group_id': os.getenv('logger_group_id', None),
         'userbot_prefix': os.getenv('userbot_prefix', None),
         'default_sticker_pack': os.getenv('default_sticker_pack', None),
         'default_animated_sticker_pack': os.getenv(
@@ -186,7 +182,7 @@ def make_config(
     config: configparser.ConfigParser,
     section: str, section_dict: dict
 ) -> None:
-    UNACCETPABLE = ['', '0', 'None', 'none']
+    UNACCETPABLE = ['', '0', 'None', 'none', 0, None]
     for key, value in section_dict.items():
         if value is not None and value not in UNACCETPABLE:
             config[section][key] = str(value)

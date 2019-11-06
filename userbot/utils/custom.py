@@ -187,7 +187,7 @@ async def _resolve_entities(message: str, entities: list) -> dict:
                         messages.append((m_chunk, [entity_type(**kwargs)]))
                 else:
                     messages.append((message[:msg_end], [entities[0]]))
-                next_offset = await _next_offset(1, entities)
+                next_offset, _ = await _next_offset(1, entities)
                 del entities[0]
                 message = message[msg_end:]
                 await _reset_entities(entities, msg_end, next_offset)
@@ -195,8 +195,11 @@ async def _resolve_entities(message: str, entities: list) -> dict:
             end = end + 1  # We don't want the index
 
         e_chunk = entities[:end]
-        msg_end = e_chunk[-1].offset + e_chunk[-1].length
-        next_offset = await _next_offset(end, entities)
+        next_offset, last_chunk = await _next_offset(end, entities)
+        if last_chunk:
+            msg_end = len(message) + 1
+        else:
+            msg_end = e_chunk[-1].offset + e_chunk[-1].length
         t_chunk = message[:msg_end]
         messages.append((t_chunk, e_chunk))
         entities = entities[end:]
@@ -214,11 +217,13 @@ async def _reset_entities(entities: list, end: int, next_offset: int) -> None:
         entity.offset = entity.offset + increment - offset
 
 
-async def _next_offset(end, entities) -> int:
+async def _next_offset(end, entities) -> Tuple[int, int]:
     """Find out how much length we need to skip ahead for the next entities"""
+    last_chunk = False
     if len(entities) >= end+1:
         next_offset = entities[end].offset
     else:
         # It's always the last entity so just grab the last index
         next_offset = entities[-1].offset + entities[-1].length
-    return next_offset
+        last_chunk = True
+    return next_offset, last_chunk
