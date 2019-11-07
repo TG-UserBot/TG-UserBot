@@ -1,8 +1,16 @@
 # TG-UserBot
 
+A modular Telegram UserBot for Python which uses the [Telethon][telethon] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
+
 [![Documentation Status][docsbadge]][docs]
 
-A modular Telegram UserBot for Python which uses the [Telethon][telethon] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
+### Deploy to Heroku Directly
+- Go to https://redislabs.com/ and make a free 30 MB database and copy it's endpoint and password.
+- Clone the repository and install the requirements. Read the procedure section below.
+- Add your API keys and Redis endpoint and password in your config's telethon section.
+- Run the bot, login once till the bot running. Finally, exit the script with ``Ctrl + C`` and use the button below to deploy.
+- ``Incase your session is invalid, just run the bot locally again, it will delete your old session from Redis. Then run it again, login and exit it and restart your dyno on Heroku.``
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
 
 ### Requirements
 
@@ -63,3 +71,4 @@ Either submit pull requests or create an issue on here, if not, you can join the
    [docs]: <https://tg-userbot.readthedocs.io/en/latest/>
    [docsbadge]: <https://readthedocs.org/projects/tg-userbot/badge/?version=latest>
    [support]: <https://t.me/tg_userbot_support>
+   [heroku-deploy]: <https://heroku.com/deploy>

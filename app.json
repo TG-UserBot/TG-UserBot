@@ -1,0 +1,63 @@
+{
+    "name": "TG-UserBot",
+    "description": "A modular Telegram UserBot for Python which uses the Telethon library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.",
+    "repository": "https://github.com/kandnub/TG-UserBot/",
+    "logo": "https://i.imgur.com/qctfOGK.png",
+    "keywords": ["tg-userbot", "telegram-userbot", "userbot", "python"],
+    "success_url": "https://t.me/tg_userbot_support/",
+    "stack": "container",
+    "image": "Dockerfile",
+    "env": {
+        "HEROKU_APP_NAME": {
+            "description": "The case-sensitive app name you used.",
+            "required": true
+        },
+        "api_key_heroku": {
+            "description": "Get your API key from https://dashboard.heroku.com/account",
+            "required": true
+        },
+        "api_id": {
+            "description": "Get your own Telegram API key from https://my.telegram.org/apps",
+            "required": true
+        },
+        "api_hash": {
+            "description": "Get your own Telegram API key from https://my.telegram.org/apps",
+            "required": true
+        },
+        "redis_endpoint": {
+            "description": "Get your own free 30 MB databse from https://redislabs.com/",
+            "required": true
+        },
+        "redis_password": {
+            "description": "Get your own free 30 MB databse from https://redislabs.com/",
+            "required": true
+        },
+        "console_logger_level": {
+            "description": "Logging level to use for Heroku logs.",
+            "value": "INFO",
+            "required": false
+        },
+        "logger_group_id": {
+            "description": "The ID of a group if you want the userbot to log everything.",
+            "required": false
+        },
+        "userbot_prefix": {
+            "description": "If you want to use one specific prefix. Set one.",
+            "required": false
+        },
+        "default_sticker_pack": {
+            "description": "Default sticker pack to add the new stickers in.",
+            "value": "auto",
+            "required": false
+        },
+        "default_animated_sticker_pack": {
+            "description": "Default animated sticker pack to add the new stickers in.",
+            "value": "auto",
+            "required": false
+        },
+        "api_key_removebg": {
+            "description": "Get your API key from https://remove.bg/",
+            "required": false
+        }
+    }
+}
