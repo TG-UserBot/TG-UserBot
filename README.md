@@ -9,8 +9,10 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 - Clone the repository and install the requirements. Read the procedure section below.
 - Add your API keys and Redis endpoint and password in your config's telethon section.
 - Run the bot, login once till the bot running. Finally, exit the script with ``Ctrl + C`` and use the button below to deploy.
-- ``Incase your session is invalid, just run the bot locally again, it will delete your old session from Redis. Then run it again, login and exit it and restart your dyno on Heroku.``
+
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
+
+``Incase your session becomes invalid, just run the bot locally again, it will delete your old session from Redis. Then run it again, login and exit it and restart your dyno on Heroku.``
 
 ### Requirements
 
