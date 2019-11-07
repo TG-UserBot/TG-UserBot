@@ -105,6 +105,7 @@ async def sed_substitute(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"regexninja(?: |$)(on|off)?$"
 )
 async def regex_ninja(event: NewMessage.Event) -> None:
+    """Enable and disable ninja mode for @regexbot"""
     arg = event.matches[0].group(1)
     ninja = os.environ.get("userbot_regexninja", False)
 
@@ -135,6 +136,7 @@ async def regex_ninja(event: NewMessage.Event) -> None:
     regex=(r'^s/((?:\\/|[^/])+)/((?:\\/|[^/])*)(/.*)?', re.IGNORECASE)
 )
 async def ninja(event: NewMessage.Event) -> None:
+    """Deletes our sed messages if regexninja is enabled"""
     ninja = os.environ.get("userbot_regexninja", False)
     if ninja:
         await asyncio.sleep(0.5)

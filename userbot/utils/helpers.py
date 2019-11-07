@@ -113,7 +113,7 @@ async def isRestart(client: UserBotClient) -> None:
     """Check if the script restarted itself and edit the last message"""
     userbot_restarted = os.environ.get('userbot_restarted', False)
     heroku = client.config['api_keys'].get('api_key_heroku', False)
-    updated = os.environ.get('userbot_update', False)
+    updated = os.environ.pop('userbot_update', False)
     disabled_commands = False
 
     async def success_edit(text):
@@ -130,7 +130,6 @@ async def isRestart(client: UserBotClient) -> None:
 
     if updated:
         text = "`Successfully updated and restarted the userbot!`"
-        del os.environ['userbot_update']
     else:
         text = '`Successfully restarted the userbot!`'
     if userbot_restarted:

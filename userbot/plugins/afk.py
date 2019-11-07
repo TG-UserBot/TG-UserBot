@@ -74,9 +74,10 @@ async def out_listner(event: NewMessage.Event) -> None:
     """Handle your AFK status by listening to new outgoing messages."""
     if event.from_scheduled:
         return
-    afk = os.environ.get('userbot_afk', False)
+    afk = os.environ.pop('userbot_afk', False)
     if not afk:
         return
+    os.environ.pop('userbot_afk_reason', None)
 
     def_text = "`You received no messages nor were tagged at any time.`"
     pr_text = ''
@@ -123,16 +124,12 @@ async def out_listner(event: NewMessage.Event) -> None:
     main_text = '\n'.join([pr_text, gr_text]).strip()
     if not client.logger:
         main_text += "\n`Use a logger group for more detailed AFK mentions!`"
-    status = await event.answer("`I am no longer AFK!`", reply=True)
+    status = await event.answer("`I am no longer AFK!`", reply_to=event.id)
     toast = await event.answer(
         message=main_text or def_text,
         reply_to=status.id,
         log=("afk", '\n'.join([pr_log, gr_log]).strip() or def_text)
     )
-    if "userbot_afk" in os.environ:
-        del os.environ['userbot_afk']
-    if "userbot_afk_reason" in os.environ:
-        del os.environ['userbot_afk_reason']
 
     for chat, msg in sent.items():
         await client.delete_messages(chat, msg)
