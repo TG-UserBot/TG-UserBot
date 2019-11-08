@@ -19,15 +19,17 @@ import re
 from typing import Tuple
 
 from telethon import events
-from telethon.tl import types
+from telethon.tl import custom, types
 
-from userbot.utils.custom import Message
+from .custom import answer
+
+
+custom.Message.answer = answer
 
 
 @events.common.name_inner_event
 class NewMessage(events.NewMessage):
     """Custom NewMessage event inheriting the default Telethon event"""
-    types.Message = Message
 
     def __init__(
         self,
@@ -99,16 +101,7 @@ class NewMessage(events.NewMessage):
                                 event.reply(text)
                             )
                         return
-
-        return super().filter(event)
-
-    class Event(events.NewMessage.Event):
-        def __init__(self, update):
-            # Rebuild the update type to our custom Message type
-            # Very dirty but it'll do for now. TODO: Fix it soon.
-            if type(update).__name__ != type(Message).__name__:
-                update = Message(**vars(update))
-            super().__init__(update)
+        return event
 
 
 @events.common.name_inner_event

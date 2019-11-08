@@ -32,7 +32,7 @@ plugin_category = "user"
     outgoing=True, regex=r"remind(me|here)(?: |$)(\w+)?(?: |$)([\s\S]*)"
 )
 async def remindme(event: NewMessage.Event) -> None:
-    """Set a reminder to be sent to your Saved Messages in x amount of time."""
+    """Set a reminder (scheduled message) to be sent in n amount of time."""
     arg = event.matches[0].group(1)
     time = event.matches[0].group(2)
     text = event.matches[0].group(3)

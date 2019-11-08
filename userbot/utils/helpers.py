@@ -218,6 +218,8 @@ async def _human_friendly_timedelta(timedelta: str) -> str:
         unit = "second" if s == 1 else "seconds"
         delimiter = " and " if len(text) > 1 else ''
         text += f"{delimiter}{s} {unit}"
+    if len(text) == 0:
+        text = "\u221E (less than 1 second)"
     return text
 
 

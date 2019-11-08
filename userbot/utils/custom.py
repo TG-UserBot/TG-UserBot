@@ -28,144 +28,125 @@ LOGGER = logging.getLogger(__name__)
 MAXLIM: int = 4096
 
 
-class Message(custom.Message):
-    """Custom message type with the answer bound method"""
+async def answer(
+    self,
+    *args,
+    log: str or Tuple[str, str] = None,
+    reply: bool = False,
+    **kwargs
+) -> Union[custom.Message, List[custom.Message]]:
+    """Custom bound method for the Message object"""
+    message = await self.client.get_messages(self.chat_id, ids=self.id)
+    reply_to = self.reply_to_msg_id or self.id
 
-    def __init__(self, id, **kwargs):
-        for k, v in kwargs.copy().items():
-            if k.startswith('_'):
-                del kwargs[k]
-        super().__init__(id, **kwargs)
-
-    async def answer(
-        self,
-        *args,
-        log: str or Tuple[str, str] = None,
-        reply: bool = False,
-        **kwargs
-    ) -> Union[custom.Message, List[custom.Message]]:
-        message = await self._client.get_messages(
-            self.chat_id, ids=self.id
-        )
-        reply_to = self.reply_to_msg_id or self.id
-
-        if len(args) == 1 and isinstance(args[0], str):
-            is_reply = reply or kwargs.get('reply_to', False)
-            text = args[0]
-            msg, msg_entities = markdown.parse(text)
-            if len(msg) <= MAXLIM:
-                if (
-                    is_reply or self.media or self.fwd_from or
-                    not (message and message.out)
-                ):
-                    kwargs.setdefault('reply_to', reply_to)
-                    try:
-                        kwargs.setdefault('silent', True)
-                        msg = await self.respond(text, **kwargs)
-                    except Exception as e:
-                        LOGGER.exception(e)
-                else:
-                    if len(msg_entities) > 100:
-                        messages = await _resolve_entities(
-                            msg, msg_entities
-                        )
-                        chunks = [markdown.unparse(t, e) for t, e in messages]
-                        msg = []
-                        try:
-                            first_msg = await self.edit(chunks[0], **kwargs)
-                        except Exception as e:
-                            LOGGER.exception(e)
-                        msg.append(first_msg)
-                        for t in chunks[1:]:
-                            try:
-                                kwargs.setdefault('silent', True)
-                                sent = await self.respond(t, **kwargs)
-                                msg.append(sent)
-                            except Exception as e:
-                                LOGGER.exception(e)
-                    else:
-                        try:
-                            msg = await self.edit(text, **kwargs)
-                        except Exception as e:
-                            LOGGER.exception(e)
-            else:
-                if (
-                    message and message.out and
-                    not (message.fwd_from or message.media)
-                ):
-                    await self.edit("`Output exceeded the limit.`")
+    if len(args) == 1 and isinstance(args[0], str):
+        is_reply = reply or kwargs.get('reply_to', False)
+        text = args[0]
+        msg, msg_entities = markdown.parse(text)
+        if len(msg) <= MAXLIM:
+            if (
+                is_reply or self.media or self.fwd_from or
+                not (message and message.out)
+            ):
                 kwargs.setdefault('reply_to', reply_to)
-                output = io.BytesIO(msg.strip().encode())
-                output.name = "output.txt"
                 try:
                     kwargs.setdefault('silent', True)
-                    msg = await self.respond(
-                        file=output,
-                        **kwargs
-                    )
-                    output.close()
+                    msg = await self.respond(text, **kwargs)
                 except Exception as e:
-                    output.close()
                     LOGGER.exception(e)
+            else:
+                if len(msg_entities) > 100:
+                    messages = await _resolve_entities(msg, msg_entities)
+                    chunks = [markdown.unparse(t, e) for t, e in messages]
+                    msg = []
+                    try:
+                        first_msg = await self.edit(chunks[0], **kwargs)
+                    except Exception as e:
+                        LOGGER.exception(e)
+                    msg.append(first_msg)
+                    for t in chunks[1:]:
+                        try:
+                            kwargs.setdefault('silent', True)
+                            sent = await self.respond(t, **kwargs)
+                            msg.append(sent)
+                        except Exception as e:
+                            LOGGER.exception(e)
+                else:
+                    try:
+                        msg = await self.edit(text, **kwargs)
+                    except Exception as e:
+                        LOGGER.exception(e)
         else:
+            if (
+                message and message.out and
+                not (message.fwd_from or message.media)
+            ):
+                await self.edit("`Output exceeded the limit.`")
             kwargs.setdefault('reply_to', reply_to)
+            output = io.BytesIO(msg.strip().encode())
+            output.name = "output.txt"
             try:
                 kwargs.setdefault('silent', True)
-                msg = await self.respond(*args, **kwargs)
+                msg = await self.respond(
+                    file=output,
+                    **kwargs
+                )
+                output.close()
+            except Exception as e:
+                output.close()
+                LOGGER.exception(e)
+    else:
+        kwargs.setdefault('reply_to', reply_to)
+        try:
+            kwargs.setdefault('silent', True)
+            msg = await self.respond(*args, **kwargs)
+        except Exception as e:
+            LOGGER.exception(e)
+
+    if log:
+        if isinstance(log, tuple):
+            command, extra = log
+            text = f"**USERBOT LOG** #{command}"
+            if extra:
+                text += f"\n{extra}"
+        else:
+            text = f"**USERBOT LOG** `Executed command:` #{log}"
+        if self.client.logger:
+            logger_group = self.client.config['userbot'].getint(
+                'logger_group_id', False
+            )
+            entity = False
+            try:
+                entity = await self.client.get_input_entity(logger_group)
+            except TypeError:
+                LOGGER.info("Your logger group ID is unsupported")
+            except ValueError:
+                LOGGER.info("Your logger group ID cannot be found")
             except Exception as e:
                 LOGGER.exception(e)
 
-        if log:
-            if isinstance(log, tuple):
-                command, extra = log
-                text = f"**USERBOT LOG** #{command}"
-                if extra:
-                    text += f"\n{extra}"
-            else:
-                text = f"**USERBOT LOG** `Executed command:` #{log}"
-            if self._client.logger:
-                logger_group = self._client.config['userbot'].getint(
-                    'logger_group_id', False
-                )
-                entity = False
-                try:
-                    entity = await self._client.get_input_entity(logger_group)
-                except TypeError:
-                    LOGGER.info("Your logger group ID is unsupported")
-                except ValueError:
-                    LOGGER.info("Your logger group ID cannot be found")
-                except Exception as e:
-                    LOGGER.exception(e)
-
-                if entity:
-                    message, msg_entities = markdown.parse(text)
-                    if len(message) <= MAXLIM and len(msg_entities) < 100:
-                        messages = [(message, msg_entities)]
-                    else:
-                        messages = await _resolve_entities(
-                            message, msg_entities
-                        )
-                    for text, entities in messages:
-                        try:
-                            await self._client(
-                                functions.messages.SendMessageRequest(
-                                    peer=entity,
-                                    message=text,
-                                    no_webpage=True,
-                                    silent=True,
-                                    entities=entities
-                                )
+            if entity:
+                message, msg_entities = markdown.parse(text)
+                if len(message) <= MAXLIM and len(msg_entities) < 100:
+                    messages = [(message, msg_entities)]
+                else:
+                    messages = await _resolve_entities(message, msg_entities)
+                for text, entities in messages:
+                    try:
+                        await self.client(
+                            functions.messages.SendMessageRequest(
+                                peer=entity,
+                                message=text,
+                                no_webpage=True,
+                                silent=True,
+                                entities=entities
                             )
-                            await asyncio.sleep(2)
-                        except Exception as e:
-                            print("Report this error to the support group.")
-                            LOGGER.exception(e)
-        return msg
-
-
-Message.register(types.Message)
-# In-case you want a literal match for is instance
-# Message.register(type(types.Message))
+                        )
+                        await asyncio.sleep(2)
+                    except Exception as e:
+                        print("Report this error to the support group.")
+                        LOGGER.exception(e)
+    return msg
 
 
 async def _resolve_entities(message: str, entities: list) -> dict:
@@ -198,6 +179,15 @@ async def _resolve_entities(message: str, entities: list) -> dict:
                 continue
             end = end + 1  # We don't want the index
 
+        _, last_chunk = await _next_offset(end, entities)
+        if not last_chunk:
+            last_end = entities[end+1].offset + entities[end+1].length
+            if end > 3 and not message[last_end:].startswith('\n'):
+                for e in entities[:end:-1]:
+                    start = e.offset + e.length
+                    end = end - 1
+                    if end == 2 or message[start:].startswith('\n'):
+                        break
         e_chunk = entities[:end]
         next_offset, last_chunk = await _next_offset(end, entities)
         if last_chunk:

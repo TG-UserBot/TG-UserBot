@@ -20,7 +20,7 @@ import dataclasses
 import importlib
 import logging
 import sys
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from telethon import TelegramClient, events
 
@@ -91,25 +91,16 @@ class UserBotClient(TelegramClient):
                     builtin
                 )
                 category = category.lower()
-                self.commands.update({
-                    com: UBcommand
-                })
+                self.commands.update({com: UBcommand})
 
-                self.commandcategories.setdefault(category, []).append(
-                    com
-                )
+                update_dict(self.commandcategories, category, com)
                 if builtin:
-                    self.commandcategories.setdefault('builtin', []).append(
-                        com
-                    )
+                    update_dict(self.commandcategories, 'builtin', com)
             return func
 
         return wrapper
 
-    async def _restarter(
-        self,
-        event: Union[MessageEdited.Event, NewMessage.Event]
-    ) -> None:
+    async def _restarter(self, event: NewMessage.Event) -> None:
         """Remove all event handlers and stop then start the client again"""
         if self.restarting:
             await event.answer("`Previous restart is still in proccess!`")
@@ -176,3 +167,9 @@ class UserBotClient(TelegramClient):
             process.kill()
             LOGGER.debug("Killed %d which was still running.", process.pid)
         self.running_processes.clear()
+
+
+def update_dict(category: dict, name: str, command: str or list) -> None:
+    commands = command.split('/') if '/' in command else [command]
+    for c in commands:
+        category.setdefault(name, []).append(c)

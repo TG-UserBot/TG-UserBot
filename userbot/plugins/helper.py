@@ -16,6 +16,7 @@
 
 
 import os.path
+from typing import Tuple
 
 from userbot import client
 from userbot.utils.events import NewMessage
@@ -34,23 +35,23 @@ async def setprefix(event: NewMessage.Event) -> None:
     """Change the bot's default prefix."""
     match = event.matches[0].group(1).strip()
     old_prefix = client.prefix
-    event.client.prefix = match
-    event.client.config['userbot']['userbot_prefix'] = match
+    client.prefix = match
+    client.config['userbot']['userbot_prefix'] = match
     if old_prefix is None:
         await event.answer(
             "`Successfully changed the prefix to `**{0}**`. "
-            "To revert this, do `**resetprefix**".format(event.client.prefix),
-            log=("setprefix", f"Prefix changed to {event.client.prefix}")
+            "To revert this, do `**resetprefix**".format(client.prefix),
+            log=("setprefix", f"Prefix changed to {client.prefix}")
         )
     else:
         await event.answer(
             "`Successfully changed the prefix to `**{0}**`. "
             "To revert this, do `**{0}setprefix {1}**".format(
-                event.client.prefix, old_prefix
+                client.prefix, old_prefix
             ),
             log=(
                 "setprefix",
-                f"prefix changed to {event.client.prefix} from {old_prefix}"
+                f"prefix changed to {client.prefix} from {old_prefix}"
             )
         )
     client._updateconfig()
@@ -63,12 +64,12 @@ async def setprefix(event: NewMessage.Event) -> None:
 )
 async def resetprefix(event: NewMessage.Event) -> None:
     """Reset the bot's prefix to the default ones."""
-    prefix = event.client.config['userbot'].get('userbot_prefix', None)
+    prefix = client.config['userbot'].get('userbot_prefix', None)
     if prefix:
         del client.config['userbot']['userbot_prefix']
-        event.client.prefix = None
+        client.prefix = None
         await event.answer(
-            "`Succesffully reset your prefix to the deafult ones!`",
+            "`Successfully reset your prefix to the deafult ones!`",
             log=("resetprefix", "Successfully reset your prefix")
         )
         client._updateconfig()
@@ -86,17 +87,26 @@ async def enable(event: NewMessage.Event) -> None:
     """Enable a command IF it's already disabled."""
     arg = event.matches[0].group(1)
     if not arg:
-        await event.edit("`Enable what? The void?`")
+        await event.answer("`Enable what? The void?`")
         return
-    command = event.client.disabled_commands.get(arg, False)
+    commands, command_list = await solve_commands(client.disabled_commands)
+    command = commands.get(arg, False)
     if command:
         for handler in command.handlers:
-            event.client.add_event_handler(command.func, handler)
-        event.client.commands.update({arg: command})
-        del event.client.disabled_commands[arg]
+            client.add_event_handler(command.func, handler)
+        if arg in command_list:
+            com = command_list.get(arg)
+            client.commands[com] = command
+            del client.disabled_commands[com]
+            enabled_coms = ', '.join(com.split('/'))
+        else:
+            client.commands[arg] = command
+            del client.disabled_commands[arg]
+            enabled_coms = arg
+
         await event.answer(
-            f"`Successfully enabled {arg}`",
-            log=("enable", f"Enabled command: {arg}")
+            f"`Successfully enabled {enabled_coms}`",
+            log=("enable", f"Enabled command(s): {enabled_coms}")
         )
     else:
         await event.answer(
@@ -113,19 +123,27 @@ async def disable(event: NewMessage.Event) -> None:
     """Disable a command IF it's already enabled."""
     arg = event.matches[0].group(1)
     if not arg:
-        await event.edit("`Disable what? The void?`")
+        await event.answer("`Disable what? The void?`")
         return
-    command = event.client.commands.get(arg, False)
+    commands, command_list = await solve_commands(client.commands)
+    command = commands.get(arg, False)
     if command:
         if command.builtin:
             await event.answer("`Cannot disable a builtin command.`")
         else:
-            event.client.remove_event_handler(command.func)
-            event.client.disabled_commands.update({arg: command})
-            del event.client.commands[arg]
+            client.remove_event_handler(command.func)
+            if arg in command_list:
+                com = command_list.get(arg)
+                client.disabled_commands[com] = command
+                del client.commands[com]
+                disabled_coms = ', '.join(com.split('/'))
+            else:
+                client.disabled_commands[arg] = command
+                del client.commands[arg]
+                disabled_coms = arg
             await event.answer(
-                f"`Successfully disabled {arg}`",
-                log=("disable", f"Disabled command: {arg}")
+                f"`Successfully disabled {disabled_coms}`",
+                log=("disable", f"Disabled command(s): {disabled_coms}")
             )
     else:
         await event.answer("`Couldn't find the specified command.`")
@@ -138,7 +156,8 @@ async def disable(event: NewMessage.Event) -> None:
 async def commands(event: NewMessage.Event) -> None:
     """A list of all the currently enabled commands."""
     response = "**Enabled commands:**"
-    enabled = sorted(event.client.commands.keys())
+    commands, _ = await solve_commands(client.commands)
+    enabled = sorted(commands.keys())
     for i in range(0, len(enabled), chunk):
         response += "\n  "
         response += ", ".join('`' + c + '`' for c in enabled[i:i+chunk])
@@ -151,17 +170,17 @@ async def commands(event: NewMessage.Event) -> None:
 )
 async def disabled(event: NewMessage.Event) -> None:
     """A list of all the currently disabled commands."""
-    disabled_commands = event.client.disabled_commands
+    disabled_commands, _ = await solve_commands(client.disabled_commands)
 
     if not disabled_commands:
         await event.answer("`There are no disabled commands currently.`")
         return
 
     response = "**Disabled commands:**"
-    enabled = sorted(disabled_commands.keys())
-    for i in range(0, len(enabled), chunk):
+    disabled = sorted(disabled_commands.keys())
+    for i in range(0, len(disabled), chunk):
         response += "\n  "
-        response += ", ".join('`' + c + '`' for c in enabled[i:i+chunk])
+        response += ", ".join('`' + c + '`' for c in disabled[i:i+chunk])
     await event.answer(response)
 
 
@@ -172,9 +191,9 @@ async def disabled(event: NewMessage.Event) -> None:
 async def helper(event: NewMessage.Event) -> None:
     """A list of commands categories, their commands or command's details."""
     arg = event.matches[0].group(1)
-    enabled = event.client.commands
-    disabled = event.client.disabled_commands
-    categories = event.client.commandcategories
+    enabled, _ = await solve_commands(client.commands)
+    disabled, _ = await solve_commands(client.disabled_commands)
+    categories = client.commandcategories
     if arg:
         arg = arg.strip().lower()
         arg1 = True if arg.endswith(("dev", "details", "info")) else False
@@ -183,11 +202,11 @@ async def helper(event: NewMessage.Event) -> None:
         if arg == "all":
             text = "**Enabled commands:**"
             for name, command in sorted(enabled.items()):
-                text += f"\n**{name}**: `{command.info}`"
+                text += f"\n**{name}**: `{command.info}`\n"
             if disabled:
                 text += "\n**Disabled commands:**"
                 for name, command in sorted(disabled.items()):
-                    text += f"\n**{name}**: `{command.info}`"
+                    text += f"\n**{name}**: `{command.info}`\n"
         elif arg in [*enabled, *disabled]:
             merged = {**enabled, **disabled}
             command = merged.get(arg)
@@ -225,3 +244,16 @@ async def helper(event: NewMessage.Event) -> None:
         for category in sorted(categories.keys()):
             text += f"\n    **{category}**"
     await event.answer(text)
+
+
+async def solve_commands(commands: dict) -> Tuple[dict, dict]:
+    new_dict: dict = {}
+    com_tuples = {}
+    for com_names, command in commands.items():
+        if '/' in com_names:
+            for n in com_names.split('/'):
+                com_tuples[n] = com_names
+                new_dict[n] = command
+        else:
+            new_dict[com_names] = command
+    return new_dict, com_tuples
