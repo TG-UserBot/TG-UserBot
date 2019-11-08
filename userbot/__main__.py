@@ -57,7 +57,7 @@ if __name__ == "__main__":
     except (AuthKeyError, InvalidBufferError):
         client.session.delete()
         LOGGER.error(
-            "Your old session is invalid and has been automatically deleted! "
+            "Your old session was invalid and has been automatically deleted! "
             "Run the script again to generate a new session."
         )
         sys.exit(1)

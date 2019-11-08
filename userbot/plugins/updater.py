@@ -48,11 +48,13 @@ async def updater(event: NewMessage.Event) -> None:
         fetched_itmes = repo.remotes.origin.fetch()
     except git.exc.NoSuchPathError as path:
         await event.answer(f"`Couldn't find {path}!`")
+        repo.__del__()
         return
     except git.exc.GitCommandError as command:
         await event.answer(
             f"`An error occured trying to get the Git Repo.`\n`{command}`"
         )
+        repo.__del__()
         return
     except git.exc.InvalidGitRepositoryError:
         repo = git.Repo.init(basedir)
@@ -61,6 +63,7 @@ async def updater(event: NewMessage.Event) -> None:
             await event.answer(
                 "`The main repository does not exist. Remote is invalid!`"
             )
+            repo.__del__()
             return
         fetched_itmes = origin.fetch()
         repo.create_head('master', origin.refs.master).set_tracking_branch(
@@ -87,11 +90,13 @@ async def updater(event: NewMessage.Event) -> None:
         )
         prefix = client.prefix if client.prefix is not None else '.'
         await event.answer(text.format(command, prefix))
+        repo.__del__()
         return
 
     new_commit = repo.head.commit
     if old_commit == new_commit:
         await event.answer("`Already up-to-date!`")
+        repo.__del__()
         return
 
     remote_url = repo.remote().url.replace(".git", '/')
@@ -156,6 +161,7 @@ async def updater(event: NewMessage.Event) -> None:
             )
             await asyncio.sleep(2)
             await updated_pip_modules(event, pull, repo, new_commit)
+            repo.__del__()
             await restart(event)
         else:
             for build in app.builds():
@@ -203,8 +209,10 @@ async def updater(event: NewMessage.Event) -> None:
                     f"\n`{command}`"
                 )
                 LOGGER.exception(command)
+            repo.__del__()
     else:
         await updated_pip_modules(event, pull, repo, new_commit)
+        repo.__del__()
         await restart(event)
 
 
