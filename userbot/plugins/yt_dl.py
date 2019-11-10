@@ -55,16 +55,9 @@ params = {
     'quiet': True
 }
 
-try:
-    subprocess.Popen(
-        ['ffmpeg'],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT
-    ).communicate()
-    ffmpeg = True
-except OSError:
-    ffmpeg = False
+
+cmd = subprocess.run(['ffmpeg', '-version'], shell=True, capture_output=True)
+ffmpeg = True if cmd.returncode == 0 else False
 
 
 @client.onMessage(
@@ -115,7 +108,7 @@ async def yt_dl(event):
 
     await event.answer("`Processing...`")
     output = await extract_info(
-        concurrent.futures.ThreadPoolExecutor, params, url, download=True
+        concurrent.futures.ThreadPoolExecutor(), params, url, download=True
     )
     warning = (
         "`WARNING: FFMPEG is not installed!`"
