@@ -20,6 +20,7 @@ import bs4
 import concurrent
 import functools
 import io
+import random
 import re
 import requests
 import urllib
@@ -37,8 +38,10 @@ light_useragent = """Mozilla/5.0 (Linux; Android 6.0.1; SM-G920V Build/\
 MMB29K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.98 \
 Mobile Safari/537.36"""
 
-heavy_useragent = """Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 \
+heavy_ua1 = """Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 \
 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"""
+heavy_ua2 = """Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"""
 
 
 @client.onMessage(
@@ -72,10 +75,13 @@ async def reverse(event: NewMessage.Event) -> None:
     photo.close()
 
     if not response.ok:
-        await event.answer("`Google told me to go away!`")
+        await event.answer("`Google said go away for a while.`")
         return
 
     match = await _scrape_url(fetchUrl + "&hl=en")
+    if isinstance(match, urllib.error.HTTPError):
+        await event.edit(f"`{match.code}: {match.reason}`")
+        return
     guess = match['best_guess']
     imgspage = match['similar_images']
     matching_text = match['matching_text']
@@ -99,13 +105,20 @@ async def reverse(event: NewMessage.Event) -> None:
     limit = event.matches[0].group(1)
     lim = int(limit) if limit else 2
 
-    images = await _get_similar_links(imgspage, lim)
+    images, gifs = await _get_similar_links(imgspage, lim)
     if images:
         await client.send_file(
             entity=await event.get_input_chat(),
             file=images,
             reply_to=event.message.id
         )
+    if gifs:
+        for gif in gifs:
+            await client.send_file(
+                entity=await event.get_input_chat(),
+                file=gif,
+                reply_to=event.message.id
+            )
 
 
 def _post(name: str, media: io.BytesIO):
@@ -124,9 +137,12 @@ def _post(name: str, media: io.BytesIO):
 async def _scrape_url(googleurl):
     """Parse/Scrape the HTML code for the info we want."""
 
-    opener.addheaders = [('User-agent', heavy_useragent)]
+    UA = random.choice([heavy_ua1, heavy_ua2])
+    opener.addheaders = [('User-agent', UA)]
 
     source = await _run_sync(functools.partial(opener.open, googleurl))
+    if isinstance(source, urllib.error.HTTPError):
+        return source
     soup = bs4.BeautifulSoup(source.read(), 'html.parser')
 
     result = {
@@ -174,8 +190,11 @@ async def _get_similar_links(link: str, lim: int = 2):
     opener.addheaders = [('User-agent', light_useragent)]
 
     source = await _run_sync(functools.partial(opener.open, link))
+    if isinstance(source, urllib.error.HTTPError):
+        return source
 
     links = []
+    gifs = []
     counter = 0
 
     pattern = (
@@ -191,14 +210,20 @@ async def _get_similar_links(link: str, lim: int = 2):
                     response.content_type.startswith('image/')
                 ):
                     counter += 1
-                    links.append(await response.read())
+                    if response.content_type.endswith('gif'):
+                        gifs.append(link)
+                    else:
+                        links.append(await response.read())
             if counter >= int(lim):
                 break
 
-    return links
+    return links, gifs
 
 
 async def _run_sync(func: callable):
-    return await loop.run_in_executor(
-        concurrent.futures.ThreadPoolExecutor(), func
-    )
+    try:
+        return await loop.run_in_executor(
+            concurrent.futures.ThreadPoolExecutor(), func
+        )
+    except urllib.error.HTTPError as e:
+        return e
