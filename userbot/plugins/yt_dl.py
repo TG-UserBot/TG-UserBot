@@ -16,9 +16,9 @@
 
 
 import concurrent
-import subprocess
 
 from userbot import client
+from userbot.utils.helpers import is_ffmpeg_there
 from userbot.helper_funcs.yt_dl import (
     extract_info, hook, list_formats, YTdlLogger
 )
@@ -56,10 +56,6 @@ params = {
 }
 
 
-cmd = subprocess.run(['ffmpeg', '-version'], shell=True, capture_output=True)
-ffmpeg = True if cmd.returncode == 0 else False
-
-
 @client.onMessage(
     command="yt_dl",
     outgoing=True, regex=r"yt_dl (.+?)(?: |$)(.+)?$"
@@ -68,6 +64,7 @@ async def yt_dl(event):
     """Download videos from YouTube with their url in multiple formats."""
     url = event.matches[0].group(1)
     fmt = event.matches[0].group(2)
+    ffmpeg = await is_ffmpeg_there()
 
     if fmt:
         fmt = fmt.strip()

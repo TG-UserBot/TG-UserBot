@@ -33,10 +33,7 @@ plugin_category = "admin"
 )
 async def promote(event: NewMessage.Event) -> None:
     """Promote a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.add_admins)
-    ):
+    if not event.is_private and not await get_rights(event, add_admins=True):
         await event.answer("`You do not have rights to add admins in here!`")
         return
     elif event.is_private:
@@ -84,10 +81,7 @@ async def promote(event: NewMessage.Event) -> None:
 )
 async def demote(event: NewMessage.Event) -> None:
     """Demote a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer(
             "`You do not have rights to remove admins in here!`"
         )
@@ -136,10 +130,7 @@ async def demote(event: NewMessage.Event) -> None:
 )
 async def ban(event: NewMessage.Event) -> None:
     """Ban a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to ban users in here!`")
         return
     elif event.is_private:
@@ -186,10 +177,7 @@ async def ban(event: NewMessage.Event) -> None:
 )
 async def unban(event: NewMessage.Event) -> None:
     """Un-ban a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to un-ban users in here!`")
         return
     elif event.is_private:
@@ -243,10 +231,7 @@ async def unban(event: NewMessage.Event) -> None:
 )
 async def kick(event: NewMessage.Event) -> None:
     """Kick a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to kick users in here!`")
         return
     elif event.is_private:
@@ -292,10 +277,7 @@ async def kick(event: NewMessage.Event) -> None:
 )
 async def mute(event: NewMessage.Event) -> None:
     """Mute a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to mute users in here!`")
         return
     elif event.is_private:
@@ -342,10 +324,7 @@ async def mute(event: NewMessage.Event) -> None:
 )
 async def unmute(event: NewMessage.Event) -> None:
     """Un-mute a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer(
             "`You do not have rights to un-mute users in here!`"
         )
@@ -394,10 +373,7 @@ async def unmute(event: NewMessage.Event) -> None:
 )
 async def tmute(event: NewMessage.Event) -> None:
     """Temporary mute a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to mute users in here!`")
         return
     elif event.is_private:
@@ -458,10 +434,7 @@ async def tmute(event: NewMessage.Event) -> None:
 )
 async def tban(event: NewMessage.Event) -> None:
     """Temporary ban a user in a group or channel."""
-    if (
-        not event.is_private and
-        not (event.chat.creator or event.chat.admin_rights.ban_users)
-    ):
+    if not event.is_private and not await get_rights(event, ban_users=True):
         await event.answer("`You do not have rights to t-ban users in here!`")
         return
     elif event.is_private:
@@ -514,3 +487,36 @@ async def tban(event: NewMessage.Event) -> None:
     except Exception as e:
         await event.answer(f"`{e}`")
         LOGGER.exception(e)
+
+
+async def get_rights(
+    event: NewMessage.Event,
+    change_info: bool = False,
+    post_messages: bool = False,
+    edit_messages: bool = False,
+    delete_messages: bool = False,
+    ban_users: bool = False,
+    invite_users: bool = False,
+    pin_messages: bool = False,
+    add_admins: bool = False
+) -> bool:
+    """Return a bool according the required rights"""
+    chat = await event.get_chat()
+    if chat.creator:
+        return True
+    rights = {
+        'change_info': change_info,
+        'post_messages': post_messages,
+        'edit_messages': edit_messages,
+        'delete_messages': delete_messages,
+        'ban_users': ban_users,
+        'invite_users': invite_users,
+        'pin_messages': pin_messages,
+        'add_admins': add_admins
+    }
+    required_rights = []
+    for right, required in rights.items():
+        if required:
+            required_rights.append(getattr(chat.admin_rights, right, False))
+
+    return all(required_rights)

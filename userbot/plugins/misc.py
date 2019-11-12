@@ -39,6 +39,7 @@ plugin_category = "misc"
 async def shutdown(event: NewMessage.Event) -> None:
     """Shutdown the userbot script."""
     await event.answer("`Disconnecting the client and exiting. Ciao!`")
+    client.reconnect = False
     print()
     LOGGER.info("Disconnecting the client and exiting the main script.")
     await event.client.disconnect()
@@ -46,19 +47,16 @@ async def shutdown(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("restart", plugin_category),
-    outgoing=True, regex="restart(?: |$)(client)?$", builtin=True
+    outgoing=True, regex="restart$", builtin=True
 )
 async def restart(event: NewMessage.Event) -> None:
-    """Restart the userbot script or the client only if specified."""
-    arg = event.matches[0].group(1)
-    if arg:
-        event.client.loop.create_task(event.client._restarter(event))
-    else:
-        await event.answer(
-            "`BRB disconnecting and starting the script again!`",
-            log=("restart", "Restarted the userbot script")
-        )
-        await shell_restart(event)
+    """Restart the userbot script."""
+    client.reconnect = False
+    await event.answer(
+        "`BRB disconnecting and starting the script again!`",
+        log=("restart", "Restarted the userbot script")
+    )
+    await shell_restart(event)
 
 
 @client.onMessage(

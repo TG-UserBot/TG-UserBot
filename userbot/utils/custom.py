@@ -36,6 +36,7 @@ async def answer(
     **kwargs
 ) -> Union[custom.Message, List[custom.Message]]:
     """Custom bound method for the Message object"""
+    message_out = None
     message = await self.client.get_messages(self.chat_id, ids=self.id)
     reply_to = self.reply_to_msg_id or self.id
 
@@ -51,29 +52,29 @@ async def answer(
                 kwargs.setdefault('reply_to', reply_to)
                 try:
                     kwargs.setdefault('silent', True)
-                    msg = await self.respond(text, **kwargs)
+                    message_out = await self.respond(text, **kwargs)
                 except Exception as e:
                     LOGGER.exception(e)
             else:
                 if len(msg_entities) > 100:
                     messages = await _resolve_entities(msg, msg_entities)
                     chunks = [markdown.unparse(t, e) for t, e in messages]
-                    msg = []
+                    message_out = []
                     try:
                         first_msg = await self.edit(chunks[0], **kwargs)
                     except Exception as e:
                         LOGGER.exception(e)
-                    msg.append(first_msg)
+                    message_out.append(first_msg)
                     for t in chunks[1:]:
                         try:
                             kwargs.setdefault('silent', True)
                             sent = await self.respond(t, **kwargs)
-                            msg.append(sent)
+                            message_out.append(sent)
                         except Exception as e:
                             LOGGER.exception(e)
                 else:
                     try:
-                        msg = await self.edit(text, **kwargs)
+                        message_out = await self.edit(text, **kwargs)
                     except Exception as e:
                         LOGGER.exception(e)
         else:
@@ -87,7 +88,7 @@ async def answer(
             output.name = "output.txt"
             try:
                 kwargs.setdefault('silent', True)
-                msg = await self.respond(
+                message_out = await self.respond(
                     file=output,
                     **kwargs
                 )
@@ -99,7 +100,7 @@ async def answer(
         kwargs.setdefault('reply_to', reply_to)
         try:
             kwargs.setdefault('silent', True)
-            msg = await self.respond(*args, **kwargs)
+            message_out = await self.respond(*args, **kwargs)
         except Exception as e:
             LOGGER.exception(e)
 
@@ -146,7 +147,7 @@ async def answer(
                     except Exception as e:
                         print("Report this error to the support group.")
                         LOGGER.exception(e)
-    return msg
+    return message_out
 
 
 async def _resolve_entities(message: str, entities: list) -> dict:

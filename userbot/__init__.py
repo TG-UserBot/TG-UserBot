@@ -146,7 +146,7 @@ client = UserBotClient(
     api_hash=API_HASH,
     loop=loop,
     app_version=__version__,
-    auto_reconnect=True
+    auto_reconnect=False
 )
 
 client.version = __version__

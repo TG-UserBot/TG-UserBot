@@ -15,6 +15,7 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import asyncio
 import configparser
 import datetime
 import logging
@@ -166,19 +167,25 @@ async def isRestart(client: UserBotClient) -> None:
             await disable_commands(client, disabled_commands)
 
 
-async def restart(event: NewMessage.Event) -> None:
+def restarter(client: UserBotClient) -> None:
     args = [sys.executable, "-m", "userbot"]
-    restart_message = f"{event.chat_id}/{event.message.id}"
-    os.environ.setdefault('userbot_restarted', restart_message)
-    if event.client.disabled_commands:
-        disabled_list = ", ".join(event.client.disabled_commands.keys())
+    if client.disabled_commands:
+        disabled_list = ", ".join(client.disabled_commands.keys())
         os.environ.setdefault('userbot_disabled_commands', disabled_list)
+    client._kill_running_processes()
 
     if sys.platform.startswith('win'):
         os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
     else:
         os.execle(sys.executable, *args, os.environ)
-    await event.client.disconnect()
+
+
+async def restart(event: NewMessage.Event) -> None:
+    restart_message = f"{event.chat_id}/{event.message.id}"
+    os.environ.setdefault('userbot_restarted', restart_message)
+    restarter(event.client)
+    if event.client.is_connected():
+        await event.client.disconnect()
 
 
 def make_config(
@@ -258,3 +265,13 @@ async def disable_commands(client: UserBotClient, commands: str) -> None:
             client.disabled_commands.update({command: target})
             del client.commands[command]
             LOGGER.debug("Disabled command: %s", command)
+
+
+async def is_ffmpeg_there():
+    cmd = await asyncio.create_subprocess_shell(
+        'ffmpeg -version',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    await cmd.communicate()
+    return True if cmd.returncode == 0 else False

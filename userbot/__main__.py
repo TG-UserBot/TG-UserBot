@@ -35,14 +35,6 @@ print(userbot.__copyright__)
 print("Licensed under the terms of the " + userbot.__license__)
 
 
-async def _run_until_complete():
-    await client.disconnected
-    while client.restarting:
-        await client.start()
-        await client.disconnected
-    client._kill_running_processes()
-
-
 def wakeup():
     client.loop.call_later(0.1, wakeup)
 
@@ -72,7 +64,10 @@ if __name__ == "__main__":
     try:
         if sys.platform.startswith('win'):
             client.loop.call_later(0.1, wakeup)  # Needed for SIGINT handling
-        client.loop.run_until_complete(_run_until_complete())
+        client.loop.run_until_complete(client.disconnected)
+        if client.reconnect:
+            LOGGER.info("Client was disconnected, restarting the script.")
+            helpers.restarter(client)
     except NotImplementedError:
         pass
     except KeyboardInterrupt:

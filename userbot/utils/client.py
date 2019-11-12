@@ -17,9 +17,7 @@
 
 import configparser
 import dataclasses
-import importlib
 import logging
-import sys
 from typing import Dict, List
 
 from telethon import TelegramClient, events
@@ -51,7 +49,7 @@ class UserBotClient(TelegramClient):
     pluginManager: PluginManager = None
     plugins: list = []
     prefix: str = None
-    restarting: bool = False
+    reconnect: bool = True
     register_commands: bool = False
     running_processes: dict = {}
     version: int = 0
@@ -99,61 +97,6 @@ class UserBotClient(TelegramClient):
             return func
 
         return wrapper
-
-    async def _restarter(self, event: NewMessage.Event) -> None:
-        """Remove all event handlers and stop then start the client again"""
-        if self.restarting:
-            await event.answer("`Previous restart is still in proccess!`")
-            return
-
-        self.failed_imports.clear()
-        self.restarting = True
-
-        self._kill_running_processes()
-
-        await event.answer(
-            "`Removing all the event handlers and disonnecting "
-            "the client. BRB.`"
-        )
-        self.pluginManager.remove_handlers()
-        self.pluginManager.inactive_plugins = []
-        self.pluginManager.active_plugins = []
-        self.commands.clear()
-        self.disabled_commands.clear()
-        await self.disconnect()
-
-        for module in sys.modules.copy():
-            # Required to update helper and util file.
-            if module.startswith(('userbot.helper_funcs.', 'userbot.utils.')):
-                importlib.reload(sys.modules[module])
-
-        await self.connect()
-        await event.answer(
-            "`Succesfully removed all the handlers and started "
-            "the client again! Adding the new handlers now. BRB..`"
-        )
-        self.pluginManager.import_all()
-        self.pluginManager.add_handlers()
-
-        text = "`Successfully restarted and imported all the plugins!`"
-        if self.failed_imports:
-            text = (
-                "`Couldn't import all the plugins. Check the console logs or"
-                " do a manual restart.`"
-            )
-            text += "\n`Failed imports:`\n"
-            text += '\n'.join(self.failed_imports)
-            self.failed_imports.clear()
-        await event.answer(
-            text,
-            log=("restart client", "Successfully restarted the client")
-        )
-
-        self.restarting = False
-        LOGGER.info(
-            "Client restarted! Current prefix: {}".format(self.prefix)
-        )
-        print()
 
     def _updateconfig(self) -> bool:
         """Update the config. Sync method to avoid issues."""
