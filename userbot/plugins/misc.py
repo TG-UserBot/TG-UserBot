@@ -42,7 +42,7 @@ async def shutdown(event: NewMessage.Event) -> None:
     client.reconnect = False
     print()
     LOGGER.info("Disconnecting the client and exiting the main script.")
-    await event.client.disconnect()
+    await client.disconnect()
 
 
 @client.onMessage(
@@ -51,7 +51,6 @@ async def shutdown(event: NewMessage.Event) -> None:
 )
 async def restart(event: NewMessage.Event) -> None:
     """Restart the userbot script."""
-    client.reconnect = False
     await event.answer(
         "`BRB disconnecting and starting the script again!`",
         log=("restart", "Restarted the userbot script")

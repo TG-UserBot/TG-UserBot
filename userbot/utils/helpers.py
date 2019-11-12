@@ -181,6 +181,7 @@ def restarter(client: UserBotClient) -> None:
 
 
 async def restart(event: NewMessage.Event) -> None:
+    event.client.reconnect = False
     restart_message = f"{event.chat_id}/{event.message.id}"
     os.environ.setdefault('userbot_restarted', restart_message)
     restarter(event.client)
