@@ -101,7 +101,7 @@ def resolve_env(config: configparser.ConfigParser):
         'api_key_heroku': os.getenv(
             'api_key_heroku', None
         ),
-        'removebg': os.getenv(
+        'api_key_removebg': os.getenv(
             'api_key_removebg', None
         )
     }
