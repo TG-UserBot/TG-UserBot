@@ -171,7 +171,16 @@ def restarter(client: UserBotClient) -> None:
     args = [sys.executable, "-m", "userbot"]
     if client.disabled_commands:
         disabled_list = ", ".join(client.disabled_commands.keys())
-        os.environ.setdefault('userbot_disabled_commands', disabled_list)
+        os.environ['userbot_disabled_commands'] = disabled_list
+    if os.environ.get('userbot_afk', False):
+        from userbot.plugins import plugins_data
+        cls_dict = plugins_data.dump_data(plugins_data.AFK)
+        if "privates" in cls_dict:
+            os.environ['userbot_afk_privates'] = cls_dict['privates']
+        if "groups" in cls_dict:
+            os.environ['userbot_afk_groups'] = cls_dict['groups']
+        if "sent" in cls_dict:
+            os.environ['userbot_afk_sent'] = cls_dict['sent']
     client._kill_running_processes()
 
     if sys.platform.startswith('win'):
@@ -183,7 +192,7 @@ def restarter(client: UserBotClient) -> None:
 async def restart(event: NewMessage.Event) -> None:
     event.client.reconnect = False
     restart_message = f"{event.chat_id}/{event.message.id}"
-    os.environ.setdefault('userbot_restarted', restart_message)
+    os.environ['userbot_restarted'] = restart_message
     restarter(event.client)
     if event.client.is_connected():
         await event.client.disconnect()

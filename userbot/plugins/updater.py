@@ -33,6 +33,11 @@ author_link = "[{author}]({url}commits?author={author})"
 summary = "\n[{rev}]({url}commit/{sha}) `{summary}`\n"
 commited = "{committer}` committed {elapsed} ago`\n"
 authored = "{author}` authored and `{committer}` committed {elapsed} ago`\n"
+main_repo = "https://github.com/kandnub/TG-UserBot.git"
+requirements_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    'requirements.txt'
+)
 
 
 @client.onMessage(
@@ -42,7 +47,7 @@ authored = "{author}` authored and `{committer}` committed {elapsed} ago`\n"
 async def updater(event: NewMessage.Event) -> None:
     """Pull newest changes from the official repo and update the script/app."""
     arg = event.matches[0].group(1)
-    main_repo = "https://github.com/kandnub/TG-UserBot.git"
+    await event.answer("`Checking for updates!`")
     try:
         repo = git.Repo(basedir)
         fetched_itmes = repo.remotes.origin.fetch()
@@ -70,10 +75,13 @@ async def updater(event: NewMessage.Event) -> None:
             origin.refs.master
         ).checkout()
     fetched_commits = repo.iter_commits(f"HEAD..{fetched_itmes[0].ref.name}")
-
-    await event.answer("`Checking for updates!`")
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit
+    for diff_added in old_commit.diff('HEAD~1').iter_change_type('M'):
+        if diff_added.b_path == "requirements.txt":
+            await event.answer("`Updating the pip requirements!`")
+            await update_requirements(event)
+
     if arg == "add":
         repo.index.add(untracked_files, force=True)
         repo.index.commit("[TG-UserBot] Updater: Untracked files")
@@ -81,7 +89,7 @@ async def updater(event: NewMessage.Event) -> None:
         repo.head.reset('--hard')
 
     try:
-        pull = repo.remotes.origin.pull()
+        repo.remotes.origin.pull()
     except git.exc.GitCommandError as command:
         text = (
             "`An error occured trying to Git pull:`\n`{0}`\n\n"
@@ -160,7 +168,6 @@ async def updater(event: NewMessage.Event) -> None:
                 "`The changes will be reverted upon dyno restart.`"
             )
             await asyncio.sleep(2)
-            await updated_pip_modules(event, pull, repo, new_commit)
             repo.__del__()
             await restart(event)
         else:
@@ -211,25 +218,20 @@ async def updater(event: NewMessage.Event) -> None:
                 LOGGER.exception(command)
             repo.__del__()
     else:
-        await updated_pip_modules(event, pull, repo, new_commit)
         repo.__del__()
         await restart(event)
 
 
-async def updated_pip_modules(event, pull, repo, new_commit):
-    pulled = getattr(pull, repo.active_branch.name, False)
-    if pulled and pulled.old_commit:
-        for f in new_commit.diff(pulled.old_commit):
-            if f.b_path == "requirements.txt":
-                await event.answer("`Updating the pip requirements!`")
-                await update_requirements()
-
-
-async def update_requirements():
-    reqs = os.path.join(basedir, "requirements.txt")
+async def update_requirements(event):
+    reqs = requirements_path
     try:
-        await asyncio.create_subprocess_shell(
-            ' '.join(sys.executable, "-m", "pip", "install", "-r", str(reqs))
-        ).communicate()
+        process = await asyncio.create_subprocess_shell(
+            ' '.join(sys.executable, "-m", "pip", "install", "-r", str(reqs)),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await process.communicate()
+        if process.returncode != 0:
+            await event.edit("`Failed trying to install requirements.`")
     except Exception as e:
         LOGGER.exception(e)
