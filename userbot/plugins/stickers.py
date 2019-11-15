@@ -68,17 +68,19 @@ async def getsticker(event: NewMessage.Event) -> None:
     else:
         sticker_bytes = io.BytesIO()
         await reply.download_media(sticker_bytes)
-        sticker_bytes.seek(0)
         sticker = io.BytesIO()
-        pilImg = PIL.Image.open(sticker_bytes)
+        try:
+            pilImg = PIL.Image.open(sticker_bytes)
+        except OSError as e:
+            await event.answer(f'`OSError: {e}`')
+            return
         pilImg.save(sticker, format="PNG")
         pilImg.close()
-        sticker.seek(0)
         sticker.name = "sticcer.png"
         if event.matches[0].group(1):
-            await reply.reply(file=sticker, force_document=True)
+            await reply.reply(file=sticker.getvalue(), force_document=True)
         else:
-            await reply.reply(file=sticker)
+            await reply.reply(file=sticker.getvalue())
         sticker_bytes.close()
         sticker.close()
 
@@ -296,19 +298,20 @@ async def kang(event: NewMessage.Event) -> None:
         sticker = io.BytesIO()
         sticker.name = name
         await sticker_event.download_media(file=sticker)
-        sticker.seek(0)
         if sticker_event.sticker:
-            await conv.send_message(file=sticker, force_document=True)
+            await conv.send_message(
+                file=sticker.getvalue(), force_document=True
+            )
         else:
             new_sticker = io.BytesIO()
             resized_sticker = await _resize_image(sticker, new_sticker)
-            new_sticker.name = name
-            new_sticker.seek(0)
+            if isinstance(resized_sticker, str):
+                await event.answer(resized_sticker)
+                return
             await conv.send_message(
                 file=resized_sticker, force_document=True
             )
             new_sticker.close()
-
         sticker.close()
         r3 = await conv.get_response()
         LOGGER.debug("Stickers:" + r3.text)
@@ -509,7 +512,11 @@ async def _resolve_pack_name(
 
 
 async def _resize_image(image: BinaryIO, new_image: BinaryIO) -> BinaryIO:
-    image = PIL.Image.open(image)
+    try:
+        name = image.name
+        image = PIL.Image.open(image)
+    except OSError as e:
+        return f"`OSError: {e}`"
     w, h = (image.width, image.height)
 
     if w == h:
@@ -525,8 +532,9 @@ async def _resize_image(image: BinaryIO, new_image: BinaryIO) -> BinaryIO:
 
     image.resize(size).save(new_image, 'png')
     del image  # Nothing to close once the image is loaded.
+    new_image.name = name
 
-    return new_image
+    return new_image.getvalue()
 
 
 async def _list_packs() -> Tuple[List[str], types.Message]:

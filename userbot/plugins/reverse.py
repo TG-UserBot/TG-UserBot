@@ -92,11 +92,10 @@ async def reverse(event: NewMessage.Event) -> None:
         await event.answer("`Reply to a photo or a non-animated sticker.`")
         return
 
-    photo.seek(0)
-    name = "media" + ext
-
     await event.answer("`Uploading media...`")
-    response = await _run_sync(functools.partial(_post, name, photo))
+    response = await _run_sync(functools.partial(
+        _post, f"media{ext}", photo.getvalue()
+    ))
 
     fetchUrl = response.headers['Location']
     photo.close()

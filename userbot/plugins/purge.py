@@ -26,8 +26,8 @@ plugin_category = "user"
 
 
 @client.onMessage(
-    command=("purge", "admin"),
-    outgoing=True, regex=r"purge(?: |$)(\d*)", require_admin=True
+    command=("purge", "admin"), require_admin=True,
+    outgoing=True, regex=r"purge(?: |$)(\d+)?(?: |$)(\d+)?$"
 )
 async def purge(event: NewMessage.Event) -> None:
     """Delete (AKA purge) multiple messages from a chat all together."""
@@ -42,6 +42,7 @@ async def purge(event: NewMessage.Event) -> None:
 
     entity = await event.get_chat()
     amount = event.matches[0].group(1)
+    skip = event.matches[0].group(2)
 
     if not event.reply_to_msg_id and not amount:
         await event.answer("`Purge yourself!`")
@@ -52,7 +53,7 @@ async def purge(event: NewMessage.Event) -> None:
     messages = await client.get_messages(
         entity,
         limit=int(amount) if amount else None,
-        offset_id=await _offset(event),
+        offset_id=await _offset(event, skip),
         reverse=True if event.reply_to_msg_id else False
     )
 
@@ -68,12 +69,13 @@ async def purge(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("delme", plugin_category),
-    outgoing=True, regex=r"delme(?: |$)(\d*)"
+    outgoing=True, regex=r"delme(?: |$)(\d+)?(?: |$)(\d+)?$"
 )
 async def delme(event: NewMessage.Event) -> None:
     """Delete YOUR messages in a chat. Similar to purge's logic."""
     entity = await event.get_chat()
     amount = event.matches[0].group(1)
+    skip = event.matches[0].group(2)
 
     if not amount:
         amount = 1 if not event.reply_to_msg_id else None
@@ -81,7 +83,7 @@ async def delme(event: NewMessage.Event) -> None:
     messages = await client.get_messages(
         entity,
         limit=int(amount) if amount else None,
-        offset_id=await _offset(event),
+        offset_id=await _offset(event, skip),
         reverse=True if event.reply_to_msg_id else False,
         from_user="me"
     )
@@ -119,7 +121,8 @@ async def delete(event: NewMessage.Event) -> None:
     await event.delete()
 
 
-async def _offset(event: NewMessage.Event) -> int:
+async def _offset(event: NewMessage.Event, skip: None or int) -> int:
+    skip = int(skip) if skip is not None else 0
     if event.reply_to_msg_id:
-        return event.reply_to_msg_id - 1
-    return event.message.id
+        return (event.reply_to_msg_id - 1) + skip
+    return event.message.id - skip

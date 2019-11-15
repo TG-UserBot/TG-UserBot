@@ -22,12 +22,12 @@ import logging
 import os
 import os.path
 import sys
-from typing import Union
+from typing import Tuple, Union
 
 from heroku3 import from_key
 
 from telethon import errors
-from telethon.tl.types import User, Chat, Channel
+from telethon.tl import types
 from telethon.utils import get_display_name
 
 from .client import UserBotClient
@@ -42,7 +42,7 @@ sample_config_file = os.path.join(
 )
 
 
-def printUser(entity: User) -> None:
+def printUser(entity: types.User) -> None:
     """Print the user's first name + last name upon start"""
     user = get_display_name(entity)
     print(
@@ -240,13 +240,16 @@ async def _human_friendly_timedelta(timedelta: str) -> str:
     return text
 
 
-async def get_chat_link(arg: Union[User, Chat, Channel], reply=None) -> str:
-    if isinstance(arg, (User, Chat, Channel)):
+async def get_chat_link(
+    arg: Union[types.User, types.Chat, types.Channel, NewMessage.Event],
+    reply=None
+) -> str:
+    if isinstance(arg, (types.User, types.Chat, types.Channel)):
         entity = arg
     else:
         entity = await arg.get_chat()
 
-    if isinstance(entity, User):
+    if isinstance(entity, types.User):
         extra = f"[{get_display_name(entity)}](tg://user?id={entity.id})"
     else:
         if hasattr(entity, 'username') and entity.username is not None:
@@ -285,3 +288,36 @@ async def is_ffmpeg_there():
     )
     await cmd.communicate()
     return True if cmd.returncode == 0 else False
+
+
+async def get_entity_info(
+    arg: Union[types.ChatFull, types.ChannelFull]
+) -> Tuple[str, int, int, int, int, int]:
+    creator, admins, bots, participants, kicked, banned = (
+        None, None, None, None, None, None
+    )
+    full_chat = arg.full_chat
+    if isinstance(full_chat, types.ChannelFull):
+        if hasattr(full_chat, 'participants_count'):
+            participants = full_chat.participants_count
+        if hasattr(full_chat, 'admins_count'):
+            admins = full_chat.admins_count
+        if hasattr(full_chat, 'kicked_count'):
+            kicked = full_chat.kicked_count
+        if hasattr(full_chat, 'banned_count'):
+            banned = full_chat.banned_count
+        if hasattr(full_chat, 'bot_info'):
+            bots = len(full_chat.bot_info)
+    else:
+        if hasattr(full_chat, 'bot_info'):
+            bots = len(full_chat.bot_info)
+        if hasattr(full_chat, 'participants'):
+            admins, participants = 0, 0
+            for p in full_chat.participants.participants:
+                if isinstance(p, types.ChatParticipantCreator):
+                    creator = p.user_id
+                if isinstance(p, types.ChatParticipant):
+                    participants += 1
+                if isinstance(p, types.ChatParticipantAdmin):
+                    admins += 1
+    return creator, admins, bots, participants, kicked, banned
