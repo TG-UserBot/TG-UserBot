@@ -50,7 +50,7 @@ async def updater(event: NewMessage.Event) -> None:
     await event.answer("`Checking for updates!`")
     try:
         repo = git.Repo(basedir)
-        fetched_itmes = repo.remotes.origin.fetch()
+        fetched_items = repo.remotes.origin.fetch()
     except git.exc.NoSuchPathError as path:
         await event.answer(f"`Couldn't find {path}!`")
         repo.__del__()
@@ -70,17 +70,18 @@ async def updater(event: NewMessage.Event) -> None:
             )
             repo.__del__()
             return
-        fetched_itmes = origin.fetch()
+        fetched_items = origin.fetch()
         repo.create_head('master', origin.refs.master).set_tracking_branch(
             origin.refs.master
         ).checkout()
-    fetched_commits = repo.iter_commits(f"HEAD..{fetched_itmes[0].ref.name}")
+    fetched_commits = repo.iter_commits(f"HEAD..{fetched_items[0].ref.name}")
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit
-    for diff_added in old_commit.diff('HEAD~1').iter_change_type('M'):
-        if diff_added.b_path == "requirements.txt":
+    for diff_added in old_commit.diff('FETCH_HEAD').iter_change_type('M'):
+        if "requirements.txt" in diff_added.b_path:
             await event.answer("`Updating the pip requirements!`")
             await update_requirements(event)
+            break
 
     if arg == "add":
         repo.index.add(untracked_files, force=True)
@@ -223,10 +224,10 @@ async def updater(event: NewMessage.Event) -> None:
 
 
 async def update_requirements(event):
-    reqs = requirements_path
+    reqs = str(requirements_path)
     try:
         process = await asyncio.create_subprocess_shell(
-            ' '.join(sys.executable, "-m", "pip", "install", "-r", str(reqs)),
+            ' '.join([sys.executable, "-m", "pip", "install", "-r", reqs]),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
