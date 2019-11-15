@@ -42,3 +42,13 @@ class AFK:
     privates: dict = None
     groups: dict = None
     sent: dict = None
+
+
+def dump_AFK() -> None:
+    cls_dict = dump_data(AFK)
+    if "privates" in cls_dict:
+        os.environ['userbot_afk_privates'] = cls_dict['privates']
+    if "groups" in cls_dict:
+        os.environ['userbot_afk_groups'] = cls_dict['groups']
+    if "sent" in cls_dict:
+        os.environ['userbot_afk_sent'] = cls_dict['sent']

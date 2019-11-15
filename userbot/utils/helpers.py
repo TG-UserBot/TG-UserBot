@@ -33,6 +33,7 @@ from telethon.utils import get_display_name
 from .client import UserBotClient
 from .log_formatter import CEND, CUSR
 from .events import NewMessage
+from userbot.plugins import plugins_data
 
 
 LOGGER = logging.getLogger(__name__)
@@ -173,14 +174,7 @@ def restarter(client: UserBotClient) -> None:
         disabled_list = ", ".join(client.disabled_commands.keys())
         os.environ['userbot_disabled_commands'] = disabled_list
     if os.environ.get('userbot_afk', False):
-        from userbot.plugins import plugins_data
-        cls_dict = plugins_data.dump_data(plugins_data.AFK)
-        if "privates" in cls_dict:
-            os.environ['userbot_afk_privates'] = cls_dict['privates']
-        if "groups" in cls_dict:
-            os.environ['userbot_afk_groups'] = cls_dict['groups']
-        if "sent" in cls_dict:
-            os.environ['userbot_afk_sent'] = cls_dict['sent']
+        plugins_data.dump_AFK()
     client._kill_running_processes()
 
     if sys.platform.startswith('win'):

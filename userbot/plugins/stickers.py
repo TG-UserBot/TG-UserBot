@@ -15,13 +15,14 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import datetime
 import re
 import io
 import itertools
 import PIL
 from typing import BinaryIO, List, Sequence, Tuple, Union
 
-from telethon.tl import types
+from telethon.tl import functions, types
 
 from userbot import client, LOGGER
 from userbot.utils.helpers import get_chat_link
@@ -149,6 +150,16 @@ async def kang(event: NewMessage.Event) -> None:
         event, sticker_event
     )
     prefix = client.prefix if client.prefix is not None else '.'
+    notif = await client(functions.account.GetNotifySettingsRequest(
+        peer="Stickers"
+    ))
+    await client(functions.account.UpdateNotifySettingsRequest(
+        peer="Stickers",
+        settings=types.InputPeerNotifySettings(
+            silent=True,
+            mute_until=datetime.timedelta(days=365)
+        )
+    ))
     if pack:
         if (':' in pack) or ('=' in pack):
             text = event.matches[0].group(1)
@@ -233,7 +244,6 @@ async def kang(event: NewMessage.Event) -> None:
     await event.answer(
         "`Turning on the kang machine... Your sticker? My sticker!`"
     )
-
     async with client.conversation(**conversation_args) as conv:
         if new_pack:
             packtype = "/newanimated" if is_animated else "/newpack"
@@ -298,18 +308,24 @@ async def kang(event: NewMessage.Event) -> None:
         sticker = io.BytesIO()
         sticker.name = name
         await sticker_event.download_media(file=sticker)
-        if sticker_event.sticker:
+        if sticker_event.sticker.mime_type == "application/x-tgsticker":
+            sticker.seek(0)
             await conv.send_message(
-                file=sticker.getvalue(), force_document=True
+                file=sticker, force_document=True
             )
         else:
             new_sticker = io.BytesIO()
-            resized_sticker = await _resize_image(sticker, new_sticker)
+            if sticker_event.sticker:
+                resized_sticker = await _resize_image(
+                    sticker, new_sticker, False
+                )
+            else:
+                resized_sticker = await _resize_image(sticker, new_sticker)
             if isinstance(resized_sticker, str):
                 await event.answer(resized_sticker)
                 return
             await conv.send_message(
-                file=resized_sticker, force_document=True
+                file=new_sticker, force_document=True
             )
             new_sticker.close()
         sticker.close()
@@ -374,6 +390,10 @@ async def kang(event: NewMessage.Event) -> None:
         log=("kang", f"Successfully kanged a sticker from {extra} to {pack}")
     )
     await _delete_sticker_messages(first_msg or new_first_msg)
+    await client(functions.account.UpdateNotifySettingsRequest(
+        peer="Stickers",
+        settings=types.InputPeerNotifySettings(**vars(notif))
+    ))
 
 
 async def _set_default_packs(string: str, delimiter: str) -> str:
@@ -511,30 +531,38 @@ async def _resolve_pack_name(
     return packname, packnickname, emojis or None
 
 
-async def _resize_image(image: BinaryIO, new_image: BinaryIO) -> BinaryIO:
+async def _resize_image(
+    image: BinaryIO,
+    new_image: BinaryIO,
+    resize: bool = True
+) -> BinaryIO:
     try:
         name = image.name
         image = PIL.Image.open(image)
     except OSError as e:
         return f"`OSError: {e}`"
-    w, h = (image.width, image.height)
 
-    if w == h:
-        size = (512, 512)
-    else:
-        if w > h:
-            h = int(max(h * 512 / w, 1))
-            w = int(512)
+    if resize:
+        w, h = (image.width, image.height)
+        if w == h:
+            size = (512, 512)
         else:
-            w = int(max(w * 512 / h, 1))
-            h = int(512)
-        size = (w, h)
+            if w > h:
+                h = int(max(h * 512 / w, 1))
+                w = int(512)
+            else:
+                w = int(max(w * 512 / h, 1))
+                h = int(512)
+            size = (w, h)
+        image.resize(size).save(new_image, 'png')
+    else:
+        image.save(new_image, 'png')
 
-    image.resize(size).save(new_image, 'png')
     del image  # Nothing to close once the image is loaded.
     new_image.name = name
+    new_image.seek(0)
 
-    return new_image.getvalue()
+    return new_image
 
 
 async def _list_packs() -> Tuple[List[str], types.Message]:
@@ -631,7 +659,7 @@ async def _get_default_packs() -> Tuple[str, str]:
 async def _is_sticker_event(event: NewMessage.Event) -> bool:
     if event.sticker or event.photo:
         return True
-    if event.document and "image" in event.media.document.mime_type:
+    if event.document and "image" in event.document.mime_type:
         return True
 
     return False
