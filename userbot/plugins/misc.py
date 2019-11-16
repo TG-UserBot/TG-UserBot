@@ -26,14 +26,15 @@ from telethon import utils
 from telethon.tl import functions, types
 
 from userbot import client, LOGGER
-from userbot.utils.helpers import get_chat_link, get_entity_info, restart
+from userbot.helper_funcs import misc
+from userbot.utils.helpers import get_chat_link, restart
 from userbot.utils.events import NewMessage
 
 
 plugin_category = "misc"
 invite_links = {
-    'private': re.compile(r'^(?:https://)?(t\.me/joinchat/\w+)/?$'),
-    'public': re.compile(r'^(?:https://)?t\.me/(\w+)/?$'),
+    'private': re.compile(r'^(?:https?://)?(t\.me/joinchat/\w+)/?$'),
+    'public': re.compile(r'^(?:https?://)?t\.me/(\w+)/?$'),
     'username': re.compile(r'^@?(\w{5,32})$')
 }
 
@@ -47,24 +48,6 @@ def removebg_post(API_KEY: str, media: bytes or str):
         headers={'X-Api-Key': API_KEY},
     )
     return response
-
-
-async def unparse_info(creator, admins, bots, users, kicked, banned) -> str:
-    text = ''
-    if creator:
-        c = await client.get_entity(creator)
-        text += f"\n**Creator:** {await get_chat_link(c)}"
-    if users:
-        text += f"\n**Participants:** {users}"
-    if admins:
-        text += f"\n**Admins:** {admins}"
-    if bots:
-        text += f"\n**Bots:** {bots}"
-    if kicked:
-        text += f"\n**Kicked:** {kicked}"
-    if banned:
-        text += f"\n**Banned:** {banned}"
-    return text
 
 
 @client.onMessage(
@@ -181,58 +164,76 @@ async def resolver(event: NewMessage.Event) -> None:
     if not link:
         await event.answer("`Resolving the void.`")
         return
-    text = f"`Couldn't resolve:` {link}."
+    text = f"`Couldn't resolve:` {link}"
     for link_type, pattern in invite_links.items():
         match = pattern.match(link)
         if match is not None:
             valid = match.group(1)
             if link_type == "private":
-                creator, cid, _ = utils.resolve_invite_link(valid)
+                creatorid, cid, _ = utils.resolve_invite_link(valid)
                 if not cid:
                     await event.answer(text)
                     return
-                creator = await get_chat_link(await client.get_entity(creator))
+                try:
+                    creator = await client.get_entity(creatorid)
+                    creator = await get_chat_link(creator)
+                except (TabError, ValueError):
+                    creator = f"`{creatorid}`"
                 text = f"**Link:** {link}"
-                text += f"\n**Creator:** {creator}\n**Chat ID:** `{cid}`"
+                text += f"\n**Link creator:** {creator}\n**ID:** `{cid}`"
+                try:
+                    chat = await client.get_entity(cid)
+                except (TypeError, ValueError):
+                    break
+
+                if isinstance(chat, types.Channel):
+                    result = await client(
+                        functions.channels.GetFullChannelRequest(
+                            channel=chat
+                        )
+                    )
+                    text += await misc.resolve_channel(event.client, result)
+                elif isinstance(chat, types.Chat):
+                    result = await client(
+                        functions.messages.GetFullChatRequest(
+                            chat_id=chat
+                        )
+                    )
+                    text += await misc.resolve_chat(event.client, result)
+                break
             else:
                 try:
-                    chat = await client.get_input_entity(valid)
+                    chat = await client.get_entity(valid)
                 except (TypeError, ValueError):
-                    chat = None
-                if isinstance(
-                    chat, (types.InputPeerUser, types.InputPeerSelf)
-                ):
-                    usr = await client.get_entity(valid)
-                    text = f"**ID:** {usr.id}"
-                    if usr.username:
-                        text += f"\n**Username:** @{usr.username}"
-                    text += f"\n{await get_chat_link(usr)}"
-                elif isinstance(chat, types.InputPeerChat):
+                    continue
+
+                if isinstance(chat, types.User):
+                    text = f"**ID:** `{chat.id}``"
+                    if chat.username:
+                        text += f"\n**Username:** @{chat.username}"
+                    text += f"\n{await get_chat_link(chat)}"
+
+                if isinstance(chat, types.ChatForbidden):
+                    text += f"\n`Not allowed to view {chat.title}.`"
+                elif isinstance(chat, types.ChatEmpty):
+                    text += "\n`The chat is empty.`"
+                elif isinstance(chat, types.Chat):
                     text = f"**Chat:** @{valid}"
                     result = await client(
                         functions.messages.GetFullChatRequest(
                             chat_id=chat
                         )
                     )
-                    if isinstance(result, types.ChatForbidden):
-                        text += f"`Not allowed to view {result.title}.`"
-                    elif isinstance(result, types.ChatEmpty):
-                        text += "`The chat is empty.`"
-                    else:
-                        text += f"\n**Chat ID:** {result.full_chat.id}"
-                        info = await get_entity_info(result)
-                        text += await unparse_info(*info)
-                elif isinstance(chat, types.InputPeerChannel):
+                    text += await misc.resolve_chat(event.client, result)
+
+                if isinstance(chat, types.ChannelForbidden):
+                    text += f"\n`Not allowed to view {chat.title}.`"
+                elif isinstance(chat, types.Channel):
                     text = f"**Channel:** @{valid}"
                     result = await client(
                         functions.channels.GetFullChannelRequest(
                             channel=chat
                         )
                     )
-                    if isinstance(result, types.ChannelForbidden):
-                        text += f"`Not allowed to view {result.title}.`"
-                    else:
-                        text += f"\n**Channel ID:** {result.full_chat.id}"
-                        info = await get_entity_info(result)
-                        text += await unparse_info(*info)
-    await event.answer(text)
+                    text += await misc.resolve_channel(event.client, result)
+    await event.answer(text, link_preview=False)

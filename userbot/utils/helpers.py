@@ -22,7 +22,7 @@ import logging
 import os
 import os.path
 import sys
-from typing import Tuple, Union
+from typing import Union
 
 from heroku3 import from_key
 
@@ -282,36 +282,3 @@ async def is_ffmpeg_there():
     )
     await cmd.communicate()
     return True if cmd.returncode == 0 else False
-
-
-async def get_entity_info(
-    arg: Union[types.ChatFull, types.ChannelFull]
-) -> Tuple[str, int, int, int, int, int]:
-    creator, admins, bots, participants, kicked, banned = (
-        None, None, None, None, None, None
-    )
-    full_chat = arg.full_chat
-    if isinstance(full_chat, types.ChannelFull):
-        if hasattr(full_chat, 'participants_count'):
-            participants = full_chat.participants_count
-        if hasattr(full_chat, 'admins_count'):
-            admins = full_chat.admins_count
-        if hasattr(full_chat, 'kicked_count'):
-            kicked = full_chat.kicked_count
-        if hasattr(full_chat, 'banned_count'):
-            banned = full_chat.banned_count
-        if hasattr(full_chat, 'bot_info'):
-            bots = len(full_chat.bot_info)
-    else:
-        if hasattr(full_chat, 'bot_info'):
-            bots = len(full_chat.bot_info)
-        if hasattr(full_chat, 'participants'):
-            admins, participants = 0, 0
-            for p in full_chat.participants.participants:
-                if isinstance(p, types.ChatParticipantCreator):
-                    creator = p.user_id
-                if isinstance(p, types.ChatParticipant):
-                    participants += 1
-                if isinstance(p, types.ChatParticipantAdmin):
-                    admins += 1
-    return creator, admins, bots, participants, kicked, banned

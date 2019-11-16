@@ -46,8 +46,10 @@ async def answer(
         msg, msg_entities = markdown.parse(text)
         if len(msg) <= MAXLIM:
             if (
-                is_reply or self.media or self.fwd_from or
-                not (message and message.out)
+                not (message and message.out) or is_reply or self.fwd_from or
+                (self.media and not isinstance(
+                    self.media, types.MessageMediaWebPage
+                ))
             ):
                 kwargs.setdefault('reply_to', reply_to)
                 try:
