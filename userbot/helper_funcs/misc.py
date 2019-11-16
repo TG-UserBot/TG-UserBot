@@ -66,7 +66,7 @@ async def parse_banned_rights(BannedRights: types.ChatBannedRights) -> str:
         right = getattr(BannedRights, attr, False)
         if right:
             if attr == "until_date":
-                text.append(f'{string} {right.ctime()} (UTC')
+                text.append(f'{string} {right.ctime()} (UTC)')
             else:
                 text.append(f'{string} {right}')
     return '\n'.join(text)

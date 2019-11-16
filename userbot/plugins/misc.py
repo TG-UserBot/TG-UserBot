@@ -159,10 +159,10 @@ async def rmbg(event: NewMessage.Event) -> None:
     outgoing=True, regex="resolve(?: |$)(.*)$"
 )
 async def resolver(event: NewMessage.Event) -> None:
-    """Resolve an invite link or username."""
+    """Resolve an invite link or a username."""
     link = event.matches[0].group(1)
     if not link:
-        await event.answer("`Resolving the void.`")
+        await event.answer("`Resolved the void.`")
         return
     text = f"`Couldn't resolve:` {link}"
     for link_type, pattern in invite_links.items():
@@ -208,7 +208,7 @@ async def resolver(event: NewMessage.Event) -> None:
                     continue
 
                 if isinstance(chat, types.User):
-                    text = f"**ID:** `{chat.id}``"
+                    text = f"**ID:** `{chat.id}`"
                     if chat.username:
                         text += f"\n**Username:** @{chat.username}"
                     text += f"\n{await get_chat_link(chat)}"
@@ -237,3 +237,28 @@ async def resolver(event: NewMessage.Event) -> None:
                     )
                     text += await misc.resolve_channel(event.client, result)
     await event.answer(text, link_preview=False)
+
+
+@client.onMessage(
+    command=("mention", plugin_category),
+    outgoing=True, regex=r"mention(?: |$)(@?\w{5,32}|\d+)?(?: |$)(.*)$"
+)
+async def bot_mention(event: NewMessage.Event) -> None:
+    """Mention a user in the bot like link with a custom name."""
+    user = event.matches[0].group(1)
+    name = event.matches[0].group(2)
+    if not (user and name):
+        await event.answer("`Mentioned the void.`")
+        return
+
+    try:
+        user = await client.get_input_entity(user)
+    except (TypeError, ValueError):
+        await event.answer("`Couldn't get the entity.`")
+        return
+
+    if not isinstance(user, types.InputPeerUser):
+        await event.answer("`Cannot mention non-users.`")
+        return
+    text = f"[{name}](tg://user?id={user.user_id})"
+    await event.answer(text)
