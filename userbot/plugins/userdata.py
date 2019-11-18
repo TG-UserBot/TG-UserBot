@@ -211,6 +211,9 @@ async def pfp(event: NewMessage.Event) -> None:
         (reply.document and reply.document.mime_type.startswith("image")) or
         reply.photo or reply.sticker
     ):
+        if reply.sticker and not reply.sticker.mime_type == "image/webp":
+            await event.answer("`Invalid sticker type.`")
+            return
         try:
             temp_file = io.BytesIO()
             await client.download_media(reply, temp_file)

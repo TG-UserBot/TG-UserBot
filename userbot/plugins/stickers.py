@@ -78,10 +78,11 @@ async def getsticker(event: NewMessage.Event) -> None:
         pilImg.save(sticker, format="PNG")
         pilImg.close()
         sticker.name = "sticcer.png"
+        sticker.seek(0)
         if event.matches[0].group(1):
-            await reply.reply(file=sticker.getvalue(), force_document=True)
+            await reply.reply(file=sticker, force_document=True)
         else:
-            await reply.reply(file=sticker.getvalue())
+            await reply.reply(file=sticker)
         sticker_bytes.close()
         sticker.close()
 
@@ -308,7 +309,10 @@ async def kang(event: NewMessage.Event) -> None:
         sticker = io.BytesIO()
         sticker.name = name
         await sticker_event.download_media(file=sticker)
-        if sticker_event.sticker.mime_type == "application/x-tgsticker":
+        if (
+            sticker_event.sticker and
+            sticker_event.sticker.mime_type == "application/x-tgsticker"
+        ):
             sticker.seek(0)
             await conv.send_message(
                 file=sticker, force_document=True
