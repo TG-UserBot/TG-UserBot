@@ -85,7 +85,6 @@ API_ID = telethon.getint('api_id', False)
 API_HASH = telethon.get('api_hash', False)
 REDIS_ENDPOINT = telethon.get('redis_endpoint', False)
 REDIS_PASSWORD = telethon.get('redis_password', False)
-REDIS = bool(REDIS_ENDPOINT) and bool(REDIS_PASSWORD)
 
 userbot = config['userbot']
 LOGGER_CHAT_ID = userbot.getint('logger_group_id', 0)
@@ -109,7 +108,7 @@ if not API_ID and not API_HASH:
     print("You need to set your API keys in your config or environment!")
     LOGGER.debug("No API keys!")
     sys.exit(1)
-elif REDIS:
+elif REDIS_ENDPOINT and REDIS_PASSWORD:
     REDIS_HOST = REDIS_ENDPOINT.split(':')[0]
     REDIS_PORT = REDIS_ENDPOINT.split(':')[1]
     redis_connection = redis.Redis(

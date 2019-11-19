@@ -80,7 +80,18 @@ async def updater(event: NewMessage.Event) -> None:
     for diff_added in old_commit.diff('FETCH_HEAD').iter_change_type('M'):
         if "requirements.txt" in diff_added.b_path:
             await event.answer("`Updating the pip requirements!`")
-            await update_requirements(event)
+            updated = await update_requirements()
+            if updated == 0:
+                await event.edit("`Successfully updated the requirements.`")
+            else:
+                if isinstance(updated, int):
+                    await event.edit(
+                        "`Failed trying to install requirements."
+                        " Install them manually and run the command again.`"
+                    )
+                else:
+                    await event.edit(f'```{updated}```')
+                return
             break
 
     if arg == "add":
@@ -223,7 +234,7 @@ async def updater(event: NewMessage.Event) -> None:
         await restart(event)
 
 
-async def update_requirements(event):
+async def update_requirements():
     reqs = str(requirements_path)
     try:
         process = await asyncio.create_subprocess_shell(
@@ -232,7 +243,7 @@ async def update_requirements(event):
             stderr=asyncio.subprocess.PIPE
         )
         await process.communicate()
-        if process.returncode != 0:
-            await event.edit("`Failed trying to install requirements.`")
+        return process.returncode
     except Exception as e:
         LOGGER.exception(e)
+        return repr(e)

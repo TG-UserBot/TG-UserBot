@@ -73,7 +73,7 @@ def resolve_env(config: configparser.ConfigParser):
         api_hash = config['telethon'].get('api_hash', False)
 
     if not api_id or not api_hash:
-        raise ValueError
+        raise ValueError('You need to set your API Keys at least.')
 
     sample_config = configparser.ConfigParser()
     sample_config.read(sample_config_file)
