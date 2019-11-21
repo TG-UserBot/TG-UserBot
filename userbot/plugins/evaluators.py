@@ -32,7 +32,7 @@ plugin_category = "terminal"
     outgoing=True, regex=r"eval(?: |$)([\s\S]*)"
 )
 async def evaluate(event: NewMessage.Event) -> None:
-    """Evaluate something in the running script."""
+    """Evaluate Python expressions in the running script."""
     expression = event.matches[0].group(1).strip()
     reply = await event.get_reply_message()
     if not expression:
@@ -63,7 +63,7 @@ async def evaluate(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"exec(?: |$)([\s\S]*)"
 )
 async def execute(event: NewMessage.Event) -> None:
-    """Execute Python code in a subprocess."""
+    """Execute Python statements in a subprocess."""
     message = (
         str(event.chat_id) +
         ':' +

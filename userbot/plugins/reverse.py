@@ -107,7 +107,7 @@ async def reverse(event: NewMessage.Event) -> None:
     await event.answer("`Parsing the results...`")
     match = await _scrape_url(fetchUrl + "&hl=en")
     if isinstance(match, urllib.error.HTTPError):
-        await event.edit(f"`{match.code}: {match.reason}`")
+        await event.answer(f"`{match.code}: {match.reason}`")
         return
     guess = match['best_guess']
     imgspage = match['similar_images']

@@ -94,11 +94,11 @@ class NewMessage(events.NewMessage):
                     if not event.chat.admin_rights:
                         if self.outgoing and event.message.out:
                             event._client.loop.create_task(
-                                event.edit(text)
+                                event.answer(text)
                             )
                         elif self.incoming and not event.message.out:
                             event._client.loop.create_task(
-                                event.reply(text)
+                                event.answer(text, reply=True)
                             )
                         return
         return event

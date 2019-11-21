@@ -143,7 +143,7 @@ async def rmbg(event: NewMessage.Event) -> None:
         await event.delete()
         image = io.BytesIO(response.content)
         image.name = "image.png"
-        await event.respond(file=image, force_document=True, reply=True)
+        await event.answer(file=image, force_document=True, reply=True)
         image.close()
     else:
         error = response.json()['errors'][0]

@@ -82,15 +82,15 @@ async def updater(event: NewMessage.Event) -> None:
             await event.answer("`Updating the pip requirements!`")
             updated = await update_requirements()
             if updated == 0:
-                await event.edit("`Successfully updated the requirements.`")
+                await event.answer("`Successfully updated the requirements.`")
             else:
                 if isinstance(updated, int):
-                    await event.edit(
+                    await event.answer(
                         "`Failed trying to install requirements."
                         " Install them manually and run the command again.`"
                     )
                 else:
-                    await event.edit(f'```{updated}```')
+                    await event.answer(f'```{updated}```')
                 return
             break
 

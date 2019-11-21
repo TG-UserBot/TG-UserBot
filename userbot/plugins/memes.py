@@ -36,7 +36,7 @@ async def shibes(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
+    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 
@@ -52,7 +52,7 @@ async def cats(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
+    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 
@@ -68,7 +68,7 @@ async def birds(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.respond(file=json[0], reply_to=event.reply_to_msg_id or None)
+    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
     await event.delete()
 
 
