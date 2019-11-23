@@ -8,9 +8,6 @@
     "stack": "container",
     "image": "Dockerfile",
     "env": {
-        "HEROKU_APP_NAME": {
-            "description": "The case-sensitive app name you used."
-        },
         "api_key_heroku": {
             "description": "Get your API key from https://dashboard.heroku.com/account"
         },

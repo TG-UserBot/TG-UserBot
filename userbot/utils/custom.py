@@ -20,6 +20,7 @@ import io
 import logging
 from typing import List, Tuple, Union
 
+from telethon import errors
 from telethon.extensions import markdown
 from telethon.tl import custom, functions, types
 
@@ -64,6 +65,8 @@ async def answer(
                     message_out = []
                     try:
                         first_msg = await self.edit(chunks[0], **kwargs)
+                    except errors.rpcerrorlist.MessageIdInvalidError:
+                        first_msg = await self.respond(chunks[0], **kwargs)
                     except Exception as e:
                         LOGGER.exception(e)
                     message_out.append(first_msg)
@@ -77,6 +80,8 @@ async def answer(
                 else:
                     try:
                         message_out = await self.edit(text, **kwargs)
+                    except errors.rpcerrorlist.MessageIdInvalidError:
+                        message_out = await self.respond(text, **kwargs)
                     except Exception as e:
                         LOGGER.exception(e)
         else:
@@ -84,7 +89,13 @@ async def answer(
                 message and message.out and
                 not (message.fwd_from or message.media)
             ):
-                await self.edit("`Output exceeded the limit.`")
+                try:
+                    await self.edit("`Output exceeded the limit.`")
+                except errors.rpcerrorlist.MessageIdInvalidError:
+                    await self.respond("`Output exceeded the limit.`")
+                except Exception as e:
+                    LOGGER.exception(e)
+
             kwargs.setdefault('reply_to', reply_to)
             output = io.BytesIO(msg.strip().encode())
             output.name = "output.txt"

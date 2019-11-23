@@ -9,6 +9,7 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 - Clone the repository and install the requirements. Read the procedure section below.
 - Add your API keys and Redis endpoint and password in your config's telethon section.
 - Run the bot, login once till the bot running. Finally, exit the script with ``Ctrl + C`` and use the button below to deploy.
+- If the deploy button doesn't work for you, use this [template link][heroku-deploy-template].
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
 
@@ -74,3 +75,4 @@ Either submit pull requests or create an issue on here, if not, you can join the
    [docsbadge]: <https://readthedocs.org/projects/tg-userbot/badge/?version=latest>
    [support]: <https://t.me/tg_userbot_support>
    [heroku-deploy]: <https://heroku.com/deploy>
+   [heroku-deploy-template]: <https://heroku.com/deploy?template=https://github.com/kandnub/TG-UserBot>

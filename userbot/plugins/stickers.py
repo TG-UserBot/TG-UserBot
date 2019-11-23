@@ -37,6 +37,10 @@ conversation_args = {
     'timeout': 10,
     'exclusive': True
 }
+DEFAULT_MUTE = types.InputPeerNotifySettings(
+    silent=True,
+    mute_until=datetime.timedelta(days=365)
+)
 
 NO_PACK = """`Couldn't find {} in your sticker packs! \
 Check your packs and update it in the config or use \
@@ -118,6 +122,83 @@ async def stickerpack(event: NewMessage.Event) -> None:
 
 
 @client.onMessage(
+    command=("delsticker", plugin_category),
+    outgoing=True, regex="delsticker$"
+)
+async def delsticker(event: NewMessage.Event) -> None:
+    """Remove a sticker from your existing pack."""
+    if not event.reply_to_msg_id:
+        await event.answer("`Reply to a sticker to delete it.`")
+        return
+
+    reply = await event.get_reply_message()
+    if not reply.sticker:
+        await event.answer("`Replied to message isn't a sticker.`")
+        return
+
+    stickerset = None
+    for a in reply.document.attributes:
+        if isinstance(a, types.DocumentAttributeSticker):
+            stickerset = a.stickerset
+            break
+
+    if not stickerset:
+        await event.answer("`Couldn't find the sticker set.`")
+        return
+
+    result = await client(functions.messages.GetStickerSetRequest(
+        stickerset=stickerset
+    ))
+    short_name = result.set.short_name
+    notif = await client(functions.account.GetNotifySettingsRequest(
+        peer="Stickers"
+    ))
+    await _update_stickers_notif(DEFAULT_MUTE)
+    await event.answer("`Fetching all your sticker packs.`")
+    packs, first_msg = await _list_packs()
+    target_pack = None
+    for pack in packs:
+        if short_name in pack:
+            target_pack = pack
+            break
+
+    if not target_pack:
+        await event.answer("`Couldn't find the specified set in your packs.`")
+        await _delete_sticker_messages(first_msg)
+        await _update_stickers_notif(notif)
+        return
+
+    await event.answer("`Deleting the sticker from your pack.`")
+    async with client.conversation(**conversation_args) as conv:
+        await conv.send_message('/delsticker')
+        await conv.get_response()
+        await conv.send_message(target_pack)
+        r1 = await conv.get_response()
+        LOGGER.debug("Stickers:" + r1.text)
+        await reply.forward_to("@Stickers")
+        r2 = await conv.get_response()
+        LOGGER.debug("Stickers:" + r2.text)
+        if "I have deleted that sticker for you" in r2.text:
+            status = True
+        else:
+            status = r2.text
+
+    if status is True:
+        pack = f"[{short_name}](https://t.me/addstickers/{short_name})"
+        await event.answer(
+            f"`Successfully removed the sticker from` {pack}"
+        )
+        await _delete_sticker_messages(first_msg)
+    else:
+        await event.answer(
+            f"**Couldn't delete the sticker. Perhaps it's not in your pack.**"
+            "\n`Check the chat with @Stickers for more information.`"
+        )
+        await client.send_read_acknowledge("@Stickers")
+    await _update_stickers_notif(notif)
+
+
+@client.onMessage(
     command=("kang", plugin_category),
     outgoing=True, regex="kang(?: |$)(.*)$"
 )
@@ -154,13 +235,7 @@ async def kang(event: NewMessage.Event) -> None:
     notif = await client(functions.account.GetNotifySettingsRequest(
         peer="Stickers"
     ))
-    await client(functions.account.UpdateNotifySettingsRequest(
-        peer="Stickers",
-        settings=types.InputPeerNotifySettings(
-            silent=True,
-            mute_until=datetime.timedelta(days=365)
-        )
-    ))
+    await _update_stickers_notif(DEFAULT_MUTE)
     if pack:
         if (':' in pack) or ('=' in pack):
             text = event.matches[0].group(1)
@@ -174,6 +249,7 @@ async def kang(event: NewMessage.Event) -> None:
                     f"`{prefix}kang <packName>=<packsShortName>`\n"
                     "`You can also choose emojis whilst making a new pack.`"
                 )
+                await _update_stickers_notif(notif)
                 return
             packs, first_msg = await _list_packs()
             is_pack = await _verify_cs_name(pack, packs)
@@ -205,6 +281,7 @@ async def kang(event: NewMessage.Event) -> None:
                     )
                 )
                 await _delete_sticker_messages(first_msg)
+                await _update_stickers_notif(notif)
                 return
             else:
                 pack = is_pack
@@ -225,6 +302,7 @@ async def kang(event: NewMessage.Event) -> None:
                     pack = animated or "a default animated pack"
                     await event.answer(FALSE_DEFAULT.format(pack, prefix))
                     await _delete_sticker_messages(first_msg)
+                    await _update_stickers_notif(notif)
                     return
         else:
             pack = await _verify_cs_name(basic, packs)
@@ -240,6 +318,7 @@ async def kang(event: NewMessage.Event) -> None:
                     pack = basic or "a default pack"
                     await event.answer(FALSE_DEFAULT.format(pack, prefix))
                     await _delete_sticker_messages(first_msg)
+                    await _update_stickers_notif(notif)
                     return
 
     await event.answer(
@@ -290,20 +369,21 @@ async def kang(event: NewMessage.Event) -> None:
                 else:
                     await event.answer(f"`{pack} has reached it's limit!`")
                     await _delete_sticker_messages(first_msg or new_first_msg)
+                    await _update_stickers_notif(notif)
                     return
-            elif ".TGS" in r2.text and not is_animated:
-                await event.answer(
-                    "`You're trying to kang a normal sticker "
-                    "to an animated pack. Choose the correct pack!`"
-                )
+            else:
+                if ".TGS" in r2.text and not is_animated:
+                    await event.answer(
+                        "`You're trying to kang a normal sticker "
+                        "to an animated pack. Choose the correct pack!`"
+                    )
+                elif ".PSD" in r2.text and is_animated:
+                    await event.answer(
+                        "`You're trying to kang an animated sticker "
+                        "to a normal pack. Choose the correct pack!`"
+                    )
                 await _delete_sticker_messages(first_msg or new_first_msg)
-                return
-            elif ".PSD" in r2.text and is_animated:
-                await event.answer(
-                    "`You're trying to kang an animated sticker "
-                    "to a normal pack. Choose the correct pack!`"
-                )
-                await _delete_sticker_messages(first_msg or new_first_msg)
+                await _update_stickers_notif(notif)
                 return
 
         sticker = io.BytesIO()
@@ -327,6 +407,7 @@ async def kang(event: NewMessage.Event) -> None:
                 resized_sticker = await _resize_image(sticker, new_sticker)
             if isinstance(resized_sticker, str):
                 await event.answer(resized_sticker)
+                await _update_stickers_notif(notif)
                 return
             await conv.send_message(
                 file=new_sticker, force_document=True
@@ -359,6 +440,7 @@ async def kang(event: NewMessage.Event) -> None:
                     await conv.send_message('/cancel')
                     await conv.get_response()
                     await client.send_read_acknowledge(conv.chat_id)
+                    await _update_stickers_notif(notif)
                     return
 
             await conv.send_message('/skip')
@@ -380,6 +462,7 @@ async def kang(event: NewMessage.Event) -> None:
                     "Try thinking of a better short name.`"
                 )
                 await _delete_sticker_messages(first_msg or new_first_msg)
+                await _update_stickers_notif(notif)
                 return
         else:
             await conv.send_message('/done')
@@ -394,10 +477,7 @@ async def kang(event: NewMessage.Event) -> None:
         log=("kang", f"Successfully kanged a sticker from {extra} to {pack}")
     )
     await _delete_sticker_messages(first_msg or new_first_msg)
-    await client(functions.account.UpdateNotifySettingsRequest(
-        peer="Stickers",
-        settings=types.InputPeerNotifySettings(**vars(notif))
-    ))
+    await _update_stickers_notif(notif)
 
 
 async def _set_default_packs(string: str, delimiter: str) -> str:
@@ -667,3 +747,10 @@ async def _is_sticker_event(event: NewMessage.Event) -> bool:
         return True
 
     return False
+
+
+async def _update_stickers_notif(notif: types.PeerNotifySettings) -> None:
+    await client(functions.account.UpdateNotifySettingsRequest(
+        peer="Stickers",
+        settings=types.InputPeerNotifySettings(**vars(notif))
+    ))
