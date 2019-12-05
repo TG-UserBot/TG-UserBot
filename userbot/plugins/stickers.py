@@ -371,17 +371,19 @@ async def kang(event: NewMessage.Event) -> None:
                     await _delete_sticker_messages(first_msg or new_first_msg)
                     await _update_stickers_notif(notif)
                     return
-            else:
-                if ".TGS" in r2.text and not is_animated:
-                    await event.answer(
-                        "`You're trying to kang a normal sticker "
-                        "to an animated pack. Choose the correct pack!`"
-                    )
-                elif ".PSD" in r2.text and is_animated:
-                    await event.answer(
-                        "`You're trying to kang an animated sticker "
-                        "to a normal pack. Choose the correct pack!`"
-                    )
+            elif ".TGS" in r2.text and not is_animated:
+                await event.answer(
+                    "`You're trying to kang a normal sticker "
+                    "to an animated pack. Choose the correct pack!`"
+                )
+                await _delete_sticker_messages(first_msg or new_first_msg)
+                await _update_stickers_notif(notif)
+                return
+            elif ".PSD" in r2.text and is_animated:
+                await event.answer(
+                    "`You're trying to kang an animated sticker "
+                    "to a normal pack. Choose the correct pack!`"
+                )
                 await _delete_sticker_messages(first_msg or new_first_msg)
                 await _update_stickers_notif(notif)
                 return

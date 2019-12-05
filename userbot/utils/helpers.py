@@ -124,7 +124,7 @@ async def isRestart(client: UserBotClient) -> None:
         try:
             await client.edit_message(entity, message, text)
         except (
-            errors.MessageAuthorRequiredError,
+            ValueError, errors.MessageAuthorRequiredError,
             errors.MessageNotModifiedError, errors.MessageIdInvalidError
         ):
             LOGGER.debug(f"Failed to edit message ({message}) in {entity}.")
