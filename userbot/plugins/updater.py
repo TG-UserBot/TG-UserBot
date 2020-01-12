@@ -170,7 +170,7 @@ async def updater(event: NewMessage.Event) -> None:
         heroku_conn = heroku3.from_key(heroku_api_key)
         app = None
         for heroku_app in heroku_conn.apps():
-            if "api_key_heroku" in app.config():
+            if "api_key_heroku" in heroku_app.config():
                 app = heroku_app
                 break
         if app is None:
