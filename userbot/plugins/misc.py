@@ -27,6 +27,7 @@ from telethon.tl import functions, types
 
 from userbot import client, LOGGER
 from userbot.helper_funcs import misc
+from userbot.helper_funcs.ids import get_entity_from_msg
 from userbot.utils.helpers import get_chat_link, restart
 from userbot.utils.events import NewMessage
 
@@ -139,7 +140,7 @@ async def rmbg(event: NewMessage.Event) -> None:
     )
     if not isinstance(media, str):
         media.close()
-    if response.status_code == requests.codes.ok:
+    if response.status_code == 200:
         await event.delete()
         image = io.BytesIO(response.content)
         image.name = "image.png"
@@ -241,24 +242,22 @@ async def resolver(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("mention", plugin_category),
-    outgoing=True, regex=r"mention(?: |$)(@?\w{5,32}|\d+)?(?: |$)(.*)$"
+    outgoing=True, regex=r"mention(?: |$)(.*)$"
 )
 async def bot_mention(event: NewMessage.Event) -> None:
     """Mention a user in the bot like link with a custom name."""
-    user = event.matches[0].group(1)
-    name = event.matches[0].group(2)
-    if not (user and name):
+    user, text, exception = await get_entity_from_msg(event)
+    if user and text:
+        if exception:
+            await event.answer(f"`Mention machine broke!\n{user}`")
+            return
+    else:
         await event.answer("`Mentioned the void.`")
         return
 
-    try:
-        user = await client.get_input_entity(user)
-    except (TypeError, ValueError):
-        await event.answer("`Couldn't get the entity.`")
-        return
-
-    if not isinstance(user, types.InputPeerUser):
+    if not isinstance(user, types.User):
         await event.answer("`Cannot mention non-users.`")
         return
-    text = f"[{name}](tg://user?id={user.user_id})"
+
+    text = f"[{text}](tg://user?id={user.id})"
     await event.answer(text)

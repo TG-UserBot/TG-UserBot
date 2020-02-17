@@ -60,7 +60,7 @@ async def evaluate(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("exec", plugin_category),
-    outgoing=True, regex=r"exec(?: |$)([\s\S]*)"
+    outgoing=True, regex=r"exec(?: |$|\n)([\s\S]*)"
 )
 async def execute(event: NewMessage.Event) -> None:
     """Execute Python statements in a subprocess."""
@@ -116,7 +116,7 @@ async def execute(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("term", plugin_category),
-    outgoing=True, regex=r"term(?: |$)([\s\S]*)"
+    outgoing=True, regex=r"term(?: |$|\n)([\s\S]*)"
 )
 async def terminal(event: NewMessage.Event) -> None:
     """Execute terminal commands in a subprocess."""

@@ -145,12 +145,20 @@ class RedisSession(MemorySession):
             auth_key = s.get(b'auth_key') or auth_key
             self._auth_key = AuthKey(s.get(auth_key))
 
-    @MemorySession.auth_key.setter
+    @property
+    def auth_key(self):
+        return self._auth_key
+
+    @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
         self._update_sessions()
 
-    @MemorySession.takeout_id.setter
+    @property
+    def takeout_id(self):
+        return self._takeout_id
+
+    @takeout_id.setter
     def takeout_id(self, value):
         self._takeout_id = value
         self._update_sessions()

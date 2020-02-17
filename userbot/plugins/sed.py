@@ -51,8 +51,8 @@ ub_sed_pattern = r"^(?:[1-9]+sed|[1-9]+s|sed)"
 )
 async def sed_substitute(event: NewMessage.Event) -> None:
     """Perfom a GNU like SED substitution of the matched text."""
-    if not re.match(ub_sed_pattern, event.raw_text, re.IGNORECASE):
-        return
+    # if not re.match(ub_sed_pattern, event.raw_text, re.IGNORECASE):
+    #     return
 
     matches = event.matches
     reply = await event.get_reply_message()

@@ -52,3 +52,19 @@ def dump_AFK() -> None:
         os.environ['userbot_afk_groups'] = cls_dict['groups']
     if "sent" in cls_dict:
         os.environ['userbot_afk_sent'] = cls_dict['sent']
+
+
+@dataclasses.dataclass
+class Blacklist:
+    bio: list = None
+    url: list = None
+    tgid: list = None
+    txt: list = None
+
+
+@dataclasses.dataclass
+class GlobalBlacklist:
+    bio: list = None
+    url: list = None
+    tgid: list = None
+    txt: list = None
