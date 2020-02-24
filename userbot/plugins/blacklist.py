@@ -160,13 +160,13 @@ async def unappend(key: str or bytes, option: str, value: str or int) -> int:
     blkey = key[11:] if key.isalpha() else int(key[11:])
     if blkey == 'global':
         gval = getattr(GlobalBlacklist, option, [])
-        if value in gval:
+        if gval and value in gval:
             gval.remove(value)
         setattr(GlobalBlacklist, option, gval)
     else:
         if blkey in localBlacklists:
             lval = getattr(localBlacklists[blkey], option, [])
-            if value in lval:
+            if lval and value in lval:
                 lval.remove(value)
             setattr(localBlacklists[blkey], option, lval)
 
