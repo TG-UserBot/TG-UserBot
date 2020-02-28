@@ -144,7 +144,7 @@ class Parser:
         if bots:
             text += f"\n**Total bots:** `{bots}`"
 
-        if obj_type == "Channel":
+        if obj_type == "CHANNEL":
             if admins:
                 text += f"\n**Admins:** `{admins}`"
             if kicked:

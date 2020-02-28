@@ -28,7 +28,7 @@ from userbot.utils.sessions import RedisSession
 from userbot.plugins.plugins_data import Blacklist, GlobalBlacklist
 
 
-plugin_category = "blacklist"
+plugin_category = "blacklisting"
 if isinstance(type(client.session), type(RedisSession)):
     redis = client.session.redis_connection
 else:
@@ -50,13 +50,13 @@ dbl_pattern = (
 wl_pattern = (
     r"w(?:hite)?l(?:ist)?"
     r"(?: |$)"
-    r"(?P<value>@?\w{5,35}|\d{6,13})?"
+    r"(?P<value>@?\w{5,35}|-?\d{6,16})?"
 )
 dwl_pattern = (
     r"r(?:e)?m(?:ove)?"
     r"w(?:hite)?l(?:ist)?"
     r"(?: |$)"
-    r"(?P<value>@?\w{5,35}|\d{6,13})?"
+    r"(?P<value>@?\w{5,35}|-?\d{6,16})?"
 )
 bls_pattern = (
     r"(?P<global>g(?:lobal)?)?"
@@ -70,7 +70,7 @@ wls_pattern = (
     r"(?:(?P<option>\w+))?"
 )
 id_pattern = re.compile(
-    r'(?:https?:\/\/)?(?:www\.)?(?:t\.me\/)?@?(?P<e>\w{5,35}|\d{6,13})\/?'
+    r'(?:https?:\/\/)?(?:www\.)?(?:t\.me\/)?@?(?P<e>\w{5,35}|-?\d{6,16})\/?'
 )
 acceptable_options = {
     'id': 'tgid',
@@ -124,12 +124,14 @@ async def append(key: str or bytes, option: str, value: str or int) -> int:
         setattr(GlobalBlacklist, option, gval)
     else:
         if blkey in localBlacklists:
-            lval = getattr(localBlacklists[blkey], option)
+            lval = getattr(localBlacklists[blkey], option, None)
             if lval:
                 lval.append(value)
+            else:
+                lval = [value]
             setattr(localBlacklists[blkey], option, lval)
         else:
-            localBlacklists[blkey] = Blacklist({option: [value]})
+            localBlacklists[blkey] = Blacklist(**{option: [value]})
 
     return 0  # The value was stored in the DB
 
@@ -159,16 +161,24 @@ async def unappend(key: str or bytes, option: str, value: str or int) -> int:
 
     blkey = key[11:] if key.isalpha() else int(key[11:])
     if blkey == 'global':
-        gval = getattr(GlobalBlacklist, option, [])
-        if gval and value in gval:
-            gval.remove(value)
-        setattr(GlobalBlacklist, option, gval)
+        gval = getattr(GlobalBlacklist, option, None)
+        if gval:
+            if value in gval:
+                gval.remove(value)
+                if gval:
+                    setattr(GlobalBlacklist, option, gval)
+                else:
+                    setattr(GlobalBlacklist, option, None)
     else:
         if blkey in localBlacklists:
-            lval = getattr(localBlacklists[blkey], option, [])
-            if lval and value in lval:
-                lval.remove(value)
-            setattr(localBlacklists[blkey], option, lval)
+            lval = getattr(localBlacklists[blkey], option, None)
+            if lval:
+                if value in lval:
+                    lval.remove(value)
+                    if lval:
+                        setattr(localBlacklists[blkey], option, lval)
+                    else:
+                        setattr(localBlacklists[blkey], option, None)
 
     return 0  # The value was removed from the DB
 
@@ -215,10 +225,11 @@ async def blacklister(event: NewMessage.Event) -> None:
         value = value.strip('"')
     if option == 'tgid':
         entity = id_pattern.search(value).group('e')
+        entity = entity if entity.isalpha() else int(entity)
         try:
             value = await client.get_peer_id(entity)
-        except Exception:
-            await event.answer("`Invalid ID.`")
+        except Exception as e:
+            await event.answer(f"`Invalid ID.`\n{e}")
             return
 
     response = await append("blacklists:" + key, option, value)
@@ -265,6 +276,18 @@ async def unblacklister(event: NewMessage.Event) -> None:
     option = acceptable_options.get(option, 'txt')
     if value.startswith('"') and value.endswith('"'):
         value = value.strip('"')
+    if option == 'tgid':
+        entity = id_pattern.search(value).group('e')
+        entity = entity if entity.isalpha() else int(entity)
+        if isinstance(entity, str):
+            try:
+                value = await client.get_peer_id(entity)
+            except Exception as e:
+                await event.answer(f"`Invalid ID.`\n{e}")
+                return
+        else:
+            value = entity
+
     response = await unappend("blacklists:" + key, option, value)
     if response == 0:
         await event.answer(
@@ -312,7 +335,7 @@ async def whitelister(event: NewMessage.Event) -> None:
     else:
         value = int(value) if value.isdigit() else value
         try:
-            entity = await event.get_input_entity(value)
+            entity = await client.get_input_entity(value)
             if isinstance(entity, types.InputPeerUser):
                 user = True
             else:
@@ -330,12 +353,20 @@ async def whitelister(event: NewMessage.Event) -> None:
         whitelistedUsers.append(wl)
         redis.set('whitelist:users', dill.dumps(whitelistedUsers))
         await event.answer(
-            f"**Successfully whitelisted** [{wl}](tg://user?id={wl})"
+            f"**Successfully whitelisted** [{wl}](tg://user?id={wl})",
+            log=(
+                'whitelist', f'Whitelisted user [{wl}](tg://user?id={wl}).'
+            )
         )
     elif chat:
         whitelistedChats.append(wl)
         redis.set('whitelist:chats', dill.dumps(whitelistedUsers))
-        await event.answer(f"**Successfully whitelisted chat** `{wl}`")
+        await event.answer(
+            f"**Successfully whitelisted chat** `{wl}`",
+            log=(
+                'whitelist', f'Whitelisted chat {wl}.'
+            )
+        )
     else:
         await event.answer("__IDK what happened?__")
 
@@ -361,6 +392,14 @@ async def unwhitelister(event: NewMessage.Event) -> None:
     if not value:
         await event.answer('__.rmwl (<value>)__')
         return
+    else:
+        value = int(value) if value.isdigit() else value
+        try:
+            entity = await client.get_input_entity(value)
+            value = await client.get_peer_id(entity)
+        except Exception:
+            await event.answer(f"__Couldn't get the entity for {value}.__")
+            return
 
     if value in whitelistedUsers:
         whitelistedUsers.remove(value)
@@ -368,14 +407,24 @@ async def unwhitelister(event: NewMessage.Event) -> None:
             redis.set('whitelist:users', dill.dumps(whitelistedUsers))
         else:
             redis.delete('whitelist:users')
-        await event.answer(f"__Removed user {value} from whitelist.__")
+        await event.answer(
+            f"__Removed user {value} from whitelist.__",
+            log=(
+                'whitelist', f'Unwhitelisted user [{wl}](tg://user?id={wl}).'
+            )
+        )
     elif value in whitelistedChats:
         whitelistedChats.remove(value)
         if whitelistedChats:
             redis.set('whitelist:chats', dill.dumps(whitelistedUsers))
         else:
             redis.delete('whitelist:chats')
-        await event.answer(f"__Removed chat {value} from whitelist.__")
+        await event.answer(
+            f"__Removed chat {value} from whitelist.__",
+            log=(
+                'whitelist', f'Unwhitelisted chat {wl}.'
+            )
+        )
     else:
         await event.answer(f"__{value} hasn't been whitelisted.__")
         return
@@ -404,10 +453,13 @@ async def listbls(event: NewMessage.Event) -> None:
         return
 
     if glb:
-        if (
-            len(GlobalBlacklist.txt) + len(GlobalBlacklist.url) +
-            len(GlobalBlacklist.bio) + len(GlobalBlacklist.tgid) == 0
-        ):
+        attrs = ['txt', 'bio', 'url', 'tgid']
+        empty = True
+        for a in attrs:
+            attr = getattr(GlobalBlacklist, a)
+            if attr:
+                empty = False
+        if empty:
             await event.answer("__There are no global blacklists.__")
             return
         if option:
@@ -418,8 +470,11 @@ async def listbls(event: NewMessage.Event) -> None:
             else:
                 text = f"__There are no global {option} blacklists.__"
         else:
-            text = "**Global blacklists:**\n"
-            text += await blattributes(GlobalBlacklist)
+            gbls = await blattributes(GlobalBlacklist)
+            if gbls:
+                text = f"**Global blacklists:**\n{gbls}"
+            else:
+                text = f"__There are no global blacklists.__"
     else:
         if event.chat_id not in localBlacklists:
             await event.answer('__There are no blacklists set here.__')
@@ -432,8 +487,11 @@ async def listbls(event: NewMessage.Event) -> None:
             else:
                 text = f"__There are no {option} blacklists.__"
         else:
-            text = "**Blacklists:**\n"
-            text += await blattributes(localBlacklists[event.chat_id])
+            bls = await blattributes(localBlacklists[event.chat_id])
+            if bls:
+                text = f"**Blacklists:**\n{bls}"
+            else:
+                text = f"__There are no blacklists.__"
 
     await event.answer(text)
 
@@ -463,13 +521,13 @@ async def listwls(event: NewMessage.Event) -> None:
         if option in ['user', 'users']:
             if whitelistedUsers:
                 text = "**Whitelisted users:**\n"
-                text += ', '.join([str(x) for x in whitelistedUsers])
+                text += ', '.join([f'`{x}`' for x in whitelistedUsers])
             else:
                 text = "__There are no whitelisted users.__"
         else:
             if whitelistedChats:
                 text = "**Whitelisted chats:**\n"
-                text += ', '.join([str(x) for x in whitelistedChats])
+                text += ', '.join([f'`{x}`' for x in whitelistedChats])
             else:
                 text = "__There are no whitelisted chats.__"
     else:
@@ -480,10 +538,10 @@ async def listwls(event: NewMessage.Event) -> None:
 
         if whitelistedUsers:
             text += "**Whitelisted users:**\n"
-            text += ', '.join([str(x) for x in whitelistedUsers])
+            text += ', '.join([f'`{x}`' for x in whitelistedUsers])
         if whitelistedChats:
             text += "\n**Whitelisted chats:**\n"
-            text += ', '.join([str(x) for x in whitelistedChats])
+            text += ', '.join([f'`{x}`' for x in whitelistedChats])
 
     await event.answer(text)
 
@@ -491,7 +549,7 @@ async def listwls(event: NewMessage.Event) -> None:
 @client.onMessage(incoming=True)
 async def inc_listner(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis:
+    if not redis or event.is_private:
         return
     if event.chat_id in whitelistedChats or event.from_id in whitelistedUsers:
         return
@@ -571,7 +629,7 @@ async def inc_listner(event: NewMessage.Event) -> None:
 @client.on(ChatAction)
 async def bio_filter(event: ChatAction.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis:
+    if not redis or event.is_private:
         return
     text = None
 
@@ -603,7 +661,8 @@ async def bio_filter(event: ChatAction.Event) -> None:
                     text = f"**Banned due to blacklisted bio match: {value}**"
 
         if text:
-            if not (chat.creator or chat.admin_rights.ban_user):
+            ban_right = getattr(chat.admin_rights, 'ban_user', False)
+            if not (chat.creator or ban_right):
                 return
             try:
                 await client.edit_permissions(
@@ -635,7 +694,8 @@ async def escape_string(string: str) -> str:
 
 async def ban_user(event: NewMessage.Event, text: str) -> bool:
     chat = await event.get_chat()
-    if not (chat.creator or chat.admin_rights.ban_user):
+    ban_right = getattr(chat.admin_rights, 'ban_user', False)
+    if not (chat.creator or ban_right):
         return False
     try:
         await client.edit_permissions(
@@ -665,11 +725,11 @@ async def blattributes(blacklist) -> str:
     tgid = getattr(blacklist, 'tgid', None)
     url = getattr(blacklist, 'url', None)
     if strings:
-        text += f"\n**[String]:** ```{', '.join(strings)}```\n"
+        text += f"\n**[String]:** {', '.join([f'`{x}`' for x in strings])}\n"
     if bio:
-        text += f"\n**[Bio]:** ```{', '.join(bio)}```\n"
+        text += f"\n**[Bio]:** {', '.join([f'`{x}`' for x in bio])}\n"
     if tgid:
-        text += f"\n**[ID]:** ```{', '.join([str(x) for x in tgid])}```\n"
+        text += f"\n**[ID]:** {', '.join([f'`{x}`' for x in tgid])}\n"
     if url:
-        text += f"\n**[URL]:** ```{', '.join(url)}```\n"
+        text += f"\n**[URL]:** {', '.join([f'`{x}`' for x in url])}\n"
     return text
