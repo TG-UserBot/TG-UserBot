@@ -103,7 +103,7 @@ if redis:
     if redis.exists('whitelist:users'):
         whitelistedUsers = dill.loads(redis.get('whitelist:users'))
     if redis.exists('whitelist:chats'):
-        whitelistedUsers = dill.loads(redis.get('whitelist:chats'))
+        whitelistedChats = dill.loads(redis.get('whitelist:chats'))
 
 
 async def append(key: str or bytes, option: str, value: str or int) -> int:
@@ -118,9 +118,14 @@ async def append(key: str or bytes, option: str, value: str or int) -> int:
         data = dill.dumps({option: [value]})
     redis.set(key, data)
 
-    blkey = key[11:] if key.isalpha() else int(key[11:])
+    key = key[11:]
+    blkey = key if key.isalpha() else int(key)
     if blkey == 'global':
-        gval = getattr(GlobalBlacklist, option, []).append(value)
+        gval = getattr(GlobalBlacklist, option, None)
+        if gval:
+            gval.append(value)
+        else:
+            gval = [value]
         setattr(GlobalBlacklist, option, gval)
     else:
         if blkey in localBlacklists:
@@ -159,7 +164,8 @@ async def unappend(key: str or bytes, option: str, value: str or int) -> int:
     else:
         redis.set(key, data)
 
-    blkey = key[11:] if key.isalpha() else int(key[11:])
+    key = key[11:]
+    blkey = key if key.isalpha() else int(key)
     if blkey == 'global':
         gval = getattr(GlobalBlacklist, option, None)
         if gval:
@@ -360,7 +366,7 @@ async def whitelister(event: NewMessage.Event) -> None:
         )
     elif chat:
         whitelistedChats.append(wl)
-        redis.set('whitelist:chats', dill.dumps(whitelistedUsers))
+        redis.set('whitelist:chats', dill.dumps(whitelistedChats))
         await event.answer(
             f"**Successfully whitelisted chat** `{wl}`",
             log=(
@@ -384,6 +390,15 @@ async def unwhitelister(event: NewMessage.Event) -> None:
         return
 
     value = event.matches[0].group('value')
+    if event.matches[0].group('value'):
+        value = int(value) if value.isdigit() else value
+        try:
+            entity = await client.get_input_entity(value)
+            value = await client.get_peer_id(entity)
+        except Exception:
+            await event.answer(f"__Couldn't get the entity for {value}.__")
+            return
+
     if event.reply_to_msg_id and not value:
         value = (await event.get_reply_message()).from_id
     if not value:
@@ -392,14 +407,6 @@ async def unwhitelister(event: NewMessage.Event) -> None:
     if not value:
         await event.answer('__.rmwl (<value>)__')
         return
-    else:
-        value = int(value) if value.isdigit() else value
-        try:
-            entity = await client.get_input_entity(value)
-            value = await client.get_peer_id(entity)
-        except Exception:
-            await event.answer(f"__Couldn't get the entity for {value}.__")
-            return
 
     if value in whitelistedUsers:
         whitelistedUsers.remove(value)
@@ -410,19 +417,19 @@ async def unwhitelister(event: NewMessage.Event) -> None:
         await event.answer(
             f"__Removed user {value} from whitelist.__",
             log=(
-                'whitelist', f'Unwhitelisted user [{wl}](tg://user?id={wl}).'
+                'whitelist', f'Unwhitelisted user [{value}](tg://user?id={value}).'
             )
         )
     elif value in whitelistedChats:
         whitelistedChats.remove(value)
         if whitelistedChats:
-            redis.set('whitelist:chats', dill.dumps(whitelistedUsers))
+            redis.set('whitelist:chats', dill.dumps(whitelistedChats))
         else:
             redis.delete('whitelist:chats')
         await event.answer(
             f"__Removed chat {value} from whitelist.__",
             log=(
-                'whitelist', f'Unwhitelisted chat {wl}.'
+                'whitelist', f'Unwhitelisted chat {value}.'
             )
         )
     else:
