@@ -556,9 +556,11 @@ async def listwls(event: NewMessage.Event) -> None:
 @client.onMessage(incoming=True)
 async def inc_listner(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis or event.is_private:
+    if not redis or event.is_private or event.chat.broadcast:
         return
     if event.chat_id in whitelistedChats or event.from_id in whitelistedUsers:
+        return
+    if await is_admin(event.chat_id, event.sender_id):
         return
 
     text = False
@@ -636,7 +638,7 @@ async def inc_listner(event: NewMessage.Event) -> None:
 @client.on(ChatAction)
 async def bio_filter(event: ChatAction.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis or event.is_private:
+    if not redis or event.is_private or event.chat.broadcast:
         return
     text = None
 
@@ -650,6 +652,8 @@ async def bio_filter(event: ChatAction.Event) -> None:
         except (ValueError, TypeError):
             return
         if chat_id in whitelistedChats or sender_id in whitelistedUsers:
+            return
+        if await is_admin(chat_id, sender_id):
             return
 
         user = await client(functions.users.GetFullUserRequest(id=sender))
@@ -699,6 +703,23 @@ async def escape_string(string: str) -> str:
     string = re.sub(r'(?<!\\)\*', '.+', string, count=0)
     string = re.sub(r'(?<!\\)\?', '.', string, count=0)
     return string
+
+
+async def is_admin(chat_id, sender_id) -> bool:
+    """Check if the sender is an admin or bot"""
+    try:
+        result = await client(functions.channels.GetParticipantRequest(
+            channel=chat_id,
+            user_id=sender_id
+        ))
+        if isinstance(
+            result.participant,
+            (types.ChannelParticipantAdmin, types.ChannelParticipantCreator)
+        ):
+            return True
+    except:
+        pass
+    return False
 
 
 async def ban_user(event: NewMessage.Event, text: str) -> bool:
