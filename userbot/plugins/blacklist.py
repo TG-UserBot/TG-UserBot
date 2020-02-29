@@ -574,7 +574,7 @@ async def inc_listner(event: NewMessage.Event) -> None:
                     "**Banned due to globally blacklisted string match: "
                     f"{value}**"
                 )
-    elif localbl and getattr(localbl, 'string', False):
+    elif localbl and getattr(localbl, 'txt', False):
         for value in localBlacklists[event.chat_id].txt:
             string = await escape_string(value)
             if re.search(string, event.text, flags=re.I):
@@ -668,8 +668,10 @@ async def bio_filter(event: ChatAction.Event) -> None:
                     text = f"**Banned due to blacklisted bio match: {value}**"
 
         if text:
-            ban_right = getattr(chat.admin_rights, 'ban_user', False)
-            if not (chat.creator or ban_right):
+            ban_right = getattr(chat.admin_rights, 'ban_users', False)
+            if ban_right or chat.creator:
+                pass
+            else:
                 return
             try:
                 await client.edit_permissions(
@@ -701,8 +703,10 @@ async def escape_string(string: str) -> str:
 
 async def ban_user(event: NewMessage.Event, text: str) -> bool:
     chat = await event.get_chat()
-    ban_right = getattr(chat.admin_rights, 'ban_user', False)
-    if not (chat.creator or ban_right):
+    ban_right = getattr(chat.admin_rights, 'ban_users', False)
+    if ban_right or chat.creator:
+        pass
+    else:
         return False
     try:
         await client.edit_permissions(
