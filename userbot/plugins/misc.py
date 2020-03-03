@@ -168,7 +168,7 @@ async def resolver(event: NewMessage.Event) -> None:
     text = f"`Couldn't resolve:` {link}"
     for link_type, pattern in invite_links.items():
         match = pattern.match(link)
-        if match is not None:
+        if match:
             valid = match.group(1)
             if link_type == "private":
                 creatorid, cid, _ = utils.resolve_invite_link(valid)
@@ -178,7 +178,7 @@ async def resolver(event: NewMessage.Event) -> None:
                 try:
                     creator = await client.get_entity(creatorid)
                     creator = await get_chat_link(creator)
-                except (TabError, ValueError):
+                except (TypeError, ValueError):
                     creator = f"`{creatorid}`"
                 text = f"**Link:** {link}"
                 text += f"\n**Link creator:** {creator}\n**ID:** `{cid}`"

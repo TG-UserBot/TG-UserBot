@@ -16,16 +16,38 @@
 
 
 import concurrent
+import functools
+import os
+import pathlib
+import re
+import time
 import youtube_dl
 
 from .. import LOGGER
 
+
+downloads = {}
+audio = re.compile(r'\[ffmpeg\] Destination\: (.+)')
+video = re.compile(
+    r'\[ffmpeg\] Converting video from \w+ to \w+, Destination: (.+)'
+)
+merger = re.compile(r'\[ffmpeg\] Merging formats into "(.+)"')
 
 class YTdlLogger(object):
     """Logger used for YoutubeDL which logs to UserBot logger."""
     def debug(self, msg: str) -> None:
         """Logs debug messages with youtube-dl tag to UserBot logger."""
         LOGGER.debug("youtube-dl: " + msg)
+        f = None
+        if "[ffmpeg]" in msg:
+            if audio.search(msg):
+                f = audio.match(msg).group(1)
+            if video.search(msg):
+                f = video.match(msg).group(1)
+            if merger.search(msg):
+                f = merger.match(msg).group(1)
+            if f:
+                downloads.setdefault(f.split('.')[0], []).append(f)
 
     def warning(self, msg: str) -> None:
         """Logs warning messages with youtube-dl tag to UserBot logger."""
@@ -101,6 +123,7 @@ async def list_formats(info_dict: dict) -> str:
 
 
 async def extract_info(
+    loop,
     executor: concurrent.futures.Executor,
     params: dict,
     url: str,
@@ -123,46 +146,66 @@ async def extract_info(
             Successfull string or info_dict on success or an exception's
             string if any occur.
     """
-    ytdl = youtube_dl.YoutubeDL(params)
+    ydl_opts = params.copy()
+    ydl_opts['outtmpl'] = ydl_opts['outtmpl'].format(time=time.time_ns())
+    ytdl = youtube_dl.YoutubeDL(ydl_opts)
 
-    def downloader(download):
+    def downloader(url, download):
+        eStr = None
         try:
             info_dict = ytdl.extract_info(url, download=download)
-        except youtube_dl.utilsDownloadError as DE:
-            return ("`" + str(DE) + "`")
-        except youtube_dl.utilsContentTooShortError:
-            return "`There download content was too short.`"
-        except youtube_dl.utilsGeoRestrictedError:
-            return (
+        except youtube_dl.utils.DownloadError as DE:
+            eStr = f"`{DE}`"
+        except youtube_dl.utils.ContentTooShortError:
+            eStr = "`There download content was too short.`"
+        except youtube_dl.utils.GeoRestrictedError:
+            eStr = (
                 "`Video is not available from your geographic location due "
                 "to geographic restrictions imposed by a website.`"
             )
-        except youtube_dl.utilsMaxDownloadsReached:
-            return "`Max-downloads limit has been reached.`"
-        except youtube_dl.utilsPostProcessingError:
-            return "`There was an error during post processing.`"
-        except youtube_dl.utilsUnavailableVideoError:
-            return "`Video is not available in the requested format.`"
-        except youtube_dl.utilsXAttrMetadataError as XAME:
-            return f"`{XAME.code}: {XAME.msg}\n{XAME.reason}`"
-        except youtube_dl.utilsExtractorError:
-            return "`There was an error during info extraction.`"
+        except youtube_dl.utils.MaxDownloadsReached:
+            eStr = "`Max-downloads limit has been reached.`"
+        except youtube_dl.utils.PostProcessingError:
+            eStr = "`There was an error during post processing.`"
+        except youtube_dl.utils.UnavailableVideoError:
+            eStr = "`Video is not available in the requested format.`"
+        except youtube_dl.utils.XAttrMetadataError as XAME:
+            eStr = f"`{XAME.code}: {XAME.msg}\n{XAME.reason}`"
+        except youtube_dl.utils.ExtractorError:
+            eStr = "`There was an error during info extraction.`"
         except Exception as e:
-            eStr = str(type(e)) + ": " + str(e)
+            eStr = f"`{type(e)}: {e}`"
+
+        if eStr:
             return eStr
 
-        if download is False:
-            return info_dict
-        else:
+        if download:
             title = info_dict.get(
                 'title', info_dict.get('id', 'Unknown title')
             )
-            return f"`Successfully downloaded {title}.`"
+            url = info_dict.get('webpage_url', None)
+            filen = ytdl.prepare_filename(info_dict)
+            for i in downloads.pop(filen.split('.')[0], [filen]):
+                if pathlib.Path(i).exists():
+                    path = i
+            npath = re.sub(r'_\d+', '', path)
+            if pathlib.Path(npath).exists():
+                os.remove(npath)
+            os.rename(path, npath)
+            return f"`Successfully downloaded {title}.`", title, url, npath
+        else:
+            return info_dict
 
-    fut = executor.submit(downloader, download)
+    # Future blocks the running event loop
+    # fut = executor.submit(downloader, url, download)
     try:
-        result = fut.result()
+        # result = fut.result()
+        result = await loop.run_in_executor(
+            concurrent.futures.ThreadPoolExecutor(),
+            functools.partial(downloader, url, download)
+        )
     except Exception as exc:
         LOGGER.exception(exc)
+        result = f"`{type(exc)}: {exc}`"
     finally:
         return result

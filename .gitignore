@@ -1,9 +1,10 @@
-# Pyrogram files and folders
+# Telethon/UserBot files and folders
 config.ini
 userbot.session
 userbot.session-journal
 unknown_errors.txt
 downloads/
+YT_DL/
 
 # Python's cache folders
 __pycache__/*
