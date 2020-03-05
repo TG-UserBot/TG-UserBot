@@ -92,8 +92,8 @@ class NewMessage(events.NewMessage):
             if not isinstance(event._chat_peer, types.PeerUser):
                 is_creator = False
                 is_admin = False
-                creator = hasattr(event.chat, 'creator', False)
-                admin_rights = hasattr(event.chat, 'admin_rights', False)
+                creator = hasattr(event.chat, 'creator')
+                admin_rights = hasattr(event.chat, 'admin_rights')
                 if not creator and not admin_rights:
                     event.chat = event._client.loop.create_task(
                         event.get_chat()
