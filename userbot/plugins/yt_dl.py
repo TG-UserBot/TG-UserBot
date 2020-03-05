@@ -43,7 +43,7 @@ videoFormats = [
     "avi"
 ]
 
-params = {
+ydl_opts = {
     'logger': YTdlLogger(),
     'progress_hooks': [hook],
     'postprocessors': [],
@@ -75,6 +75,7 @@ async def yt_dl(event):
         return
 
     ffmpeg = await is_ffmpeg_there()
+    params = ydl_opts.copy()
 
     if fmt:
         fmt = fmt.strip()

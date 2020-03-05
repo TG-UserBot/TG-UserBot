@@ -19,7 +19,7 @@ import re
 from typing import Tuple
 
 from telethon import events
-from telethon.tl import custom, types
+from telethon.tl import custom, functions, types
 
 from .custom import answer
 
@@ -90,8 +90,36 @@ class NewMessage(events.NewMessage):
         if self.require_admin:
             text = "`You need to be an admin to use this command!`"
             if not isinstance(event._chat_peer, types.PeerUser):
-                if not event.chat.creator:
-                    if not event.chat.admin_rights:
+                is_creator = False
+                is_admin = False
+                creator = hasattr(event.chat, 'creator', False)
+                admin_rights = hasattr(event.chat, 'admin_rights', False)
+                if not creator and not admin_rights:
+                    event.chat = event._client.loop.create_task(
+                        event.get_chat()
+                    )
+
+                if self.incoming:
+                    try:
+                        p = event._client.loop.create_task(
+                            event._client(functions.channels.GetParticipantRequest(
+                                channel=event.chat_id,
+                                user_id=event.sender_id
+                            ))
+                        )
+                        participant = p.participant
+                    except Exception:
+                        participant = None
+                    if isinstance(participant, types.ChannelParticipantCreator):
+                        is_creator = True
+                    if isinstance(participant, types.ChannelParticipantAdmin):
+                        is_admin = True
+                else:
+                    is_creator = event.chat.creator
+                    is_admin = event.chat.admin_rights
+
+                if not is_creator:
+                    if not is_admin:
                         if self.outgoing and event.message.out:
                             event._client.loop.create_task(
                                 event.answer(text)

@@ -638,9 +638,11 @@ async def inc_listner(event: NewMessage.Event) -> None:
 @client.on(ChatAction)
 async def bio_filter(event: ChatAction.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis or event.is_private or event.chat.broadcast:
-        return
     text = None
+    broadcast = getattr(event.chat, 'broadcast', False)
+
+    if not redis or event.is_private or broadcast:
+        return
 
     if event.user_added or event.user_joined:
         try:
