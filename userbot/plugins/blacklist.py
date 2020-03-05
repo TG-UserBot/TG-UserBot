@@ -554,7 +554,7 @@ async def listwls(event: NewMessage.Event) -> None:
 
 
 @client.onMessage(incoming=True)
-async def inc_listner(event: NewMessage.Event) -> None:
+async def inc_listener(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
     if not redis or event.is_private or event.chat.broadcast:
         return
@@ -621,6 +621,8 @@ async def inc_listner(event: NewMessage.Event) -> None:
                 value = await client.get_peer_id(entity) if entity else 0
             elif isinstance(entity, types.MessageEntityMentionName):
                 value = await client.get_peer_id(entity.user_id)
+            else:
+                value = None
 
             if GlobalBlacklist.tgid and value in GlobalBlacklist.tgid:
                 text = (
