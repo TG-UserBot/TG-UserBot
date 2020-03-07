@@ -38,6 +38,8 @@ invite_links = {
     'public': re.compile(r'^(?:https?://)?t\.me/(\w+)/?$'),
     'username': re.compile(r'^@?(\w{5,32})$')
 }
+usernexp = re.compile(r'@(\w{3,32})\[(.+?)\]')
+nameexp = re.compile(r'\[([\w\S]+)\]\(tg://user\?id=(\d+)\)\[(.+?)\]')
 
 
 def removebg_post(API_KEY: str, media: bytes or str):
@@ -241,23 +243,21 @@ async def resolver(event: NewMessage.Event) -> None:
 
 
 @client.onMessage(
-    command=("mention", plugin_category),
-    outgoing=True, regex=r"mention(?: |$)(.*)$"
+    command=("mention", plugin_category), outgoing=True
 )
 async def bot_mention(event: NewMessage.Event) -> None:
     """Mention a user in the bot like link with a custom name."""
-    user, text, exception = await get_entity_from_msg(event)
-    if user and text:
-        if exception:
-            await event.answer(f"`Mention machine broke!\n{user}`")
-            return
-    else:
-        await event.answer("`Mentioned the void.`")
-        return
-
-    if not isinstance(user, types.User):
-        await event.answer("`Cannot mention non-users.`")
-        return
-
-    text = f"[{text}](tg://user?id={user.id})"
-    await event.answer(text)
+    newstr = event.text
+    if event.entities:
+        newstr = nameexp.sub(r'<a href="tg://user?id=\2">\3</a>', newstr, 0)
+        for match in usernexp.finditer(newstr):
+            user = match.group(1)
+            text = match.group(2)
+            entity = await client.get_peer_id(user)
+            newstr = re.sub(
+                re.escape(match.group(0)),
+                f'<a href="tg://user?id={entity}">{text}</a>',
+                newstr
+            )
+    if newstr != event.text:
+        await event.answer(newstr, parse_mode='html')

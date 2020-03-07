@@ -184,7 +184,7 @@ async def extract_info(
                 'title', info_dict.get('id', 'Unknown title')
             )
             url = info_dict.get('webpage_url', None)
-            filen = ytdl.prepare_filename(info_dict)
+            path = filen = ytdl.prepare_filename(info_dict)
             for i in downloads.pop(filen.split('.')[0], [filen]):
                 if pathlib.Path(i).exists():
                     path = i

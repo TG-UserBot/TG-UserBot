@@ -21,7 +21,7 @@ import logging
 from typing import List, Tuple, Union
 
 from telethon import errors
-from telethon.extensions import markdown
+from telethon.extensions import markdown, html
 from telethon.tl import custom, functions, types
 
 
@@ -40,11 +40,15 @@ async def answer(
     message_out = None
     message = await self.client.get_messages(self.chat_id, ids=self.id)
     reply_to = self.reply_to_msg_id or self.id
+    if kwargs.get('parse_mode', 'md') in ['html', 'HTML']:
+        parser = html
+    else:
+        parser = markdown
 
     if len(args) == 1 and isinstance(args[0], str):
         is_reply = reply or kwargs.get('reply_to', False)
         text = args[0]
-        msg, msg_entities = markdown.parse(text)
+        msg, msg_entities = parser.parse(text)
         if len(msg) <= MAXLIM:
             if (
                 not (message and message.out) or is_reply or self.fwd_from or
@@ -61,7 +65,7 @@ async def answer(
             else:
                 if len(msg_entities) > 100:
                     messages = await _resolve_entities(msg, msg_entities)
-                    chunks = [markdown.unparse(t, e) for t, e in messages]
+                    chunks = [parser.unparse(t, e) for t, e in messages]
                     message_out = []
                     try:
                         first_msg = await self.edit(chunks[0], **kwargs)
@@ -140,7 +144,7 @@ async def answer(
                 LOGGER.exception(e)
 
             if entity:
-                message, msg_entities = markdown.parse(text)
+                message, msg_entities = parser.parse(text)
                 if len(message) <= MAXLIM and len(msg_entities) < 100:
                     messages = [(message, msg_entities)]
                 else:
