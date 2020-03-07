@@ -556,7 +556,8 @@ async def listwls(event: NewMessage.Event) -> None:
 @client.onMessage(incoming=True)
 async def inc_listener(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    if not redis or event.is_private or event.chat.broadcast:
+    broadcast = getattr(event.chat, 'broadcast', False)
+    if not redis or event.is_private or broadcast:
         return
     if event.chat_id in whitelistedChats or event.from_id in whitelistedUsers:
         return

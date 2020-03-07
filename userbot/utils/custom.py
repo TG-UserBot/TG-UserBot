@@ -38,7 +38,9 @@ async def answer(
 ) -> Union[custom.Message, List[custom.Message]]:
     """Custom bound method for the Message object"""
     message_out = None
-    message = await self.client.get_messages(self.chat_id, ids=self.id)
+    message = await self.client.get_messages(
+        await self.get_input_chat(), ids=self.id
+    )
     reply_to = self.reply_to_msg_id or self.id
     if kwargs.get('parse_mode', 'md') in ['html', 'HTML']:
         parser = html
