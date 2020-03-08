@@ -64,6 +64,10 @@ newdefault = (
     "otherwise you'll be reported and blocked for spamming.**\n\n"
     "__You have {} remaining messages.__"
 )
+esc_default = re.escape(default.format(r'\d')).replace(r'\\d', r'\d')
+esc_samedefault = re.escape(samedefault.format(r'\d')).replace(r'\\d', r'\d')
+esc_newdefault = re.escape(newdefault.format(r'\d')).replace(r'\\d', r'\d')
+
 blocked = "**You've been blocked and reported for spamming.**"
 blocklog = "{} **has been blocked, unblock them to see their messages.**"
 autoapprove = "**Successfully auto-approved** {}"
@@ -82,7 +86,7 @@ if redis:
         approvedUsers = dill.loads(redis.get('approved:users'))
 
 
-@client.onMessage(incoming=True)
+@client.onMessage(incoming=True, edited=False)
 async def pm_incoming(event: NewMessage.Event) -> None:
     """Filter incoming messages for blocking."""
     if not redis or not event.is_private:
@@ -114,6 +118,7 @@ async def pm_incoming(event: NewMessage.Event) -> None:
             id=input_entity
         ))
         await event.answer(blocked, log=('pmpermit', blocklog.format(user)))
+        spammers.pop(sender, None)
         return
 
     if not lastmsg:
@@ -133,9 +138,9 @@ async def pm_incoming(event: NewMessage.Event) -> None:
             out = await event.answer(warning)
         elif (
             event.text in [PP_UNAPPROVED_MSG, FTG_UNAPPROVED_MSG] or
-            re.search(re.escape(newdefault.format(r'\d')), event.text) or
-            re.search(re.escape(default.format(r'\d')), event.text) or
-            re.search(re.escape(samedefault.format(r'\d')), event.text)
+            re.search(esc_newdefault, event.text) or
+            re.search(esc_default, event.text) or
+            re.search(esc_samedefault, event.text)
         ):
             pass
         elif lastmsg and event.text == lastmsg:
