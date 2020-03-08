@@ -97,7 +97,10 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     input_entity = await event.get_input_sender()
     sender = getattr(event, 'from_id', entity.id)
 
-    if entity.bot or sender in approvedUsers:
+    if (
+        entity.verified or entity.support or entity.bot or
+        sender in approvedUsers
+    ):
         return
     elif sender not in spammers:
         await client(functions.account.UpdateNotifySettingsRequest(
@@ -154,13 +157,13 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     spammers[sender] = (event.text, count-1, sent, lastoutmsg)
 
 
-@client.onMessage(outgoing=True)
+@client.onMessage(outgoing=True, edited=False)
 async def pm_outgoing(event: NewMessage.Event) -> None:
     """Filter outgoing messages for auto-approving."""
     if not redis or not event.is_private or event.chat_id in approvedUsers:
         return
     chat = await event.get_chat()
-    if chat.bot:
+    if chat.verified or chat.support or chat.bot:
         return
 
     result = await client.get_messages(
@@ -185,6 +188,11 @@ async def approve(event: NewMessage.Event) -> None:
     """Approve an user for PM-Permit."""
     user = await get_user(event)
     if user:
+        if user.verified or user.support or user.bot:
+            await event.answer(
+                "__You don't need to approve bots or verified/support users.__"
+            )
+            return
         href = await get_chat_link(user)
         if user.id in approvedUsers:
             await event.answer(f"{href} __is already approved.__")
