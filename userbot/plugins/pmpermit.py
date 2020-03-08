@@ -15,7 +15,9 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import datetime
 import dill
+import re
 from asyncio import sleep
 from typing import Dict, List
 
@@ -32,6 +34,21 @@ if isinstance(type(client.session), type(RedisSession)):
     redis = client.session.redis_connection
 else:
     redis = None
+
+approvedUsers: List[int] = []
+spammers: Dict[int, tuple] = {}
+
+PP_UNAPPROVED_MSG = (
+    "`Bleep blop! This is a bot. Don't fret.\n\n`"
+    "`My master hasn't approved you to PM.`"
+    "`Please wait for my master to look in, he mostly approves PMs.\n\n`"
+    "`As far as I know, he doesn't usually approve retards though.`"
+)
+FTG_UNAPPROVED_MSG = (
+    "Hey there! Unfortunately, I don't accept private messages from "
+    "strangers.\n\nPlease contact me in a group, or **wait** "
+    "for me to approve you."
+)
 
 warning = (
     "**You have one message left, you'll be reported and blocked upon "
@@ -50,8 +67,15 @@ newdefault = (
 blocked = "**You've been blocked and reported for spamming.**"
 blocklog = "{} **has been blocked, unblock them to see their messages.**"
 autoapprove = "**Successfully auto-approved** {}"
-approvedUsers: List[int] = []
-spammers: Dict[int, tuple] = {}
+
+DEFAULT_MUTE_SETTINGS = types.InputPeerNotifySettings(
+    silent=True,
+    mute_until=datetime.timedelta(days=365)
+)
+DEFAULT_UNMUTE_SETTINGS = types.InputPeerNotifySettings(
+    show_previews=True,
+    silent=False
+)
 
 if redis:
     if redis.exists('approved:users'):
@@ -63,37 +87,43 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     """Filter incoming messages for blocking."""
     if not redis or not event.is_private:
         return
+    out = None
     new_pm = False
-    input_sender = await event.get_input_sender()
-    sender = getattr(event, 'from_id', input_sender.user_id)
-    if sender in approvedUsers:
+    entity = await event.get_sender()
+    input_entity = await event.get_input_sender()
+    sender = getattr(event, 'from_id', entity.id)
+
+    if entity.bot or sender in approvedUsers:
         return
+    elif sender not in spammers:
+        await client(functions.account.UpdateNotifySettingsRequest(
+            peer=input_entity.user_id,
+            settings=DEFAULT_MUTE_SETTINGS
+        ))
 
     lastmsg, count, sent, lastoutmsg = spammers.setdefault(
         sender, (None, 5, [], None)
     )
     if count == 0:
-        entity = await event.get_sender()
         user = await get_chat_link(entity)
-        await client.delete_messages(entity, sent)
+        await client.delete_messages(input_entity, sent)
         await client(functions.messages.ReportSpamRequest(
-            peer=entity
+            peer=input_entity
         ))
         await client(functions.contacts.BlockRequest(
-            id=entity
+            id=input_entity
         ))
         await event.answer(blocked, log=('pmpermit', blocklog.format(user)))
         return
 
     if not lastmsg:
         result = await client.get_messages(
-            await event.get_input_chat(), reverse=True, limit=1
+            input_entity, reverse=True, limit=1
         )
         if result[0].id == event.id:
             new_pm = True
     if lastoutmsg:
-        entity = await event.get_sender()
-        await client.delete_messages(entity, [lastoutmsg])
+        await client.delete_messages(input_entity, [lastoutmsg])
     lastoutmsg = None
 
     if new_pm:
@@ -101,12 +131,20 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     else:
         if count == 1:
             out = await event.answer(warning)
+        elif (
+            event.text in [PP_UNAPPROVED_MSG, FTG_UNAPPROVED_MSG] or
+            re.search(re.escape(newdefault.format(r'\d')), event.text) or
+            re.search(re.escape(default.format(r'\d')), event.text) or
+            re.search(re.escape(samedefault.format(r'\d')), event.text)
+        ):
+            pass
         elif lastmsg and event.text == lastmsg:
             out = await event.answer(samedefault.format(count))
             lastoutmsg = out.id
         else:
             out = await event.answer(default.format(count))
-    if not lastoutmsg:
+
+    if not lastoutmsg and out:
         sent.append(out.id)
     spammers[sender] = (event.text, count-1, sent, lastoutmsg)
 
@@ -116,15 +154,18 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
     """Filter outgoing messages for auto-approving."""
     if not redis or not event.is_private or event.chat_id in approvedUsers:
         return
-    
+    chat = await event.get_chat()
+    if chat.bot:
+        return
+
     result = await client.get_messages(
         await event.get_input_chat(), reverse=True, limit=1
     )
     if result[0].out:
-        if event.chat_id not in approvedUsers:
-            approvedUsers.append(event.chat_id)
+        if chat.id not in approvedUsers:
+            approvedUsers.append(chat.id)
             await update_db()
-        user = await get_chat_link(await event.get_chat())
+        user = await get_chat_link(chat)
         text = autoapprove.format(user)
         out = await event.answer(text, reply=True, log=('pmpermit', text))
         await sleep(2)
@@ -147,6 +188,13 @@ async def approve(event: NewMessage.Event) -> None:
             await update_db()
             text = f"__Successfully approved__ {href}"
             await event.answer(text, log=('pmpermit', text))
+        if user.id in spammers:
+            _, _, sent, _ = spammers.pop(user.id)  # Reset the counter
+            await client.delete_messages(user, sent)
+            await client(functions.account.UpdateNotifySettingsRequest(
+                peer=user.id,
+                settings=DEFAULT_UNMUTE_SETTINGS
+            ))
 
 
 @client.onMessage(
@@ -165,6 +213,7 @@ async def disapprove(event: NewMessage.Event) -> None:
             await event.answer(text, log=('pmpermit', text))
         else:
             await event.answer(f"{href} __hasn't been approved.__")
+        spammers.pop(user.id, None)  # Reset the counter
 
 
 @client.onMessage(
