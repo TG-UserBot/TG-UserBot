@@ -341,8 +341,8 @@ async def whitelister(event: NewMessage.Event) -> None:
     else:
         value = int(value) if value.isdigit() else value
         try:
-            entity = await client.get_input_entity(value)
-            if isinstance(entity, types.InputPeerUser):
+            entity = await client.get_entity(value)
+            if isinstance(entity, types.PeerUser):
                 user = True
             else:
                 chat = True
@@ -367,8 +367,12 @@ async def whitelister(event: NewMessage.Event) -> None:
     elif chat:
         whitelistedChats.append(wl)
         redis.set('whitelist:chats', dill.dumps(whitelistedChats))
+        if entity.username:
+            wl = f"[{entity.title}](tg://resolve?domain={entity.username})"
+        else:
+            wl = f"`{wl}`"
         await event.answer(
-            f"**Successfully whitelisted chat** `{wl}`",
+            f"**Successfully whitelisted chat** {wl}",
             log=(
                 'whitelist', f'Whitelisted chat {wl}.'
             )
@@ -630,8 +634,9 @@ async def inc_listener(event: NewMessage.Event) -> None:
                     "**Banned due to globally blacklisted url match: "
                     f"{value}**"
                 )
-            elif value in localBlacklists[event.chat_id].tgid:
-                text = f"**Banned due to blacklisted id match: {value}**"
+            elif localbl and getattr(localbl, 'tgid', False):
+                if value in localBlacklists[event.chat_id].tgid:
+                    text = f"**Banned due to blacklisted id match: {value}**"
     if text:
         flag = await ban_user(event, text)
         if flag:

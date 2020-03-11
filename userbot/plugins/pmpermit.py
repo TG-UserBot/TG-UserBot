@@ -30,6 +30,7 @@ from userbot.utils.sessions import RedisSession
 
 
 plugin_category = "pmpermit"
+PM_PERMIT = client.config['userbot'].getboolean('pm_permit', False)
 if isinstance(type(client.session), type(RedisSession)):
     redis = client.session.redis_connection
 else:
@@ -89,7 +90,7 @@ if redis:
 @client.onMessage(incoming=True, edited=False)
 async def pm_incoming(event: NewMessage.Event) -> None:
     """Filter incoming messages for blocking."""
-    if not redis or not event.is_private:
+    if not PM_PERMIT or not redis or not event.is_private:
         return
     out = None
     new_pm = False
@@ -97,7 +98,17 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     input_entity = await event.get_input_sender()
     sender = getattr(event, 'from_id', entity.id)
 
-    if (
+    if entity.mutual_contact:
+        if sender not in approvedUsers:
+            approvedUsers.append(sender)
+            await update_db()
+        user = await get_chat_link(entity)
+        text = autoapprove.format(user) + " **for being a mutual contact.**"
+        out = await event.answer(text, reply=True, log=('pmpermit', text))
+        await sleep(2)
+        await out.delete()
+        return
+    elif (
         entity.verified or entity.support or entity.bot or
         sender in approvedUsers
     ):
@@ -160,7 +171,10 @@ async def pm_incoming(event: NewMessage.Event) -> None:
 @client.onMessage(outgoing=True, edited=False)
 async def pm_outgoing(event: NewMessage.Event) -> None:
     """Filter outgoing messages for auto-approving."""
-    if not redis or not event.is_private or event.chat_id in approvedUsers:
+    if (
+        not PM_PERMIT or not redis or not event.is_private or
+        event.chat_id in approvedUsers
+    ):
         return
     chat = await event.get_chat()
     if chat.verified or chat.support or chat.bot:
@@ -186,6 +200,9 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
 )
 async def approve(event: NewMessage.Event) -> None:
     """Approve an user for PM-Permit."""
+    if not PM_PERMIT or not redis:
+        await event.answer("PM-Permit is disabled.")
+        return
     user = await get_user(event)
     if user:
         if user.verified or user.support or user.bot:
@@ -216,6 +233,9 @@ async def approve(event: NewMessage.Event) -> None:
 )
 async def disapprove(event: NewMessage.Event) -> None:
     """Disapprove an user for PM-Permit."""
+    if not PM_PERMIT or not redis:
+        await event.answer("PM-Permit is disabled.")
+        return
     user = await get_user(event)
     if user:
         href = await get_chat_link(user)
@@ -247,7 +267,7 @@ async def block(event: NewMessage.Event) -> None:
             pass
         if result:
             text = f"__Successfully blocked__ {href}"
-            if redis and user.id in approvedUsers:
+            if PM_PERMIT and redis and user.id in approvedUsers:
                 approvedUsers.remove(user.id)
                 await update_db()
                 text += " __and remove them from approved users.__"

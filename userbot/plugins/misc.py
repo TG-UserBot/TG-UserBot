@@ -164,6 +164,7 @@ async def rmbg(event: NewMessage.Event) -> None:
 async def resolver(event: NewMessage.Event) -> None:
     """Resolve an invite link or a username."""
     link = event.matches[0].group(1)
+    chat = None
     if not link:
         await event.answer("`Resolved the void.`")
         return
@@ -187,6 +188,9 @@ async def resolver(event: NewMessage.Event) -> None:
                 try:
                     chat = await client.get_entity(cid)
                 except (TypeError, ValueError):
+                    break
+                except Exception as e:
+                    text += f"\n```{e}```"
                     break
 
                 if isinstance(chat, types.Channel):
@@ -253,10 +257,9 @@ async def bot_mention(event: NewMessage.Event) -> None:
         for match in usernexp.finditer(newstr):
             user = match.group(1)
             text = match.group(2)
-            entity = await client.get_peer_id(user)
             newstr = re.sub(
                 re.escape(match.group(0)),
-                f'<a href="tg://user?id={entity}">{text}</a>',
+                f'<a href="tg://resolve?domain={user}">{text}</a>',
                 newstr
             )
     if newstr != event.text:

@@ -126,7 +126,10 @@ class Parser:
         total_pics = (await event.client.get_profile_photos(chat_id)).total
 
         text = f"**{obj_type}**\n\n"
-        text += f"**ID:** `{chat_id}`"
+        if username:
+            text += f"**ID:** [{chat_id}](tg://resolve?domain={username})"
+        else:
+            text += f"**ID:** `{chat_id}`"
         if title:
             text += f"\n**Title:** `{title}`"
         if about:
