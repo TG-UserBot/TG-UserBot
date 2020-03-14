@@ -17,7 +17,7 @@
 
 import concurrent
 
-from userbot import client
+from userbot import client, LOGGER
 from userbot.utils.helpers import is_ffmpeg_there
 from userbot.helper_funcs.yt_dl import (
     extract_info, hook, list_formats, YTdlLogger
@@ -61,6 +61,10 @@ ffurl = (
     "faq.html#how-to-install-ffmpeg"
 )
 
+async def upload_progress(current, total):
+    """ Logs the upload progress """
+    LOGGER.info(f"Uploaded {current} of {total} bytes.\
+    \nProgress: {(current / total) * 100}%")
 
 @client.onMessage(
     command="ytdl",
@@ -133,7 +137,7 @@ async def yt_dl(event):
         result = warning + text if not ffmpeg else text
         await event.answer(f"`Uploading` {huh}`...`", link_preview=False)
         await client.send_file(
-            event.chat_id, path, force_document=True, reply_to=event
+            event.chat_id, path, force_document=True, progress_callback=upload_progress, reply_to=event
         )
         await event.answer(
             result, log=("YTDL", f"Successfully downloaded {huh}!")
