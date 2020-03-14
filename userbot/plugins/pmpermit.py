@@ -102,11 +102,11 @@ async def pm_incoming(event: NewMessage.Event) -> None:
         if sender not in approvedUsers:
             approvedUsers.append(sender)
             await update_db()
-        user = await get_chat_link(entity)
-        text = autoapprove.format(user) + " **for being a mutual contact.**"
-        out = await event.answer(text, reply=True, log=('pmpermit', text))
-        await sleep(2)
-        await out.delete()
+            user = await get_chat_link(entity)
+            text = autoapprove.format(user) + " **for being a mutual contact.**"
+            out = await event.answer(text, reply=True, log=('pmpermit', text))
+            await sleep(2)
+            await out.delete()
         return
     elif (
         entity.verified or entity.support or entity.bot or
@@ -187,11 +187,11 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
         if chat.id not in approvedUsers:
             approvedUsers.append(chat.id)
             await update_db()
-        user = await get_chat_link(chat)
-        text = autoapprove.format(user)
-        out = await event.answer(text, reply=True, log=('pmpermit', text))
-        await sleep(2)
-        await out.delete()
+            user = await get_chat_link(chat)
+            text = autoapprove.format(user)
+            out = await event.answer(text, reply=True, log=('pmpermit', text))
+            await sleep(2)
+            await out.delete()
 
 
 @client.onMessage(
