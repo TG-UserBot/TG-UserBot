@@ -18,7 +18,7 @@
 import asyncio
 import io
 import logging
-from typing import List, Tuple, Union
+from typing import Sequence, Tuple, Union
 
 from telethon import errors
 from telethon.extensions import markdown, html
@@ -34,15 +34,16 @@ async def answer(
     *args,
     log: str or Tuple[str, str] = None,
     reply: bool = False,
+    self_destruct: int = None,
     **kwargs
-) -> Union[custom.Message, List[custom.Message]]:
+) -> Union[custom.Message, Sequence[custom.Message]]:
     """Custom bound method for the Message object"""
     message_out = None
     message = await self.client.get_messages(
         await self.get_input_chat(), ids=self.id
     )
     reply_to = self.reply_to_msg_id or self.id
-    if kwargs.get('parse_mode', 'md') in ['html', 'HTML']:
+    if kwargs.setdefault('parse_mode', 'md') in ['html', 'HTML']:
         parser = html
     else:
         parser = markdown
@@ -63,7 +64,7 @@ async def answer(
                     kwargs.setdefault('silent', True)
                     message_out = await self.respond(text, **kwargs)
                 except Exception as e:
-                    LOGGER.exception(e)
+                    raise e
             else:
                 if len(msg_entities) > 100:
                     messages = await _resolve_entities(msg, msg_entities)
@@ -74,7 +75,7 @@ async def answer(
                     except errors.rpcerrorlist.MessageIdInvalidError:
                         first_msg = await self.respond(chunks[0], **kwargs)
                     except Exception as e:
-                        LOGGER.exception(e)
+                        raise e
                     message_out.append(first_msg)
                     for t in chunks[1:]:
                         try:
@@ -82,14 +83,14 @@ async def answer(
                             sent = await self.respond(t, **kwargs)
                             message_out.append(sent)
                         except Exception as e:
-                            LOGGER.exception(e)
+                            raise e
                 else:
                     try:
                         message_out = await self.edit(text, **kwargs)
                     except errors.rpcerrorlist.MessageIdInvalidError:
                         message_out = await self.respond(text, **kwargs)
                     except Exception as e:
-                        LOGGER.exception(e)
+                        raise e
         else:
             if (
                 message and message.out and
@@ -100,7 +101,7 @@ async def answer(
                 except errors.rpcerrorlist.MessageIdInvalidError:
                     await self.respond("`Output exceeded the limit.`")
                 except Exception as e:
-                    LOGGER.exception(e)
+                    raise e
 
             kwargs.setdefault('reply_to', reply_to)
             output = io.BytesIO(msg.strip().encode())
@@ -114,14 +115,17 @@ async def answer(
                 output.close()
             except Exception as e:
                 output.close()
-                LOGGER.exception(e)
+                raise e
     else:
         kwargs.setdefault('reply_to', reply_to)
         try:
             kwargs.setdefault('silent', True)
             message_out = await self.respond(*args, **kwargs)
         except Exception as e:
-            LOGGER.exception(e)
+            raise e
+
+    if self_destruct:
+        asyncio.create_task(_self_destructor(message_out, self_destruct))
 
     if log:
         if isinstance(log, tuple):
@@ -143,10 +147,12 @@ async def answer(
             except ValueError:
                 LOGGER.info("Your logger group ID cannot be found")
             except Exception as e:
-                LOGGER.exception(e)
+                raise e
 
             if entity:
-                message, msg_entities = parser.parse(text)
+                message, msg_entities = await self.client._parse_message_text(
+                    text, kwargs.get('parse_mode')
+                )
                 if len(message) <= MAXLIM and len(msg_entities) < 100:
                     messages = [(message, msg_entities)]
                 else:
@@ -165,7 +171,7 @@ async def answer(
                         await asyncio.sleep(2)
                     except Exception as e:
                         print("Report this error to the support group.")
-                        LOGGER.exception(e)
+                        raise e
     return message_out
 
 
@@ -184,11 +190,11 @@ async def _resolve_entities(message: str, entities: list) -> dict:
                 if msg_end > MAXLIM:
                     entity_type = getattr(types, type(entities[0]).__name__)
                     kwargs = vars(entities[0])
-                    kwargs.update({'offset': 0})
+                    kwargs.update(offset=0)
                     for i in range(0, msg_end, MAXLIM):
                         end = i+MAXLIM if i+MAXLIM <= msg_end else msg_end
                         m_chunk = message[i:end]
-                        kwargs.update({'length': len(m_chunk)})
+                        kwargs.update(length=len(m_chunk))
                         messages.append((m_chunk, [entity_type(**kwargs)]))
                 else:
                     messages.append((message[:msg_end], [entities[0]]))
@@ -241,3 +247,17 @@ async def _next_offset(end, entities) -> Tuple[int, bool]:
         next_offset = entities[-1].offset + entities[-1].length
         last_chunk = True
     return next_offset, last_chunk
+
+
+async def _self_destructor(
+    event: Union[custom.Message, Sequence[custom.Message]],
+    timeout: int or float
+) -> Union[custom.Message, Sequence[custom.Message]]:
+    await asyncio.sleep(timeout)
+    if isinstance(event, list):
+        deleted = []
+        for e in event:
+            deleted.append(await e.delete())
+    else:
+        deleted = await event.delete()
+    return deleted

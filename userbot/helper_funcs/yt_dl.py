@@ -33,6 +33,7 @@ video = re.compile(
 )
 merger = re.compile(r'\[ffmpeg\] Merging formats into "(.+)"')
 
+
 class YTdlLogger(object):
     """Logger used for YoutubeDL which logs to UserBot logger."""
     def debug(self, msg: str) -> None:
@@ -47,7 +48,7 @@ class YTdlLogger(object):
             if merger.search(msg):
                 f = merger.match(msg).group(1)
             if f:
-                downloads.setdefault(f.split('.')[0], []).append(f)
+                downloads.update(**{f.split('.')[0]: f})
 
     def warning(self, msg: str) -> None:
         """Logs warning messages with youtube-dl tag to UserBot logger."""
@@ -184,15 +185,13 @@ async def extract_info(
                 'title', info_dict.get('id', 'Unknown title')
             )
             url = info_dict.get('webpage_url', None)
-            path = filen = ytdl.prepare_filename(info_dict)
-            for i in downloads.pop(filen.split('.')[0], [filen]):
-                if pathlib.Path(i).exists():
-                    path = i
-            npath = re.sub(r'_\d+', '', path)
+            filen = ytdl.prepare_filename(info_dict)
+            path = downloads.pop(filen.split('.')[0], filen)
+            npath = re.sub(r'_\d+(\.\w+)$', r'\1', path)
             if pathlib.Path(npath).exists():
                 os.remove(npath)
             os.rename(path, npath)
-            return f"`Successfully downloaded {title}.`", title, url, npath
+            return title, url, npath
         else:
             return info_dict
 

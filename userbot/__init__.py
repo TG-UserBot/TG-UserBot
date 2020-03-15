@@ -29,7 +29,7 @@ from .utils.helpers import resolve_env
 from .utils.client import UserBotClient
 
 
-__version__ = "0.4"
+__version__ = "0.5"
 __license__ = "GNU General Public License v3.0"
 __author__ = 'Kandarp <https://github.com/kandnub>'
 __copyright__ = (

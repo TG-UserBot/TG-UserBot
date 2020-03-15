@@ -44,7 +44,7 @@ class NewMessage(events.NewMessage):
         if regex:
             if isinstance(regex, tuple):
                 exp, flags = regex
-                if not isinstance(exp, str):
+                if isinstance(exp, tuple):
                     raise TypeError(
                         "Make sure you're using a string for a pattern!"
                     )
@@ -102,15 +102,19 @@ class NewMessage(events.NewMessage):
                 if self.incoming:
                     try:
                         p = event._client.loop.create_task(
-                            event._client(functions.channels.GetParticipantRequest(
-                                channel=event.chat_id,
-                                user_id=event.sender_id
-                            ))
+                            event._client(
+                                functions.channels.GetParticipantRequest(
+                                    channel=event.chat_id,
+                                    user_id=event.sender_id
+                                )
+                            )
                         )
                         participant = p.participant
                     except Exception:
                         participant = None
-                    if isinstance(participant, types.ChannelParticipantCreator):
+                    if isinstance(
+                        participant, types.ChannelParticipantCreator
+                    ):
                         is_creator = True
                     if isinstance(participant, types.ChannelParticipantAdmin):
                         is_admin = True

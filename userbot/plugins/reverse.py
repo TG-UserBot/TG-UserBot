@@ -200,15 +200,17 @@ async def _scrape_url(googleurl):
             for match_text in search.findAll(*sixth):
                 result['matching_text'] = match_text.get_text()
 
-            for match in search.findAll(*seventh)[-1]:
-                for links in match.findAll(*eighth):
-                    if len(links.attrs) == 2:
-                        text = links.h3.get_text().strip()
-                        text = text.replace('[', '').replace(']', '')
-                        link = urllib.parse.quote_plus(
-                            links.get('href'), safe=":/-&"
-                        )
-                        result['matching'][text] = link
+            sseventh = search.findAll(*seventh)
+            if sseventh:
+                for match in sseventh[-1]:
+                    for links in match.findAll(*eighth):
+                        if len(links.attrs) == 2:
+                            text = links.h3.get_text().strip()
+                            text = text.replace('[', '').replace(']', '')
+                            link = urllib.parse.quote_plus(
+                                links.get('href'), safe=":/-&"
+                            )
+                            result['matching'][text] = link
 
     return result
 

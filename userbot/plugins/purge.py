@@ -45,9 +45,7 @@ async def purge(event: NewMessage.Event) -> None:
     skip = event.matches[0].group(2)
 
     if not event.reply_to_msg_id and not amount:
-        await event.answer("`Purge yourself!`")
-        await asyncio.sleep(2)
-        await event.delete()
+        await event.answer("`Purge yourself!`", self_destruct=2)
         return
 
     messages = await client.get_messages(
@@ -59,12 +57,10 @@ async def purge(event: NewMessage.Event) -> None:
 
     await client.delete_messages(entity, messages)
     extra = await get_chat_link(entity)
-    toast = await event.answer(
-        f"`Successfully deleted {len(messages)} message(s)!`",
+    await event.answer(
+        f"`Successfully deleted {len(messages)} message(s)!`", self_destruct=2,
         log=("purge", f"Purged {len(messages)} message(s) in {extra}")
     )
-    await asyncio.sleep(2)
-    await toast.delete()
 
 
 @client.onMessage(
@@ -90,10 +86,9 @@ async def delme(event: NewMessage.Event) -> None:
 
     await client.delete_messages(entity, messages)
     toast = await event.answer(
-        f"`Successfully deleted {len(messages)} message(s)!`"
+        f"`Successfully deleted {len(messages)} message(s)!`",
+        self_destruct=2,
     )
-    await asyncio.sleep(2)
-    await toast.delete()
 
 
 @client.onMessage(

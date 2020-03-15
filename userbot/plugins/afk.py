@@ -15,7 +15,6 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import asyncio
 import datetime
 import os
 import time
@@ -114,10 +113,13 @@ async def out_listner(event: NewMessage.Event) -> None:
     main_text = '\n'.join([pr_text, gr_text]).strip()
     if not client.logger:
         main_text += "\n`Use a logger group for more detailed AFK mentions!`"
-    status = await event.answer("`I am no longer AFK!`", reply_to=event.id)
-    toast = await event.answer(
+    status = await event.answer(
+        "`I am no longer AFK!`", reply_to=event.id, self_destruct=4
+    )
+    await event.answer(
         message=main_text or def_text,
         reply_to=status.id,
+        self_destruct=4,
         log=("afk", '\n'.join([pr_log, gr_log]).strip() or def_text)
     )
 
@@ -127,9 +129,6 @@ async def out_listner(event: NewMessage.Event) -> None:
     AFK.privates.clear()
     AFK.groups.clear()
     AFK.sent.clear()
-    await asyncio.sleep(4)
-    await toast.delete()
-    await status.delete()
 
 
 @client.onMessage(incoming=True, edited=False)

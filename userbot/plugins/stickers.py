@@ -182,6 +182,8 @@ async def delsticker(event: NewMessage.Event) -> None:
             status = True
         else:
             status = r2.text
+        await conv.send_message('/cancel')
+        await conv.get_response()
 
     if status is True:
         pack = f"[{short_name}](https://t.me/addstickers/{short_name})"
@@ -476,6 +478,7 @@ async def kang(event: NewMessage.Event) -> None:
     extra = await get_chat_link(event, sticker_event.id)
     await event.answer(
         f"`Successfully added the sticker to` {pack} `!`",
+        self_destruct=4,
         log=("kang", f"Successfully kanged a sticker from {extra} to {pack}")
     )
     await _delete_sticker_messages(first_msg or new_first_msg)

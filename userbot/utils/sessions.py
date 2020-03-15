@@ -53,10 +53,10 @@ class RedisSession(MemorySession):
 
         super().__init__()
 
-        self._dc_id = 0
-        self._server_address = None
-        self._port = None
-        self._auth_key = None
+        self._dc_id: int = 0
+        self._server_address: str = None
+        self._port: int = None
+        self._auth_key: AuthKey = None
         self._takeout_id = None
 
         self.session_name = (
@@ -82,9 +82,9 @@ class RedisSession(MemorySession):
             if not s:
                 return
 
-            self._dc_id = s.get(b'dc_id').decode()
+            self._dc_id = int(s.get(b'dc_id').decode())
             self._server_address = s.get(b'server_address').decode()
-            self._port = s.get(b'port').decode()
+            self._port = int(s.get(b'port').decode())
             self._takeout_id = (
                 s.get(b'takeout_id').decode()
                 if s.get(b'takeout_id', False) else

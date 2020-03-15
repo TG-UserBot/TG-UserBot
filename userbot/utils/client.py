@@ -18,12 +18,13 @@
 import configparser
 import dataclasses
 import logging
-from typing import Dict, List
+from typing import BinaryIO, Dict, List
 
-from telethon import TelegramClient, events
+from telethon import events, TelegramClient, types
 
 from .pluginManager import PluginManager
 from .events import MessageEdited, NewMessage
+from .FastTelethon import download_file, upload_file, TypeLocation
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class UserBotClient(TelegramClient):
     version: int = 0
 
     def onMessage(
-        self,
+        self: TelegramClient,
         builtin: bool = False,
         command: str or tuple = None,
         edited: bool = True,
@@ -89,7 +90,7 @@ class UserBotClient(TelegramClient):
                     builtin
                 )
                 category = category.lower()
-                self.commands.update({com: UBcommand})
+                self.commands.update(com=UBcommand)
 
                 update_dict(self.commandcategories, category, com)
                 if builtin:
@@ -97,6 +98,18 @@ class UserBotClient(TelegramClient):
             return func
 
         return wrapper
+
+    async def fast_download_file(
+        self: TelegramClient, location: TypeLocation,
+        out: BinaryIO, progress_callback: callable = None
+    ) -> BinaryIO:
+        return await download_file(self, location, out, progress_callback)
+
+    async def fast_upload_file(
+        self: TelegramClient, file: BinaryIO,
+        progress_callback: callable = None
+    ) -> types.TypeInputFile:
+        return await upload_file(self, file, progress_callback)
 
     def _updateconfig(self) -> bool:
         """Update the config. Sync method to avoid issues."""

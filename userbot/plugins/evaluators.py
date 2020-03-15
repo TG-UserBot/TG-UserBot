@@ -87,9 +87,7 @@ async def execute(event: NewMessage.Event) -> None:
         stderr=asyncio.subprocess.PIPE
     )
 
-    client.running_processes.update({
-        message: process
-    })
+    client.running_processes.update(message=process)
     stdout, stderr = await process.communicate()
 
     not_killed = client.running_processes.get(message, False)
@@ -143,9 +141,7 @@ async def terminal(event: NewMessage.Event) -> None:
         stderr=asyncio.subprocess.PIPE
     )
 
-    client.running_processes.update({
-        message: process
-    })
+    client.running_processes.update(message=process)
     stdout, stderr = await process.communicate()
 
     not_killed = client.running_processes.get(message, False)
@@ -205,9 +201,7 @@ async def killandterminate(event: NewMessage.Event) -> None:
         await event.answer(
             f"`Successfully {option}ed the process.`",
             log=(option, f"Successfully {option}ed a process in {extra}!"),
-            reply=True
+            self_destruct=2, reply=True
         )
-        await asyncio.sleep(2)
-        await event.delete()
     else:
         await event.answer("`There is no process running for this message.`")

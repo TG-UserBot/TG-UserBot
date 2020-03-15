@@ -18,12 +18,11 @@
 import datetime
 import dill
 import re
-from asyncio import sleep
 from typing import Dict, List
 
 from telethon.tl import functions, types
 
-from userbot import client, LOGGER
+from userbot import client
 from userbot.utils.helpers import get_chat_link
 from userbot.utils.events import NewMessage
 from userbot.utils.sessions import RedisSession
@@ -31,7 +30,7 @@ from userbot.utils.sessions import RedisSession
 
 plugin_category = "pmpermit"
 PM_PERMIT = client.config['userbot'].getboolean('pm_permit', False)
-if isinstance(type(client.session), type(RedisSession)):
+if isinstance(client.session, RedisSession):
     redis = client.session.redis_connection
 else:
     redis = None
@@ -98,20 +97,23 @@ async def pm_incoming(event: NewMessage.Event) -> None:
     input_entity = await event.get_input_sender()
     sender = getattr(event, 'from_id', entity.id)
 
-    if entity.mutual_contact:
+    if (
+        entity.verified or entity.support or entity.bot or
+        sender in approvedUsers
+    ):
+        return
+    elif entity.mutual_contact:
         if sender not in approvedUsers:
             approvedUsers.append(sender)
             await update_db()
             user = await get_chat_link(entity)
-            text = autoapprove.format(user) + " **for being a mutual contact.**"
-            out = await event.answer(text, reply=True, log=('pmpermit', text))
-            await sleep(2)
-            await out.delete()
-        return
-    elif (
-        entity.verified or entity.support or entity.bot or
-        sender in approvedUsers
-    ):
+            text = (
+                autoapprove.format(user) + " **for being a mutual contact.**"
+            )
+            await event.answer(
+                text, reply=True,
+                self_destruct=2, log=('pmpermit', text)
+            )
         return
     elif sender not in spammers:
         await client(functions.account.UpdateNotifySettingsRequest(
@@ -189,9 +191,10 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
             await update_db()
             user = await get_chat_link(chat)
             text = autoapprove.format(user)
-            out = await event.answer(text, reply=True, log=('pmpermit', text))
-            await sleep(2)
-            await out.delete()
+            await event.answer(
+                text, reply=True,
+                self_destruct=2, log=('pmpermit', text)
+            )
 
 
 @client.onMessage(
