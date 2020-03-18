@@ -87,7 +87,7 @@ async def download(event: NewMessage.Event) -> None:
             file=file_name.resolve(), progress_callback=prog.dl_progress
         )
 
-    await event.answer(f"__Successfully downloaded {file_name.name}.__")
+    await event.answer(f"__Successfully downloaded {file_name.stem}.__")
 
 
 @client.onMessage(
@@ -124,7 +124,7 @@ async def upload(event: NewMessage.Event) -> None:
         await event.answer("__Couldn't find what you were looking for.__")
         return
 
-    files = ', '.join([f.name for f in target_files])
+    files = ', '.join([f.stem for f in target_files])
     for f in target_files:
         f = f.resolve()
         prog = ProgressCallback(event, filen=f.stem)

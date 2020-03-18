@@ -235,7 +235,7 @@ async def _human_friendly_timedelta(timedelta: str) -> str:
         delimiter = " and " if len(text) > 1 else ''
         text += f"{delimiter}{s} {unit}"
     if len(text) == 0:
-        text = "\u221E (less than 1 second)"
+        text = "\u221E"
     return text
 
 
@@ -308,9 +308,9 @@ async def format_speed(speed_per_second, unit):
 
 async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
     if total is None:
-        return None
+        return 0
     if current == 0 or elp < 0.001:
-        return None
+        return 0
     return int((float(total) - float(current)) / speed)
 
 
@@ -377,10 +377,10 @@ class ProgressCallback():
         self.start = start or time.time()
         self.filen = filen
 
-    async def resolve_shit(self, current, total):
+    async def resolve_prog(self, current, total):
         now = time.time()
-        elp = self.start - now
-        speed = int(float(current) / now - self.start)
+        elp = now - self.start
+        speed = int(float(current) / elp)
         eta = await calc_eta(elp, speed, current, total)
         s0, s1, s2 = await format_speed(speed, ("byte", 1))
         c0, c1, c2 = await format_speed(current, ("byte", 1))
@@ -395,10 +395,9 @@ class ProgressCallback():
         }
 
     async def up_progress(self, current, total):
-        d = await self.resolve_shit(current, total)
+        d = await self.resolve_prog(current, total)
         self.event = await ul_progress(self.event, d)
 
     async def dl_progress(self, current, total):
-        print(current, total)
-        d = await self.resolve_shit(current, total)
+        d = await self.resolve_prog(current, total)
         self.event = await dl_progress(self.event, d)
