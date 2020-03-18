@@ -15,8 +15,6 @@
 # along with TG-UserBot.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import asyncio
-
 from userbot import client
 from userbot.utils.helpers import get_chat_link
 from userbot.utils.events import NewMessage
@@ -85,7 +83,7 @@ async def delme(event: NewMessage.Event) -> None:
     )
 
     await client.delete_messages(entity, messages)
-    toast = await event.answer(
+    await event.answer(
         f"`Successfully deleted {len(messages)} message(s)!`",
         self_destruct=2,
     )

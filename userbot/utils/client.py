@@ -22,9 +22,10 @@ from typing import BinaryIO, Dict, List
 
 from telethon import events, TelegramClient, types
 
+from .FastTelethon import download_file, upload_file, TypeLocation
+from .parser import parse_arguments
 from .pluginManager import PluginManager
 from .events import MessageEdited, NewMessage
-from .FastTelethon import download_file, upload_file, TypeLocation
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,6 +56,8 @@ class UserBotClient(TelegramClient):
     running_processes: dict = {}
     version: int = 0
 
+    parse_arguments = parse_arguments
+
     def onMessage(
         self: TelegramClient,
         builtin: bool = False,
@@ -76,12 +79,13 @@ class UserBotClient(TelegramClient):
             if self.register_commands and command:
                 handlers = events._get_handlers(func)
                 category = "misc"
-                com = command
                 if isinstance(command, tuple):
                     if len(command) == 2:
                         com, category = command
                     else:
                         raise ValueError
+                else:
+                    com = command
 
                 UBcommand = Command(
                     func,
@@ -90,8 +94,7 @@ class UserBotClient(TelegramClient):
                     builtin
                 )
                 category = category.lower()
-                self.commands.update(com=UBcommand)
-
+                self.commands.update({com: UBcommand})
                 update_dict(self.commandcategories, category, com)
                 if builtin:
                     update_dict(self.commandcategories, 'builtin', com)

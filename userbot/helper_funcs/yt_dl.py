@@ -16,6 +16,7 @@
 
 
 import concurrent
+import datetime
 import functools
 import os
 import pathlib
@@ -63,37 +64,57 @@ class YTdlLogger(object):
         LOGGER.critical("youtube-dl: " + msg)
 
 
-def hook(d: dict) -> None:
-    """YoutubeDL's hook which logs progress and erros to UserBot logger."""
-    if d['status'] == 'downloading':
-        filen = d['filename']
-        prcnt = d['_percent_str']
-        ttlbyt = d['_total_bytes_str']
-        spdstr = d['_speed_str']
-        etastr = d['_eta_str']
+class ProgressHook():
+    """Custom hook with the event stored for YTDL."""
+    def __init__(self, event):
+        self.event = event
 
-        finalStr = (
-            "Downloading {}: {} of {} at {} ETA: {}".format(
-                filen, prcnt, ttlbyt, spdstr, etastr
-            )
+    def edit(self, *args, **kwargs):
+        """Create a Task and wait for it to complete before returning."""
+        # For the love of god, find something better and fix this trash
+        task = self.event.client.loop.create_task(
+            self.event.answer(*args, **kwargs)
         )
-        LOGGER.info(finalStr)
+        while not task.done():
+            continue
+        return task.result()
 
-    elif d['status'] == 'finished':
-        filen = d['filename']
-        ttlbyt = d['_total_bytes_str']
-        elpstr = d['_elapsed_str']
+    def hook(self, d: dict) -> None:
+        """YoutubeDL's hook which logs progress and erros to UserBot logger."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if d['status'] == 'downloading':
+            filen = d['filename']
+            prcnt = d['_percent_str']
+            ttlbyt = d['_total_bytes_str']
+            spdstr = d['_speed_str']
+            etastr = d['_eta_str']
 
-        finalStr = (
-            "Downloaded {}: 100% of {} in {}".format(
-                filen, ttlbyt, elpstr
+            finalStr = (
+                "Downloading {}: {} of {} at {} ETA: {}".format(
+                    filen, prcnt, ttlbyt, spdstr, etastr
+                )
             )
-        )
-        LOGGER.warning(finalStr)
+            LOGGER.debug(finalStr)
+            if (now - self.event.date).total_seconds() > 5:
+                filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', filen)
+                self.event = self.edit(
+                    f"`Downloading {filen} at {spdstr}.`\n"
+                    f"__Progress: {prcnt} of {ttlbyt}__\n"
+                    f"__ETA: {etastr}__"
+                )
 
-    elif d['status'] == 'error':
-        finalStr = "Error:\n" + str(d)
-        LOGGER.error(finalStr)
+        elif d['status'] == 'finished':
+            filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', d['filename'])
+            ttlbyt = d['_total_bytes_str']
+            elpstr = d['_elapsed_str']
+
+            finalStr = f"Downloaded {filen}: 100% of {ttlbyt} in {elpstr}"
+            LOGGER.warning(finalStr)
+            self.edit(f"`Successfully downloaded {filen} in {elpstr}!`")
+
+        elif d['status'] == 'error':
+            finalStr = "Error: " + str(d)
+            LOGGER.error(finalStr)
 
 
 async def list_formats(info_dict: dict) -> str:
@@ -126,7 +147,7 @@ async def list_formats(info_dict: dict) -> str:
 async def extract_info(
     loop,
     executor: concurrent.futures.Executor,
-    params: dict,
+    ydl_opts: dict,
     url: str,
     download: bool = False
 ) -> str:
@@ -147,7 +168,6 @@ async def extract_info(
             Successfull string or info_dict on success or an exception's
             string if any occur.
     """
-    ydl_opts = params.copy()
     ydl_opts['outtmpl'] = ydl_opts['outtmpl'].format(time=time.time_ns())
     ytdl = youtube_dl.YoutubeDL(ydl_opts)
 
@@ -181,17 +201,23 @@ async def extract_info(
             return eStr
 
         if download:
-            title = info_dict.get(
-                'title', info_dict.get('id', 'Unknown title')
-            )
-            url = info_dict.get('webpage_url', None)
             filen = ytdl.prepare_filename(info_dict)
             path = downloads.pop(filen.split('.')[0], filen)
             npath = re.sub(r'_\d+(\.\w+)$', r'\1', path)
-            if pathlib.Path(npath).exists():
-                os.remove(npath)
-            os.rename(path, npath)
-            return title, url, npath
+            thumb = pathlib.Path(re.sub(r'\.\w+$', r'.jpg', path))
+            old_f = pathlib.Path(npath)
+            new_f = pathlib.Path(path)
+            if old_f.exists():
+                if old_f.samefile(new_f):
+                    os.remove(str(new_f.resolve()))
+                else:
+                    newname = str(old_f.stem) + '_OLD'
+                    old_f.replace(
+                        old_f.with_name(newname).with_suffix(old_f.suffix)
+                    )
+            new_f = new_f.rename(new_f.parent.parent / npath)
+            thumb = str(thumb.absolute()) if thumb.exists() else None
+            return new_f.resolve(), thumb, info_dict
         else:
             return info_dict
 

@@ -22,6 +22,7 @@ import logging
 import os
 import os.path
 import sys
+import time
 from typing import Union
 
 from heroku3 import from_key
@@ -36,7 +37,7 @@ from .events import NewMessage
 from userbot.plugins import plugins_data
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger('userbot')
 sample_config_file = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
     'sample_config.ini'
@@ -46,8 +47,9 @@ sample_config_file = os.path.join(
 def printUser(entity: types.User) -> None:
     """Print the user's first name + last name upon start"""
     user = get_display_name(entity)
-    print(
-        "\nSuccessfully logged in as {0}{2}{1}".format(CUSR, CEND, user)
+    print()
+    LOGGER.warning(
+        "Successfully logged in as {0}{2}{1}".format(CUSR, CEND, user)
     )
 
 
@@ -55,10 +57,11 @@ def printVersion(version: int, prefix: str) -> None:
     """Print the version of the bot with the default prefix"""
     if not prefix:
         prefix = '.'
-    print(
+    LOGGER.warning(
         "{0}UserBot v{2}{1} is running, test it by sending {3}ping in"
-        " any chat.\n".format(CUSR, CEND, version, prefix)
+        " any chat.".format(CUSR, CEND, version, prefix)
     )
+    print()
 
 
 def resolve_env(config: configparser.ConfigParser):
@@ -290,3 +293,112 @@ async def is_ffmpeg_there():
     )
     await cmd.communicate()
     return True if cmd.returncode == 0 else False
+
+
+async def format_speed(speed_per_second, unit):
+    unit0 = unit[0].lower()
+    base, unit0 = (1024, "Byte") if unit[0] == 'byte' else (1000, "bit")
+    seq = ['', 'K', 'M', 'G']
+    speed = speed_per_second / unit[1]
+    for i in seq:
+        if speed/base < 1:
+            return speed, i, unit0
+        speed /= base
+
+
+async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
+    if total is None:
+        return None
+    if current == 0 or elp < 0.001:
+        return None
+    return int((float(total) - float(current)) / speed)
+
+
+async def ul_progress(event, d: dict):
+    """ Logs the upload progress """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    log_text = (
+        "Uploaded %(current)s of %(total)s. "
+        "Progress: %(percentage)s%% speed: %(speed)s"
+    )
+    LOGGER.debug(log_text % d)
+    text = (
+        "`Uploading %(filen)s at %(speed)s.`\n"
+        "__Progress: %(percentage)s%% of %(total)s__\n"
+        "__ETA: %(eta)s__"
+    )
+    try:
+        if d.get('percentage', 0) == 100:
+            event = await event.answer(
+                f"__Successfully uploaded {d['filen']}!__"
+            )
+        elif (now - event.date).total_seconds() > 5:
+            event = await event.answer(text % d)
+    except Exception as e:
+        LOGGER.info(
+            "Failed to edit the progress of %(filen)s at %(percentage)s" % d
+        )
+        LOGGER.debug(e)
+    return event
+
+
+async def dl_progress(event, d: dict):
+    """ Logs the download progress """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    log_text = (
+        "Downloaded %(current)s of %(total)s. "
+        "Progress: %(percentage)s%%"
+    )
+    LOGGER.debug(log_text % d)
+    text = (
+        "`Downloading %(filen)s at %(speed)s.`\n"
+        "__Progress: %(percentage)s%% of %(total)s__\n"
+        "__ETA: %(eta)s__"
+    )
+    try:
+        if d.get('percentage', 0) == 100:
+            event = await event.answer(
+                f"__Successfully downloaded {d['filen']}!__"
+            )
+        elif (now - event.date).total_seconds() > 5:
+            event = await event.answer(text % d)
+    except Exception as e:
+        LOGGER.info(
+            "Failed to edit the progress of %(filen)s at %(percentage)s" % d
+        )
+        LOGGER.debug(e)
+    return event
+
+
+class ProgressCallback():
+    """Custom class to handle upload and download progress."""
+    def __init__(self, event, start=None, filen=''):
+        self.event = event
+        self.start = start or time.time()
+        self.filen = filen
+
+    async def resolve_shit(self, current, total):
+        now = time.time()
+        elp = self.start - now
+        speed = int(float(current) / now - self.start)
+        eta = await calc_eta(elp, speed, current, total)
+        s0, s1, s2 = await format_speed(speed, ("byte", 1))
+        c0, c1, c2 = await format_speed(current, ("byte", 1))
+        t0, t1, t2 = await format_speed(total, ("byte", 1))
+        percentage = round(current / total * 100, 2)
+        return {
+            'filen': self.filen, 'percentage': percentage,
+            'eta': await _humanfriendly_seconds(eta),
+            'current': f'{c0:.2f}{c1}{c2[0]}',
+            'total': f'{t0:.2f}{t1}{t2[0]}',
+            'speed': f'{s0:.2f}{s1}{s2[0]}/s'
+        }
+
+    async def up_progress(self, current, total):
+        d = await self.resolve_shit(current, total)
+        self.event = await ul_progress(self.event, d)
+
+    async def dl_progress(self, current, total):
+        print(current, total)
+        d = await self.resolve_shit(current, total)
+        self.event = await dl_progress(self.event, d)

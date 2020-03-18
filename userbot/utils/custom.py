@@ -16,6 +16,7 @@
 
 
 import asyncio
+import datetime
 import io
 import logging
 from typing import Sequence, Tuple, Union
@@ -39,6 +40,7 @@ async def answer(
 ) -> Union[custom.Message, Sequence[custom.Message]]:
     """Custom bound method for the Message object"""
     message_out = None
+    start_date = datetime.datetime.now(datetime.timezone.utc)
     message = await self.client.get_messages(
         await self.get_input_chat(), ids=self.id
     )
@@ -124,6 +126,12 @@ async def answer(
         except Exception as e:
             raise e
 
+    if message_out:
+        if isinstance(message_out, list):
+            for message in message_out:
+                message.date = start_date
+        else:
+            message_out.date = start_date
     if self_destruct:
         asyncio.create_task(_self_destructor(message_out, self_destruct))
 

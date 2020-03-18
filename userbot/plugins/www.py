@@ -26,7 +26,7 @@ from speedtest import Speedtest
 from telethon.tl import functions
 
 from userbot import client
-from userbot.utils.helpers import get_chat_link
+from userbot.utils.helpers import get_chat_link, format_speed
 from userbot.utils.events import NewMessage
 
 
@@ -125,12 +125,12 @@ async def speedtest(event: NewMessage.Event) -> None:
     speed_event = await event.answer(text)
 
     await _run_sync(s.download)
-    down, unit0, unit1 = await _format_speed(s.results.download, unit)
+    down, unit0, unit1 = await format_speed(s.results.download, unit)
     text = (f"{speed_event.text}\n{download % (down, unit0, unit1)}")
     speed_event = await event.answer(text)
 
     await _run_sync(s.upload)
-    up, unit0, unit1 = await _format_speed(s.results.upload, unit)
+    up, unit0, unit1 = await format_speed(s.results.upload, unit)
     text = (f"{speed_event.text}\n{upload % (up, unit0, unit1)}")
     extra = await get_chat_link(event, event.id)
     await event.answer(
@@ -154,13 +154,3 @@ async def _run_sync(func: callable):
     return await client.loop.run_in_executor(
         concurrent.futures.ThreadPoolExecutor(), func
     )
-
-
-async def _format_speed(speed_bytes_per_second, unit):
-    base = 1024 if unit[0] == 'byte' else 1000
-    seq = ['', 'K', 'M', 'G']
-    speed = speed_bytes_per_second / unit[1]
-    for i in seq:
-        if speed/base < 1:
-            return speed, i, unit[0]
-        speed /= base
