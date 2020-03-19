@@ -49,6 +49,10 @@
         "api_key_removebg": {
             "description": "Get your API key from https://remove.bg/",
             "required": false
+        },
+        "pm_permit": {
+            "description": "Whether you want PM Permit enabled or disabled.",
+            "required": false
         }
     },
     "formation": {

@@ -68,16 +68,28 @@ class ProgressHook():
     """Custom hook with the event stored for YTDL."""
     def __init__(self, event):
         self.event = event
+        self.last_edit = None
+        self.tasks = []
+
+    def callback(self, task):
+        """Cancel pending tasks else skip them if completed."""
+        if task.cancelled():
+            return
+        if not self.last_edit:
+            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
+        else:
+            new = task.result().date
+            if new > self.last_edit:
+                self.last_edit = new
 
     def edit(self, *args, **kwargs):
-        """Create a Task and wait for it to complete before returning."""
-        # For the love of god, find something better and fix this trash
+        """Create a Task of the progress edit."""
         task = self.event.client.loop.create_task(
             self.event.answer(*args, **kwargs)
         )
-        while not task.done():
-            continue
-        return task.result()
+        task.add_done_callback(self.callback)
+        self.tasks.append(task)
+        return task
 
     def hook(self, d: dict) -> None:
         """YoutubeDL's hook which logs progress and erros to UserBot logger."""
@@ -95,22 +107,32 @@ class ProgressHook():
                 )
             )
             LOGGER.debug(finalStr)
-            if (now - self.event.date).total_seconds() > 5:
-                filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', filen)
-                self.event = self.edit(
+            if (
+                not self.last_edit or
+                (now - self.last_edit).total_seconds() > 5
+            ):
+                # filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', filen)
+                self.edit(
                     f"`Downloading {filen} at {spdstr}.`\n"
                     f"__Progress: {prcnt} of {ttlbyt}__\n"
                     f"__ETA: {etastr}__"
                 )
 
         elif d['status'] == 'finished':
-            filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', d['filename'])
             ttlbyt = d['_total_bytes_str']
             elpstr = d['_elapsed_str']
 
             finalStr = f"Downloaded {filen}: 100% of {ttlbyt} in {elpstr}"
             LOGGER.warning(finalStr)
-            self.edit(f"`Successfully downloaded {filen} in {elpstr}!`")
+            self.event.client.loop.create_task(
+                self.event.answer(
+                    f"`Successfully downloaded {filen} in {elpstr}!`"
+                )
+            )
+            for task in self.tasks:
+                if not task.done():
+                    task.cancel()
+            self.tasks.clear()
 
         elif d['status'] == 'error':
             finalStr = "Error: " + str(d)
@@ -202,22 +224,24 @@ async def extract_info(
 
         if download:
             filen = ytdl.prepare_filename(info_dict)
-            path = downloads.pop(filen.split('.')[0], filen)
-            npath = re.sub(r'_\d+(\.\w+)$', r'\1', path)
-            thumb = pathlib.Path(re.sub(r'\.\w+$', r'.jpg', path))
+            opath = downloads.pop(filen.split('.')[0], filen)
+            npath = re.sub(r'_\d+(\.\w+)$', r'\1', opath)
+            thumb = pathlib.Path(re.sub(r'\.\w+$', r'.jpg', opath))
+
             old_f = pathlib.Path(npath)
-            new_f = pathlib.Path(path)
+            new_f = pathlib.Path(opath)
             if old_f.exists():
                 if old_f.samefile(new_f):
-                    os.remove(str(new_f.resolve()))
+                    os.remove(str(new_f.absolute()))
                 else:
                     newname = str(old_f.stem) + '_OLD'
                     old_f.replace(
                         old_f.with_name(newname).with_suffix(old_f.suffix)
                     )
-            new_f = new_f.rename(new_f.parent.parent / npath)
+            path = new_f.parent.parent / npath
+            new_f.rename(new_f.parent.parent / npath)
             thumb = str(thumb.absolute()) if thumb.exists() else None
-            return new_f.resolve(), thumb, info_dict
+            return path.absolute(), thumb, info_dict
         else:
             return info_dict
 
@@ -229,8 +253,5 @@ async def extract_info(
             concurrent.futures.ThreadPoolExecutor(),
             functools.partial(downloader, url, download)
         )
-    except Exception as exc:
-        LOGGER.exception(exc)
-        result = f"`{type(exc)}: {exc}`"
     finally:
         return result

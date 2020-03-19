@@ -23,7 +23,7 @@ import os
 import os.path
 import sys
 import time
-from typing import Union
+from typing import Tuple, Union
 
 from heroku3 import from_key
 
@@ -314,70 +314,64 @@ async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
     return int((float(total) - float(current)) / speed)
 
 
-async def ul_progress(event, d: dict):
+def ul_progress(d: dict, event) -> Tuple[Union[str, bool], bool]:
     """ Logs the upload progress """
     now = datetime.datetime.now(datetime.timezone.utc)
     log_text = (
         "Uploaded %(current)s of %(total)s. "
         "Progress: %(percentage)s%% speed: %(speed)s"
+        "Time elapsed: %(elp)s"
     )
     LOGGER.debug(log_text % d)
     text = (
         "`Uploading %(filen)s at %(speed)s.`\n"
         "__Progress: %(percentage)s%% of %(total)s__\n"
-        "__ETA: %(eta)s__"
+        "__ETA: %(eta)s, Elapsed: %(elp)s__"
     )
-    try:
-        if d.get('percentage', 0) == 100:
-            event = await event.answer(
-                f"__Successfully uploaded {d['filen']}!__"
-            )
-        elif (now - event.date).total_seconds() > 5:
-            event = await event.answer(text % d)
-    except Exception as e:
-        LOGGER.info(
-            "Failed to edit the progress of %(filen)s at %(percentage)s" % d
-        )
-        LOGGER.debug(e)
-    return event
+
+    if d.get('percentage', 0) == 100:
+        return "__Successfully uploaded %(filen)s in %(elp)s!__" % d, True
+    elif (now - event.date).total_seconds() > 5:
+        return text % d, False
+    return False, False
 
 
-async def dl_progress(event, d: dict):
+def dl_progress(d: dict, event) -> Tuple[Union[str, bool], bool]:
     """ Logs the download progress """
     now = datetime.datetime.now(datetime.timezone.utc)
     log_text = (
         "Downloaded %(current)s of %(total)s. "
         "Progress: %(percentage)s%%"
+        "Time elapsed: %(elp)s"
     )
     LOGGER.debug(log_text % d)
     text = (
         "`Downloading %(filen)s at %(speed)s.`\n"
         "__Progress: %(percentage)s%% of %(total)s__\n"
-        "__ETA: %(eta)s__"
+        "__ETA: %(eta)s, Elapsed: %(elp)s__"
     )
-    try:
-        if d.get('percentage', 0) == 100:
-            event = await event.answer(
-                f"__Successfully downloaded {d['filen']}!__"
-            )
-        elif (now - event.date).total_seconds() > 5:
-            event = await event.answer(text % d)
-    except Exception as e:
-        LOGGER.info(
-            "Failed to edit the progress of %(filen)s at %(percentage)s" % d
-        )
-        LOGGER.debug(e)
-    return event
+
+    if d.get('percentage', 0) == 100:
+        return "__Successfully downloaded %(filen)s in %(elp)s!__" % d, True
+    elif (now - event.date).total_seconds() > 5:
+        return text % d, False
+    return False, False
 
 
 class ProgressCallback():
     """Custom class to handle upload and download progress."""
-    def __init__(self, event, start=None, filen=''):
+    def __init__(self, event, start=None, filen='unamed'):
         self.event = event
         self.start = start or time.time()
+        self.last_edit = None
         self.filen = filen
+        self.upload_finished = False
+        self.download_finished = False
 
     async def resolve_prog(self, current, total):
+        """Calculate the necessary info and make a dict from it."""
+        if not self.last_edit:
+            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         now = time.time()
         elp = now - self.start
         speed = int(float(current) / elp)
@@ -389,15 +383,30 @@ class ProgressCallback():
         return {
             'filen': self.filen, 'percentage': percentage,
             'eta': await _humanfriendly_seconds(eta),
+            'elp': await _humanfriendly_seconds(elp),
             'current': f'{c0:.2f}{c1}{c2[0]}',
             'total': f'{t0:.2f}{t1}{t2[0]}',
             'speed': f'{s0:.2f}{s1}{s2[0]}/s'
         }
 
     async def up_progress(self, current, total):
+        """Handle the upload progress only."""
         d = await self.resolve_prog(current, total)
-        self.event = await ul_progress(self.event, d)
+        edit, finished = ul_progress(d, self.event)
+        if finished:
+            if not self.upload_finished:
+                self.event = await self.event.answer(edit)
+                self.upload_finished = True
+        elif edit:
+            self.event = await self.event.answer(edit)
 
     async def dl_progress(self, current, total):
+        """Handle the download progress only."""
         d = await self.resolve_prog(current, total)
-        self.event = await dl_progress(self.event, d)
+        edit, finished = dl_progress(d, self.event)
+        if finished:
+            if not self.download_finished:
+                self.event = await self.event.answer(edit)
+                self.download_finished = True
+        elif edit:
+            self.event = await self.event.answer(edit)
