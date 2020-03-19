@@ -75,8 +75,6 @@ class ProgressHook():
         """Cancel pending tasks else skip them if completed."""
         if task.cancelled():
             return
-        if not self.last_edit:
-            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         else:
             new = task.result().date
             if new > self.last_edit:
@@ -93,6 +91,8 @@ class ProgressHook():
 
     def hook(self, d: dict) -> None:
         """YoutubeDL's hook which logs progress and erros to UserBot logger."""
+        if not self.last_edit:
+            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         now = datetime.datetime.now(datetime.timezone.utc)
         if d['status'] == 'downloading':
             filen = d['filename']
@@ -119,7 +119,8 @@ class ProgressHook():
                 )
 
         elif d['status'] == 'finished':
-            filen = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
+            filen = d['filename']
+            filen1 = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
             ttlbyt = d['_total_bytes_str']
             elpstr = d['_elapsed_str']
 
@@ -127,7 +128,7 @@ class ProgressHook():
             LOGGER.warning(finalStr)
             self.event.client.loop.create_task(
                 self.event.answer(
-                    f"`Successfully downloaded {filen} in {elpstr}!`"
+                    f"`Successfully downloaded {filen1} in {elpstr}!`"
                 )
             )
             for task in self.tasks:
@@ -219,7 +220,7 @@ async def extract_info(
             eStr = "`There was an error during info extraction.`"
         except Exception as e:
             eStr = f"`{type(e)}: {e}`"
-
+            raise e
         if eStr:
             return eStr
 
