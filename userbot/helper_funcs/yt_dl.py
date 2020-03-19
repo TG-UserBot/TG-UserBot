@@ -111,7 +111,7 @@ class ProgressHook():
                 not self.last_edit or
                 (now - self.last_edit).total_seconds() > 5
             ):
-                # filen = re.sub(r'YT_DL\\(.+)_\d+\..+', r'\1.', filen)
+                filen = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
                 self.edit(
                     f"`Downloading {filen} at {spdstr}.`\n"
                     f"__Progress: {prcnt} of {ttlbyt}__\n"
@@ -119,6 +119,7 @@ class ProgressHook():
                 )
 
         elif d['status'] == 'finished':
+            filen = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
             ttlbyt = d['_total_bytes_str']
             elpstr = d['_elapsed_str']
 
