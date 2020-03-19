@@ -26,7 +26,7 @@ from userbot.utils.helpers import ProgressCallback
 from userbot.utils.events import NewMessage
 
 
-plugin_category = "downlaods"
+plugin_category = "downloads"
 downloads = pathlib.Path('./downloads/').absolute()
 NAME = 'untitled'
 
