@@ -145,7 +145,7 @@ async def yt_dl(event):
         path, thumb, info = output
         title = info.get('title', info.get('id', 'Unknown title'))
         uploader = info.get('uploader', None)
-        duration = info.get('duration', 0)
+        duration = int(info.get('duration', 0))
         width = info.get('width', None)
         height = info.get('height', None)
         url = info.get('webpage_url', None)
