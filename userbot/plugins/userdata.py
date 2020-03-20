@@ -25,7 +25,6 @@ from telethon.tl import functions, types
 from userbot import client, LOGGER
 from userbot.helper_funcs.parser import Parser
 from userbot.utils.events import NewMessage
-from userbot.utils.helpers import get_chat_link
 
 
 plugin_category = "user"
@@ -51,13 +50,10 @@ async def whois(event: NewMessage.Event) -> None:
     if event.reply_to_msg_id:
         if not entities:
             reply = await event.get_reply_message()
+            user = reply.sender_id
             if reply.fwd_from:
                 if reply.fwd_from.from_id:
                     user = reply.fwd_from.from_id
-                else:
-                    user = reply.sender_id
-            else:
-                user = reply.from_id
 
     users = ""
     chats = ""
@@ -88,13 +84,12 @@ async def whois(event: NewMessage.Event) -> None:
             LOGGER.debug(e)
             failed.append(user)
 
-    reply_to = event.reply_to_msg_id or event.id
     if users:
-        await event.answer("**USERS**" + users, reply_to=reply_to)
+        await event.answer("**USERS**" + users, reply=True)
     if chats:
-        await event.answer("**CHATS**" + chats, reply_to=reply_to)
+        await event.answer("**CHATS**" + chats, reply=True)
     if channels:
-        await event.answer("**CHANNELS**" + channels, reply_to=reply_to)
+        await event.answer("**CHANNELS**" + channels, reply=True)
 
     if failed:
         failedtext = "**Unable to fetch:**\n"
@@ -298,27 +293,39 @@ async def delpfp(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("id", plugin_category),
-    outgoing=True, regex=r"id(?: |$)(.*)$"
+    outgoing=True, regex=r"id(?: |$)([\s\S]*)"
 )
 async def whichid(event: NewMessage.Event) -> None:
     """Get the ID of a chat/channel or user."""
-    match = event.matches[0].group(1).strip()
+    match = event.matches[0].group(1)
+    text = ""
     if not match and not event.reply_to_msg_id:
-        entity = await event.get_chat()
+        if event.chat:
+            text = f"{event.chat.title}: "
+        text += f"`{get_peer_id(event.chat_id)}`"
     elif event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        entity = await reply.get_sender()
+        user = reply.sender_id
+        if reply.fwd_from:
+            if reply.fwd_from.from_id:
+                user = reply.fwd_from.from_id
+        text = f"`{get_peer_id(user)}`"
     else:
-        if match.isdigit():
-            await event.answer("`Nice try, fool!`")
-            return
-        try:
-            entity = await client.get_entity(match.strip())
-        except Exception as e:
-            await event.answer(
-                f"`Error trying to fetch the entity:`\n```{e}```"
-            )
-            return
-    await event.answer(
-        f"{await get_chat_link(entity)}: `{get_peer_id(entity)}`"
-    )
+        failed = []
+        strings = []
+        users, _ = await client.parse_arguments(match)
+        for user in users:
+            try:
+                entity = await client.get_input_entity(user)
+                strings.append(f"{user}: `{get_peer_id(entity)}`")
+            except Exception as e:
+                failed.append(user)
+                LOGGER.debug(e)
+        if strings:
+            text = ",\n".join(strings)
+        if failed:
+            ftext = "**Users which weren't resolved:**\n"
+            ftext += ", ".join(f'`{f}`' for f in failed)
+            await event.answer(ftext, reply=True)
+    if text:
+        await event.answer(text)
