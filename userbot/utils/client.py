@@ -56,8 +56,6 @@ class UserBotClient(TelegramClient):
     running_processes: dict = {}
     version: int = 0
 
-    parse_arguments = parse_arguments
-
     def onMessage(
         self: TelegramClient,
         builtin: bool = False,
@@ -106,13 +104,19 @@ class UserBotClient(TelegramClient):
         self: TelegramClient, location: TypeLocation,
         out: BinaryIO, progress_callback: callable = None
     ) -> BinaryIO:
+        """Download files to Telethon with multiple connections."""
         return await download_file(self, location, out, progress_callback)
 
     async def fast_upload_file(
         self: TelegramClient, file: BinaryIO,
         progress_callback: callable = None
     ) -> types.TypeInputFile:
+        """Upload files to Telethon with multiple connections."""
         return await upload_file(self, file, progress_callback)
+
+    async def parse_arguments(self, args: str) -> tuple:
+        """Parse a string to get args and kwargs for commands."""
+        return await parse_arguments(args)
 
     def _updateconfig(self) -> bool:
         """Update the config. Sync method to avoid issues."""

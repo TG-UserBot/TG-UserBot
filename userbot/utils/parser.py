@@ -23,8 +23,8 @@ from typing import Dict, List, Tuple, Union
 
 
 KWARGS = re.compile(
-    r'(?:(?P<q>\'|\")?)(?P<key>(?(q).+?|\w+))(?:(?P=q)?)'
-    r'[:=]\s?'
+    r'(?:(?P<q>\'|\")?)(?P<key>(?(q).+?|\S+))(?:(?P=q)?)'
+    r'=\s?'
     r'(?P<val>\[.+?\]|(?P<q1>\'|\").+?(?P=q1)|\S+)'
 )
 ARGS = re.compile(r'(?:(?P<q>\'|\"))(.+?)(?:(?P=q))')
@@ -59,7 +59,7 @@ async def _parse_arg(val: str) -> Union[int, str, float]:
 
 async def parse_arguments(
     arguments: str
-) -> Tuple[Dict[str, KeywordArgument], List[Value]]:
+) -> Tuple[List[Value], Dict[str, KeywordArgument]]:
     keyword_args = {}
     args = []
 
@@ -73,8 +73,8 @@ async def parse_arguments(
         args.append(val.group(2).strip())
     arguments = ARGS.sub('', arguments)
 
-    for val in re.findall(r'(\w+|\[.*\])', arguments):
+    for val in re.findall(r'([^\r\n\t\f\v ,]+|\[.*\])', arguments):
         parsed = await _parse_arg(val)
         if parsed:
             args.append(val)
-    return keyword_args, args
+    return args, keyword_args
