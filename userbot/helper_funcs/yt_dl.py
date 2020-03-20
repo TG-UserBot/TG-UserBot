@@ -90,7 +90,7 @@ class ProgressHook():
         return task
 
     def hook(self, d: dict) -> None:
-        """YoutubeDL's hook which logs progress and erros to UserBot logger."""
+        """YoutubeDL's hook which logs progress and errors to UserBot logger."""
         if not self.last_edit:
             self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         now = datetime.datetime.now(datetime.timezone.utc)
