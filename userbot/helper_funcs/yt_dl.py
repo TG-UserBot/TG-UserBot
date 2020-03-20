@@ -96,10 +96,13 @@ class ProgressHook():
         now = datetime.datetime.now(datetime.timezone.utc)
         if d['status'] == 'downloading':
             filen = d.get('filename', 'Unknown filename')
-            prcnt = d.get('_percent_str', '0%')
-            ttlbyt = d.get('_total_bytes_str', 'Unknown size')
-            spdstr = d.get('_speed_str', 'Unknown speed')
-            etastr = d.get('_eta_str', 'Unknown eta')
+            prcnt = d.get('_percent_str', None)
+            ttlbyt = d.get('_total_bytes_str', None)
+            spdstr = d.get('_speed_str', None)
+            etastr = d.get('_eta_str', None)
+
+            if not prcnt or not ttlbyt or not spdstr or not etastr:
+                return
 
             finalStr = (
                 "Downloading {}: {} of {} at {} ETA: {}".format(
@@ -121,8 +124,11 @@ class ProgressHook():
         elif d['status'] == 'finished':
             filen = d.get('filename', 'Unknown filename')
             filen1 = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
-            ttlbyt = d.get('_total_bytes_str', 'Unknown size')
-            elpstr = d.get('_elapsed_str', 'Unknown elp')
+            ttlbyt = d.get('_total_bytes_str', None)
+            elpstr = d.get('_elapsed_str', None)
+
+            if not ttlbyt or not elpstr:
+                return
 
             finalStr = f"Downloaded {filen}: 100% of {ttlbyt} in {elpstr}"
             LOGGER.warning(finalStr)
