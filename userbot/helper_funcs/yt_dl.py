@@ -95,11 +95,11 @@ class ProgressHook():
             self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         now = datetime.datetime.now(datetime.timezone.utc)
         if d['status'] == 'downloading':
-            filen = d['filename']
-            prcnt = d['_percent_str']
-            ttlbyt = d['_total_bytes_str']
-            spdstr = d['_speed_str']
-            etastr = d['_eta_str']
+            filen = d.get('filename', 'Unknown filename')
+            prcnt = d.get('_percent_str', '0%')
+            ttlbyt = d.get('_total_bytes_str', 'Unknown size')
+            spdstr = d.get('_speed_str', 'Unknown speed')
+            etastr = d.get('_eta_str', 'Unknown eta')
 
             finalStr = (
                 "Downloading {}: {} of {} at {} ETA: {}".format(
@@ -119,10 +119,10 @@ class ProgressHook():
                 )
 
         elif d['status'] == 'finished':
-            filen = d['filename']
+            filen = d.get('filename', 'Unknown filename')
             filen1 = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
-            ttlbyt = d['_total_bytes_str']
-            elpstr = d['_elapsed_str']
+            ttlbyt = d.get('_total_bytes_str', 'Unknown size')
+            elpstr = d.get('_elapsed_str', 'Unknown elp')
 
             finalStr = f"Downloaded {filen}: 100% of {ttlbyt} in {elpstr}"
             LOGGER.warning(finalStr)
@@ -249,11 +249,8 @@ async def extract_info(
 
     # Future blocks the running event loop
     # fut = executor.submit(downloader, url, download)
-    try:
-        # result = fut.result()
-        result = await loop.run_in_executor(
-            concurrent.futures.ThreadPoolExecutor(),
-            functools.partial(downloader, url, download)
-        )
-    finally:
-        return result
+    # result = fut.result()
+    return await loop.run_in_executor(
+        concurrent.futures.ThreadPoolExecutor(),
+        functools.partial(downloader, url, download)
+    )
