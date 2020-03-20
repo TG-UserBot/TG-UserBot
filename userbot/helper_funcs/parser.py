@@ -53,42 +53,42 @@ class Parser:
         about = usr_obj.about
         total_pics = (await event.client.get_profile_photos(user_id)).total
 
-        text = "**USER**\n\n"
-        text += f"**ID:** [{user_id}](tg://user?id={user_id})"
+        text = ""  # "**USER**\n"
+        text += f"  **ID:** [{user_id}](tg://user?id={user_id})"
         if first_name:
-            text += f"\n**First name:** `{first_name}`"
+            text += f"\n  **First name:** `{first_name}`"
         if last_name:
-            text += f"\n**Last name:** `{last_name}`"
+            text += f"\n  **Last name:** `{last_name}`"
         if about:
-            text += f"\n**Bio:** `{about}`"
+            text += f"\n  **Bio:** `{about}`"
         if username:
-            text += f"\n**Username:** @{username}"
+            text += f"\n  **Username:** @{username}"
         if common_chats_count:
-            text += f"\n**Groups in common:** `{common_chats_count}`"
+            text += f"\n  **Groups in common:** `{common_chats_count}`"
         if dc_id:
-            text += f"\n**DC ID:** `{dc_id}`"
+            text += f"\n  **DC ID:** `{dc_id}`"
         if is_self:
-            text += f"\n**Self:** `{is_self}`"
+            text += f"\n  **Self:** `{is_self}`"
         if contact:
-            text += f"\n**Contact:** `{contact}`"
+            text += f"\n  **Contact:** `{contact}`"
         if mutual_contact:
-            text += f"\n**Mutual contact:** `{mutual_contact}`"
+            text += f"\n  **Mutual contact:** `{mutual_contact}`"
         if deleted:
-            text += f"\n**Deleted:** `{deleted}`"
+            text += f"\n  **Deleted:** `{deleted}`"
         if is_bot:
-            text += f"\n**Bot:** `{is_bot}`"
+            text += f"\n  **Bot:** `{is_bot}`"
         if verified:
-            text += f"\n**Verified:** `{verified}`"
+            text += f"\n  **Verified:** `{verified}`"
         if support:
-            text += f"\n**TG support team:** `{support}`"
+            text += f"\n  **TG support team:** `{support}`"
         if restricted:
-            text += f"\n**Restricted for:** `{user.restriction_reason}`"
+            text += f"\n  **Restricted for:** `{user.restriction_reason}`"
         if blocked:
-            text += f"\n**Blocked:** `{blocked}`"
+            text += f"\n  **Blocked:** `{blocked}`"
         if scam:
-            text += f"\n**Scam:** `{scam}`"
+            text += f"\n  **Scam:** `{scam}`"
         if total_pics:
-            text += f"\n**Total profile pictures:** `{total_pics}`"
+            text += f"\n  **Total profile pictures:** `{total_pics}`"
         return text
 
     @staticmethod
@@ -125,44 +125,44 @@ class Parser:
         bots = len(full_chat.bot_info)
         total_pics = (await event.client.get_profile_photos(chat_id)).total
 
-        text = f"**{obj_type}**\n\n"
+        text = ""  # f"**{obj_type}**\n"
         if username:
-            text += f"**ID:** [{chat_id}](tg://resolve?domain={username})"
+            text += f"  **ID:** [{chat_id}](tg://resolve?domain={username})"
         else:
-            text += f"**ID:** `{chat_id}`"
+            text += f"  **ID:** `{chat_id}`"
         if title:
-            text += f"\n**Title:** `{title}`"
+            text += f"\n  **Title:** `{title}`"
         if about:
-            text += f"\n**About:** `{about}`"
+            text += f"\n  **About:** `{about}`"
         if username:
-            text += f"\n**Username:** @{username}"
+            text += f"\n  **Username:** @{username}"
         if participants:
-            text += f"\n**Total participants:** `{participants}`"
+            text += f"\n  **Total participants:** `{participants}`"
         if creator:
-            text += f"\n**Creator:** `{creator}`"
+            text += f"\n  **Creator:** `{creator}`"
         if left:
-            text += f"\n**Left:** `{left}`"
+            text += f"\n  **Left:** `{left}`"
         if dc_id:
-            text += f"\n**DC ID:** `{dc_id}`"
+            text += f"\n  **DC ID:** `{dc_id}`"
         if bots:
-            text += f"\n**Total bots:** `{bots}`"
+            text += f"\n  **Total bots:** `{bots}`"
 
         if obj_type == "CHANNEL":
             if admins:
-                text += f"\n**Admins:** `{admins}`"
+                text += f"\n  **Admins:** `{admins}`"
             if kicked:
-                text += f"\n**Kicked:** `{kicked}`"
+                text += f"\n  **Kicked:** `{kicked}`"
             if banned:
-                text += f"\n**Banned:** `{banned}`"
+                text += f"\n  **Banned:** `{banned}`"
             if online:
-                text += f"\n**Online:** `{online}`"
+                text += f"\n  **Online:** `{online}`"
             if broadcast:
-                text += f"\n**Broadcast:** `{broadcast}`"
+                text += f"\n  **Broadcast:** `{broadcast}`"
             if megagroup:
-                text += f"\n**Megagroup:** `{megagroup}`"
+                text += f"\n  **Megagroup:** `{megagroup}`"
             if verified:
-                text += f"\n**Verified:** `{verified}`"
+                text += f"\n  **Verified:** `{verified}`"
 
         if total_pics:
-            text += f"\n**Total profile pictures:** `{total_pics}`"
+            text += f"\n  **Total profile pictures:** `{total_pics}`"
         return text

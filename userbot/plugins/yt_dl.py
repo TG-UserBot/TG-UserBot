@@ -80,7 +80,7 @@ success = "`Successfully downloaded` {}"
 
 @client.onMessage(
     command="ytdl",
-    outgoing=True, regex=r"ytdl(?: |$)(.*)?"
+    outgoing=True, regex=r"ytdl(?: |$)([\s\S]*)"
 )
 async def yt_dl(event):
     """Download videos from YouTube with their url in multiple formats."""

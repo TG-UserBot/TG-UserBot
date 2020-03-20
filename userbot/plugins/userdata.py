@@ -22,8 +22,7 @@ from telethon import errors
 from telethon.utils import get_display_name, get_peer_id
 from telethon.tl import functions, types
 
-from userbot import client
-from userbot.helper_funcs.ids import get_user_from_msg
+from userbot import client, LOGGER
 from userbot.helper_funcs.parser import Parser
 from userbot.utils.events import NewMessage
 from userbot.utils.helpers import get_chat_link
@@ -34,64 +33,75 @@ plugin_category = "user"
 
 @client.onMessage(
     command=("whois", plugin_category),
-    outgoing=True, regex=r"(?:who|what)is(?: |$)(.*)$"
+    outgoing=True, regex=r"(?:who|what)is(?: |$)([\s\S]*)"
 )
 async def whois(event: NewMessage.Event) -> None:
     """Get your or a user's/chat's information."""
     match = event.matches[0].group(1)
+    entities = []
 
-    if event.entities or match:
-        user = await get_user_from_msg(event)
-        if not user:
-            await event.answer("`Couldn't get user/chat from the message.`")
-            return
+    if match:
+        entities, _ = await client.parse_arguments(match)
+        if "this" in entities:
+            entities.remove("this")
+            entities.append(event.chat_id)
     else:
-        user = "self"
+        entities.append("self")
 
     if event.reply_to_msg_id:
-        if not match:
+        if not entities:
             reply = await event.get_reply_message()
             if reply.fwd_from:
                 if reply.fwd_from.from_id:
                     user = reply.fwd_from.from_id
                 else:
                     user = reply.sender_id
-            if user == "self":
+            else:
                 user = reply.from_id
 
-    try:
-        input_entity = await client.get_input_entity(user)
-    except Exception as e:
-        await event.answer(
-            '`' + type(e).__name__ + ': ' + str(e) + '`',
-            reply=True
-        )
-        return
+    users = ""
+    chats = ""
+    channels = ""
+    failed = []
+    for user in entities:
+        try:
+            input_entity = await client.get_input_entity(user)
+            if isinstance(input_entity, types.InputPeerChat):
+                full_chat = await client(
+                    functions.messages.GetFullChatRequest(input_entity)
+                )
+                string = await Parser.parse_full_chat(full_chat, event)
+                chats += f"\n{chats}\n"
+            elif isinstance(input_entity, types.InputPeerChannel):
+                full_channel = await client(
+                    functions.channels.GetFullChannelRequest(input_entity)
+                )
+                string = await Parser.parse_full_chat(full_channel, event)
+                channels += f"\n{string}\n"
+            else:
+                full_user = await client(
+                    functions.users.GetFullUserRequest(input_entity)
+                )
+                string = await Parser.parse_full_user(full_user, event)
+                users += f"\n{string}\n"
+        except Exception as e:
+            LOGGER.debug(e)
+            failed.append(user)
 
-    try:
-        if isinstance(input_entity, types.InputPeerChat):
-            full_chat = await client(
-                functions.messages.GetFullChatRequest(chat_id=input_entity)
-            )
-            string = await Parser.parse_full_chat(full_chat, event)
-        elif isinstance(input_entity, types.InputPeerChannel):
-            full_channel = await client(
-                functions.channels.GetFullChannelRequest(channel=input_entity)
-            )
-            string = await Parser.parse_full_chat(full_channel, event)
-        else:
-            full_user = await client(
-                functions.users.GetFullUserRequest(id=input_entity)
-            )
-            string = await Parser.parse_full_user(full_user, event)
-    except Exception as e:
-        await event.answer(
-            '`' + type(e).__name__ + ': ' + str(e) + '`',
-            reply=True
-        )
-        return
+    reply_to = event.reply_to_msg_id or event.id
+    if users:
+        await event.answer("**USERS**" + users, reply_to=reply_to)
+    if chats:
+        await event.answer("**CHATS**" + chats, reply_to=reply_to)
+    if channels:
+        await event.answer("**CHANNELS**" + channels, reply_to=reply_to)
 
-    await event.answer(string)
+    if failed:
+        failedtext = "**Unable to fetch:**\n"
+        failedtext += ", ".join(f'`{u}`' for u in failed)
+        await event.answer(failedtext)
+    elif not (users or chats or channels):
+        await event.answer("__Something went wrong!__", self_destruct=2)
 
 
 @client.onMessage(
