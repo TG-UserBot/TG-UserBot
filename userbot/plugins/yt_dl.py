@@ -225,8 +225,8 @@ async def fix_attributes(
         for attr in attributes:
             if isinstance(attr, types.DocumentAttributeVideo):
                 duration = duration or attr.duration
-                width = width or attr.width
-                height = height or attr.height
+                width = width or attr.w
+                height = height or attr.h
                 break
         video = types.DocumentAttributeVideo(
             duration, width, height, round_message, supports_streaming
