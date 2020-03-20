@@ -23,8 +23,9 @@ from typing import Dict, List, Tuple, Union
 
 
 KWARGS = re.compile(
-    r'(?:(?P<q>\'|\")?)(?P<key>(?(q).+?|\S+))(?:(?P=q)?)'
-    r'=\s?'
+    r'(?<!\S)'  # Make sure the key starts after a whitespace
+    r'(?:(?P<q>\'|\")?)(?P<key>(?(q).+?|(?!\d)\w+?))(?(q)(?P=q))'
+    r'(?::(?!//)|=)\s?'
     r'(?P<val>\[.+?\]|(?P<q1>\'|\").+?(?P=q1)|\S+)'
 )
 ARGS = re.compile(r'(?:(?P<q>\'|\"))(.+?)(?:(?P=q))')
