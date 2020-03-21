@@ -307,10 +307,11 @@ async def format_speed(speed_per_second, unit):
 
 
 async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
-    if total is None:
+    if total is None or total == 0:
         return 0
     if current == 0 or elp < 0.001:
         return 0
+    speed = speed if speed else 1
     return int((float(total) - float(current)) / speed)
 
 

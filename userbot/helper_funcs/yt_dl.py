@@ -259,7 +259,12 @@ async def extract_info(
     # Future blocks the running event loop
     # fut = executor.submit(downloader, url, download)
     # result = fut.result()
-    return await loop.run_in_executor(
-        concurrent.futures.ThreadPoolExecutor(),
-        functools.partial(downloader, url, download)
-    )
+    try:
+        result = await loop.run_in_executor(
+            concurrent.futures.ThreadPoolExecutor(),
+            functools.partial(downloader, url, download)
+        )
+    except Exception as e:
+        result = f"```{type(e)}: {e}```"
+    finally:
+        return result
