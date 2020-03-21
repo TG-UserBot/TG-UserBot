@@ -644,7 +644,7 @@ async def unblacklistuser(event: NewMessage.Event) -> None:
         targets = []
         for user in users:
             if user in blacklistedUsers:
-                blacklistedUsers.remove(user)
+                blacklistedUsers.pop(user)
                 targets.append(f"[{user}](tg://user?id={user})")
         if blacklistedUsers:
             redis.set('blacklist:users', dill.dumps(blacklistedUsers))
@@ -821,11 +821,19 @@ async def inc_listener(event: NewMessage.Event) -> None:
     if text and await ban_user(event, text, 'url', match):
         return
 
-    if GlobalBlacklist.tgid or (localbl and getattr(localbl, 'tgid', False)):
+    if GlobalBlacklist.tgid or (localbl and hasattr(localbl, 'tgid')):
         tgid_check = True
 
-    if tgid_check and event.entities:
-        for entity in event.entities:
+    if tgid_check:
+        if (
+            event.sender_id in getattr(GlobalBlacklist, 'tgid', []) +
+            getattr(localbl, 'tgid', [])
+        ):
+            text = id_str.format(event.sender_id)
+            match = event.sender_id
+            pass
+        entities = getattr(event, 'entities', None) or []
+        for entity in entities:
             if (
                 isinstance(
                     entity,
@@ -852,7 +860,7 @@ async def inc_listener(event: NewMessage.Event) -> None:
                 text = id_str.format(value)
                 match = value
                 break
-            elif localbl and getattr(localbl, 'tgid', False):
+            elif localbl and hasattr(localbl, 'tgid'):
                 if value in localBlacklists[event.chat_id].tgid:
                     text = id_str.format(value)
                     match = value
@@ -889,6 +897,12 @@ async def bio_filter(event: ChatAction.Event) -> None:
             if sender_id not in temp_banlist:
                 await ban_user(event, blacklisted_text)
             return
+        elif (
+            sender_id in getattr(GlobalBlacklist, 'tgid', []) +
+            getattr(localbl, 'tgid', [])
+        ):
+            await ban_user(event, id_str.format(sender_id), 'bio', match)
+            return
 
         user = await client(functions.users.GetFullUserRequest(id=sender))
         if GlobalBlacklist.bio:
@@ -897,7 +911,7 @@ async def bio_filter(event: ChatAction.Event) -> None:
                 if re.search(bio, user.about, flags=re.I):
                     match = value
                     break
-        elif localbl and getattr(localbl, 'bio', False):
+        elif localbl and hasattr(localbl, 'bio'):
             for value in localBlacklists[chat_id].bio:
                 bio = await escape_string(value)
                 if re.search(bio, user.about, flags=re.I):
