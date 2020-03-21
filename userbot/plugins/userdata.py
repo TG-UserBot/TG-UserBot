@@ -309,7 +309,8 @@ async def whichid(event: NewMessage.Event) -> None:
         if reply.fwd_from:
             if reply.fwd_from.from_id:
                 user = reply.fwd_from.from_id
-        text = f"`{get_peer_id(user)}`"
+        peer = get_peer_id(user)
+        text = f"[{peer}](tg://user?id={peer})"
     else:
         failed = []
         strings = []
@@ -317,7 +318,9 @@ async def whichid(event: NewMessage.Event) -> None:
         for user in users:
             try:
                 entity = await client.get_input_entity(user)
-                strings.append(f"{user}: `{get_peer_id(entity)}`")
+                strings.append(
+                    f"[{user}](tg://user?id={get_peer_id(entity)})"
+                )
             except Exception as e:
                 failed.append(user)
                 LOGGER.debug(e)

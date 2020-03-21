@@ -21,7 +21,7 @@ from typing import Dict, List, Tuple, Union
 
 from telethon.events import ChatAction
 from telethon.tl import types, functions
-from telethon.utils import resolve_invite_link
+from telethon.utils import get_display_name, resolve_invite_link
 
 from userbot import client, LOGGER
 from userbot.utils.events import NewMessage
@@ -46,32 +46,27 @@ id_str = "**Banned due to blacklisted id match: {}**"
 bl_pattern = (
     r"(?P<global>g(?:lobal)?)?"
     r"b(?:lack)?l(?:ist)?"
-    r"(?: |$)"
-    r"(?:(?P<option>\w+)[:=])?(?P<value>[\S]+|\".+\")?"
+    r"(?: |$)(?P<match>[\s\S]*)"
 )
 dbl_pattern = (
     r"r(?:e)?m(?:ove)?"
     r"(?P<global>g(?:lobal)?)?"
     r"b(?:lack)?l(?:ist)?"
-    r"(?: |$)"
-    r"(?:(?P<option>\w+)[:=])?(?P<value>[\S]+|\".+\")?"
+    r"(?: |$)(?P<match>[\s\S]*)"
 )
 wl_pattern = (
     r"w(?:hite)?l(?:ist)?"
-    r"(?: |$)"
-    r"(?P<value>@?\w{5,35}|-?\d{6,16})?"
+    r"(?: |$)(?P<match>[\s\S]*)"
 )
 dwl_pattern = (
     r"r(?:e)?m(?:ove)?"
     r"w(?:hite)?l(?:ist)?"
-    r"(?: |$)"
-    r"(?P<value>@?\w{5,35}|-?\d{6,16})?"
+    r"(?: |$)(?P<match>[\s\S]*)"
 )
 dbld_pattern = (
     r"(?:remove|un)"
     r"b(?:lack)?l(?:ist)?"
-    r"(?: |$)"
-    r"(?P<value>@?\w{5,35}|-?\d{6,16})?"
+    r"(?: |$)(?P<match>[\s\S]*)"
 )
 bls_pattern = (
     r"(?P<global>g(?:lobal)?)?"
@@ -102,6 +97,12 @@ acceptable_options = {
     'str': 'txt',
     'domian': 'url',
     'url': 'url'
+}
+full_key_names = {
+    'tgid': '[Telegram IDs]',
+    'bio': '[User Bios]',
+    'txt': '[Strings]',
+    'url': '[URLs]'
 }
 
 temp_banlist: List[int] = []
@@ -134,59 +135,83 @@ if redis:
         whitelistedChats = dill.loads(redis.get('whitelist:chats'))
 
 
-async def append(key: str or bytes, option: str, value: str or int) -> int:
+async def append(
+    key: str or bytes, option: str, values: List[Union[str, int]]
+) -> Tuple[list, list]:
     """Create/Append values to keys in Redis DB"""
+    added = []
+    skipped = []
+
     if redis.exists(key):
         data = dill.loads(redis.get(key))
-        if option in data and value in data[option]:
-            return 1  # The value is already stored in the DB
-        data.setdefault(option, []).append(value)
+        if option in data:
+            for value in values:
+                if value in data[option]:
+                    skipped.append(value)
+                    continue  # The value is already stored in the DB
+                else:
+                    data[option].append(value)
+                    added.append(value)
+        else:
+            data.setdefault(option, []).extend(values)
+            added.extend(values)
         data = dill.dumps(data)
     else:
-        data = dill.dumps({option: [value]})
+        data = dill.dumps({option: values})
     redis.set(key, data)
 
     key = key[11:]
     blkey = key if key.isalpha() else int(key)
-    if blkey == 'global':
-        gval = getattr(GlobalBlacklist, option, None)
-        if gval:
-            gval.append(value)
-        else:
-            gval = [value]
-        setattr(GlobalBlacklist, option, gval)
-    else:
-        if blkey in localBlacklists:
-            lval = getattr(localBlacklists[blkey], option, None)
-            if lval:
-                lval.append(value)
+    if added:
+        if blkey == 'global':
+            gval = getattr(GlobalBlacklist, option, None)
+            if gval:
+                gval.extend(added)
             else:
-                lval = [value]
-            setattr(localBlacklists[blkey], option, lval)
+                gval = added
+            setattr(GlobalBlacklist, option, gval)
         else:
-            localBlacklists[blkey] = Blacklist(**{option: [value]})
+            if blkey in localBlacklists:
+                lval = getattr(localBlacklists[blkey], option, None)
+                if lval:
+                    lval.extend(added)
+                else:
+                    lval = added
+                setattr(localBlacklists[blkey], option, lval)
+            else:
+                localBlacklists[blkey] = Blacklist(**{option: added})
 
-    return 0  # The value was stored in the DB
+    return added, skipped
 
 
-async def unappend(key: str or bytes, option: str, value: str or int) -> int:
+async def unappend(
+    key: str or bytes, option: str, values: List[Union[str, int]]
+) -> Tuple[list, list]:
     """Remove/Unappend values to keys from Redis DB"""
+    removed = []
+    skipped = []
     empty = False
     if redis.exists(key):
         data = dill.loads(redis.get(key))
-        if option in data and value in data[option]:
-            data[option].remove(value)
-            for x, _ in data.copy().items():
-                if len(data[x]) == 0:
+        if option in data:
+            for value in values:
+                if value in data[option]:
+                    data[option].remove(value)
+                    removed.append(value)
+                else:
+                    skipped.append(value)
+            for x, y in data.copy().items():
+                if len(y) == 0:
                     del data[x]
             if len(data) == 0:
                 empty = True
             else:
                 data = dill.dumps(data)
         else:
-            return 1  # The value doesn't exist in the list
+            return removed, skipped
     else:
-        return 2  # The key doesn't exist
+        return removed, skipped
+
     if empty:
         redis.delete(key)
     else:
@@ -194,27 +219,30 @@ async def unappend(key: str or bytes, option: str, value: str or int) -> int:
 
     key = key[11:]
     blkey = key if key.isalpha() else int(key)
-    if blkey == 'global':
-        gval = getattr(GlobalBlacklist, option, None)
-        if gval:
-            if value in gval:
-                gval.remove(value)
+    if removed:
+        if blkey == 'global':
+            gval = getattr(GlobalBlacklist, option, None)
+            if gval:
+                for value in removed:
+                    if value in gval:
+                        gval.remove(value)
                 if gval:
                     setattr(GlobalBlacklist, option, gval)
                 else:
                     setattr(GlobalBlacklist, option, None)
-    else:
-        if blkey in localBlacklists:
-            lval = getattr(localBlacklists[blkey], option, None)
-            if lval:
-                if value in lval:
-                    lval.remove(value)
+        else:
+            if blkey in localBlacklists:
+                lval = getattr(localBlacklists[blkey], option, None)
+                if lval:
+                    for value in removed:
+                        if value in lval:
+                            lval.remove(value)
                     if lval:
                         setattr(localBlacklists[blkey], option, lval)
                     else:
                         setattr(localBlacklists[blkey], option, None)
 
-    return 0  # The value was removed from the DB
+    return removed, skipped
 
 
 @client.onMessage(
@@ -230,13 +258,19 @@ async def blacklister(event: NewMessage.Event) -> None:
         return
 
     glb = event.matches[0].group('global')
-    option = event.matches[0].group('option') or 'str'
-    value = event.matches[0].group('value')
+    match = event.matches[0].group('match')
     key = "global" if glb else str(event.chat_id)
+    added_values = {}
+    skipped_values = {}
 
-    if not value:
-        await event.answer('__.(g)bl <option>:<value>__')
+    if not match:
+        await event.answer(
+            '__.(g)bl <value1> .. <valuen> or <option>:<value>__\n'
+            '`Available options:` __id, bio, string/str, domain/url__'
+        )
         return
+
+    parsed = await get_values(match)
 
     if not glb:
         chat = await event.get_chat()
@@ -247,36 +281,22 @@ async def blacklister(event: NewMessage.Event) -> None:
                 )
                 return
 
-    if option and option not in acceptable_options:
-        await event.answer(
-            "`Invalid argument. Available options:`\n"
-            "__id, bio, string/str, domain/url__"
-        )
-        return
+    for option, values in parsed.items():
+        if values:
+            added, failed = await append("blacklists:" + key, option, values)
+            if added:
+                added_values.update({option: added})
+            if failed:
+                skipped_values.update({option: failed})
 
-    option = acceptable_options.get(option, 'txt')
-    if value.startswith('"') and value.endswith('"'):
-        value = value.strip('"')
-    if option == 'tgid':
-        entity = id_pattern.search(value).group('e')
-        entity = entity if entity.isalpha() else int(entity)
-        try:
-            value = await client.get_peer_id(entity)
-        except Exception as e:
-            await event.answer(f"`Invalid ID.`\n{e}")
-            return
-
-    response = await append("blacklists:" + key, option, value)
-    if response == 0:
-        await event.answer(
-            f'__Added {option} blacklist:__ **{value}** __for {key}.__',
-            log=('blacklist', f'Added {option} blacklist: {value} for {key}.')
-        )
-    else:
-        await event.answer(
-            f'__Skipped {option} blacklist, it already exists for {key}.__',
-            reply=True
-        )
+    if added_values:
+        text = f"**New blacklists for {key}:**\n"
+        text += await values_to_str(added_values)
+        await event.answer(text, log=('blacklist', text))
+    if skipped_values:
+        text = f"**Skipped blacklists for {key}:**\n"
+        text += await values_to_str(skipped_values)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -292,54 +312,38 @@ async def unblacklister(event: NewMessage.Event) -> None:
         return
 
     glb = event.matches[0].group('global')
-    option = event.matches[0].group('option') or 'str'
-    value = event.matches[0].group('value')
+    match = event.matches[0].group('match')
     key = "global" if glb else str(event.chat_id)
+    removed_values = {}
+    skipped_values = {}
 
-    if not value:
-        await event.answer('__.rm(g)bl <option>:<value>__')
-        return
-
-    if option and option not in acceptable_options:
+    if not match:
         await event.answer(
-            "`Invalid argument. Available options:`\n"
-            "__id, bio, string/str, domain/url__"
+            '__.rm(g)bl <value1> .. <valuen> or <option>:<value>__\n'
+            '`Available options:` __id, bio, string/str, domain/url__'
         )
         return
 
-    option = acceptable_options.get(option, 'txt')
-    if value.startswith('"') and value.endswith('"'):
-        value = value.strip('"')
-    if option == 'tgid':
-        entity = id_pattern.search(value).group('e')
-        entity = entity if entity.isalpha() else int(entity)
-        if isinstance(entity, str):
-            try:
-                value = await client.get_peer_id(entity)
-            except Exception as e:
-                await event.answer(f"`Invalid ID.`\n{e}")
-                return
-        else:
-            value = entity
+    parsed = await get_values(match)
 
-    response = await unappend("blacklists:" + key, option, value)
-    if response == 0:
-        await event.answer(
-            f'__Removed {option} blacklist:__ **{value}** __for {key}.__',
-            log=(
-                'blacklist', f'Removed {option} blacklist: {value} for {key}.'
+    for option, values in parsed.items():
+        if values:
+            removed, skipped = await unappend(
+                "blacklists:" + key, option, values
             )
-        )
-    elif response == 1:
-        await event.answer(
-            f"__Skipped {option} blacklist, it doesn't exists for {key}.__",
-            reply=True
-        )
-    else:
-        await event.answer(
-            f"__There are no blackists saved for {key}.__",
-            reply=True
-        )
+            if removed:
+                removed_values.update({option: removed})
+            if skipped:
+                skipped_values.update({option: skipped})
+
+    if removed_values:
+        text = f"**Removed blacklists for {key}:**\n"
+        text += await values_to_str(removed_values)
+        await event.answer(text, log=('blacklist', text))
+    if skipped_values:
+        text = f"**Skipped blacklists for {key}:**\n"
+        text += await values_to_str(skipped_values)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -354,64 +358,83 @@ async def whitelister(event: NewMessage.Event) -> None:
         )
         return
 
-    value = event.matches[0].group('value')
-    user = False
-    chat = False
-    entity = await client.get_entity(value)
+    match = event.matches[0].group('match') or ''
+    users = []
+    chats = []
+    skipped = []
+    text = ''
+    log = ''
 
-    if not value:
+    if match:
+        args, _ = await client.parse_arguments(match)
+        for user in args:
+            if user in whitelistedUsers + whitelistedChats:
+                skipped.append(f"`{user}`")
+                continue
+            try:
+                entity = await client.get_entity(user)
+                if isinstance(entity, types.User):
+                    if not entity.is_self:
+                        users.append(entity)
+                else:
+                    chats.append(entity)
+            except Exception:
+                skipped.append(f"`{user}`")
+    else:
         if event.reply_to_msg_id:
             wl = (await event.get_reply_message()).from_id
-            wl = await client.get_peer_id(wl)
-            user = True
+            users.append(await client.get_entity(wl))
         else:
-            wl = await client.get_peer_id(await event.get_input_chat())
-            chat = True
-    else:
-        value = int(value) if value.isdigit() else value
-        try:
-            if isinstance(entity, types.PeerUser):
-                user = True
+            entity = await event.get_chat()
+            if event.is_private:
+                users.append(entity)
             else:
-                chat = True
-            wl = await client.get_peer_id(entity)
-        except Exception:
-            await event.answer(f"__Couldn't get the entity for {value}.__")
-            return
+                chats.append(entity)
 
-    if wl in whitelistedUsers or wl in whitelistedChats:
-        await event.answer(f'__{wl} is already whitelisted.__')
-        return
-    elif wl in blacklistedUsers:
-        await event.answer(
-            f"__{wl} is blacklisted, unblacklist them and try again.__"
-        )
-        return
-
-    if user:
-        whitelistedUsers.append(wl)
-        redis.set('whitelist:users', dill.dumps(whitelistedUsers))
-        await event.answer(
-            f"**Successfully whitelisted** [{wl}](tg://user?id={wl})",
-            log=(
-                'whitelist', f'Whitelisted user [{wl}](tg://user?id={wl}).'
-            )
-        )
-    elif chat:
-        whitelistedChats.append(wl)
-        redis.set('whitelist:chats', dill.dumps(whitelistedChats))
-        if entity.username:
-            wl = f"[{entity.title}](tg://resolve?domain={entity.username})"
-        else:
-            wl = f"`{wl}`"
-        await event.answer(
-            f"**Successfully whitelisted chat** {wl}",
-            log=(
-                'whitelist', f'Whitelisted chat {wl}.'
-            )
-        )
-    else:
-        await event.answer("__IDK what happened?__")
+    if users:
+        usertext = ''
+        count = 0
+        for user in users:
+            entity = await client.get_peer_id(user)
+            name = get_display_name(user)
+            name = f"[{name}](tg://user?id={entity})"
+            if entity not in whitelistedUsers:
+                whitelistedUsers.append(entity)
+                usertext += f"  {name}"
+                count = 1
+            else:
+                skipped.append(name)
+        if count != 0:
+            redis.set('whitelist:users', dill.dumps(whitelistedUsers))
+            text += "**Whitelisted users:**\n" + usertext
+            log += text
+            await event.answer(text, log=None if chats else ("whitelist", log))
+    if chats:
+        chattext = ''
+        count = 0
+        for chat in chats:
+            if chat.username:
+                name = f"[{chat.title}](tg://resolve?domain={chat.username})"
+            else:
+                name = f"`{chat.id}`"
+            entity = await client.get_peer_id(chat)
+            if entity not in whitelistedChats:
+                whitelistedChats.append(entity)
+                chattext += f"  {name}"
+                count = 1
+            else:
+                skipped.append(name)
+        if count:
+            if text:
+                text += "\n\n**Whitelisted chats:**\n" + chattext
+            else:
+                text += "**Whitelisted chats:**\n" + chattext
+            redis.set('whitelist:chats', dill.dumps(whitelistedChats))
+            log += text
+            await event.answer(text, log=("whitelist", log))
+    if skipped:
+        text = "**Skipped entities:**\n" + ", ".join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -426,53 +449,87 @@ async def unwhitelister(event: NewMessage.Event) -> None:
         )
         return
 
-    value = event.matches[0].group('value')
-    if event.matches[0].group('value'):
-        value = int(value) if value.isdigit() else value
-        try:
-            entity = await client.get_input_entity(value)
-            value = await client.get_peer_id(entity)
-        except Exception:
-            await event.answer(f"__Couldn't get the entity for {value}.__")
-            return
+    match = event.matches[0].group('match') or ''
+    users = []
+    chats = []
+    skipped = []
+    text = ''
+    log = ''
 
-    if event.reply_to_msg_id and not value:
-        value = (await event.get_reply_message()).from_id
-    if not value:
-        value = event.chat_id
-
-    if not value:
-        await event.answer('__.rmwl <value>__')
-        return
-
-    if value in whitelistedUsers:
-        whitelistedUsers.remove(value)
-        if whitelistedUsers:
-            redis.set('whitelist:users', dill.dumps(whitelistedUsers))
-        else:
-            redis.delete('whitelist:users')
-        await event.answer(
-            f"__Removed user {value} from whitelist.__",
-            log=(
-                'whitelist',
-                f'Unwhitelisted user [{value}](tg://user?id={value}).'
-            )
-        )
-    elif value in whitelistedChats:
-        whitelistedChats.remove(value)
-        if whitelistedChats:
-            redis.set('whitelist:chats', dill.dumps(whitelistedChats))
-        else:
-            redis.delete('whitelist:chats')
-        await event.answer(
-            f"__Removed chat {value} from whitelist.__",
-            log=(
-                'whitelist', f'Unwhitelisted chat {value}.'
-            )
-        )
+    if match:
+        args, _ = await client.parse_arguments(match)
+        for user in args:
+            if user in whitelistedUsers:
+                users.append(user)
+                continue
+            elif user in whitelistedChats:
+                chats.append(user)
+                continue
+            try:
+                entity = await client.get_entity(user)
+                if isinstance(entity, types.User):
+                    if not entity.is_self:
+                        users.append(entity.id)
+                else:
+                    chats.append(entity.id)
+            except Exception:
+                skipped.append(f"`{user}`")
     else:
-        await event.answer(f"__{value} hasn't been whitelisted.__")
-        return
+        if event.reply_to_msg_id:
+            entity = (await event.get_reply_message()).from_id
+            users.append(await client.get_peer_id(entity))
+        else:
+            entity = await event.get_chat()
+            entity = await client.get_peer_id(entity)
+            if event.is_private:
+                users.append(entity)
+            else:
+                chats.append(entity)
+
+    if users and whitelistedUsers:
+        count = 0
+        usertext = ''
+        for user in users:
+            if user in whitelistedUsers:
+                whitelistedUsers.remove(user)
+                usertext += f" `{user}`"
+                count = 1
+            else:
+                skipped.append(f"`{user}`")
+        if count:
+            if whitelistedUsers:
+                redis.set('whitelist:users', dill.dumps(whitelistedUsers))
+            else:
+                redis.delete('whitelist:users')
+            text += "**Un-whitelisted users:**\n" + usertext
+            log += text
+            await event.answer(
+                text, log=None if chats else ("whitelist", text)
+            )
+    if chats and whitelistedChats:
+        count = 0
+        chattext = ''
+        for chat in chats:
+            if chat in whitelistedChats:
+                whitelistedChats.remove(chat)
+                chattext += f" `{chat}`"
+                count = 1
+            else:
+                skipped.append(f"`{chat}`")
+        if count:
+            if whitelistedChats:
+                redis.set('whitelist:chats', dill.dumps(whitelistedChats))
+            else:
+                redis.delete('whitelist:chats')
+            if text:
+                text += "**\n\nUn-whitelisted chats:**\n" + chattext
+            else:
+                text += "**Un-whitelisted chats:**\n" + chattext
+            log += text
+            await event.answer(text, log=("whitelist", text))
+    if skipped:
+        text = "**Skipped entities:**\n" + ", ".join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -553,41 +610,52 @@ async def unblacklistuser(event: NewMessage.Event) -> None:
         )
         return
 
-    value = event.matches[0].group('value')
-    if event.matches[0].group('value'):
-        value = int(value) if value.isdigit() else value
-        try:
-            entity = await client.get_input_entity(value)
-            value = await client.get_peer_id(entity)
-        except Exception:
-            await event.answer(f"__Couldn't get the entity for {value}.__")
-            return
+    match = event.matches[0].group('match') or ''
+    users = []
+    skipped = []
 
-    if event.reply_to_msg_id and not value:
-        value = (await event.get_reply_message()).from_id
-    if not value:
-        value = event.chat_id
+    if match:
+        args, _ = await client.parse_arguments(match)
+        for user in args:
+            if user in blacklistedUsers:
+                users.append(user)
+                continue
+            try:
+                entity = await client.get_entity(user)
+                if isinstance(entity, types.User):
+                    if not entity.is_self:
+                        users.append(entity.id)
+                else:
+                    skipped.append(f"`{entity.id}`")
+            except Exception:
+                skipped.append(f"`{user}`")
+    else:
+        if event.reply_to_msg_id:
+            entity = (await event.get_reply_message()).from_id
+            users.append(await client.get_peer_id(entity))
+        else:
+            entity = await event.get_chat()
+            entity = await client.get_peer_id(entity)
+            if event.is_private:
+                users.append(entity)
 
-    if not value:
-        await event.answer('__.unbl <value>__')
-        return
-
-    if value in blacklistedUsers:
-        blacklistedUsers.pop(value, None)
+    if users and blacklistedUsers:
+        text = "**Un-blacklisted users:**\n"
+        targets = []
+        for user in users:
+            if user in blacklistedUsers:
+                blacklistedUsers.remove(user)
+                targets.append(f"[{user}](tg://user?id={user})")
         if blacklistedUsers:
             redis.set('blacklist:users', dill.dumps(blacklistedUsers))
         else:
             redis.delete('blacklist:users')
-        await event.answer(
-            f"__Removed {value} from blacklisted users.__",
-            log=(
-                'unblacklist',
-                f'Unblacklisted user [{value}](tg://user?id={value}).'
-            )
-        )
-    else:
-        await event.answer(f"__{value} hasn't been blacklisted.__")
-        return
+        text += ", ".join(targets)
+        await event.answer(text, log=('unblacklist', text))
+    if skipped:
+        text = "**Skipped users:**\n"
+        text += ', '.join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -922,4 +990,96 @@ async def blattributes(blacklist) -> str:
         text += f"\n**[ID]:** {', '.join([f'`{x}`' for x in tgid])}\n"
     if url:
         text += f"\n**[URL]:** {', '.join([f'`{x}`' for x in url])}\n"
+    return text
+
+
+async def get_values(match: str) -> Dict[str, List]:
+    """
+        Iter through the parsed arguments and
+        return a list of the proper options.
+    """
+    args, kwargs = await client.parse_arguments(match)
+    txt: List[str] = []
+    tgid: List[int] = []
+    bio: List[str] = []
+    url: List[str] = []
+
+    for i in args:
+        if isinstance(i, list):
+            txt += [str(o) for o in i if o not in txt]
+        else:
+            if i not in txt:
+                txt.append(str(i))
+
+    temp_id = kwargs.get('id', [])
+    await append_args_to_list(tgid, temp_id, True)
+
+    temp_bio = kwargs.get('bio', [])
+    await append_args_to_list(bio, temp_bio)
+
+    temp_string = kwargs.get('string', [])
+    temp_str = kwargs.get('str', [])
+    if isinstance(temp_str, list):
+        temp_string.extend(temp_str)
+    else:
+        temp_string.append(temp_str)
+    await append_args_to_list(txt, temp_string)
+
+    temp_domain = kwargs.get('domain', [])
+    temp_url = kwargs.get('url', [])
+    if isinstance(temp_url, list):
+        temp_domain.extend(temp_url)
+    else:
+        temp_domain.append(temp_url)
+    await append_args_to_list(url, temp_domain)
+
+    return {'txt': txt, 'tgid': tgid, 'bio': bio, 'url': url}
+
+
+async def append_args_to_list(
+    option: list, args_list: str or list, tg_id: bool = False
+) -> list:
+    """Iter through the values and append if they're not in the list."""
+    if isinstance(args_list, list):
+        for i in args_list:
+            if tg_id:
+                value = await get_peer_id(i)
+                if value and value not in option:
+                    option.append(value)
+            else:
+                i = str(i)
+                if i not in option:
+                    option.append(i)
+    else:
+        if tg_id:
+            i = await get_peer_id(args_list)
+            if i and i not in option:
+                option.append(i)
+        else:
+            i = str(i)
+            if i not in option:
+                option.append(i)
+
+    return option
+
+
+async def get_peer_id(entity: str or int) -> int:
+    peer = None
+    try:
+        peer = await client.get_peer_id(entity)
+    except Exception as e:
+        LOGGER.debug(e)
+    return peer
+
+
+async def values_to_str(values_dict: dict) -> str:
+    text = ""
+    for key, values in values_dict.items():
+        key = full_key_names.get(key, key)
+        if len(text) == 0:
+            text += f"**{key}:**\n  "
+        else:
+            text += f"\n\n**{key}**\n"
+        text += ", ".join(f'`{x}`' for x in values)
+
     return text

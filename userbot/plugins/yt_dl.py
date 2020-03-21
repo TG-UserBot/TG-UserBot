@@ -116,11 +116,11 @@ async def yt_dl(event):
                     warnings.append(info)
             if fmts:
                 text = "**Formats:**\n"
-                text += ",\n\n".join(f"`{f}`" for f in fmts)
+                text += ",\n\n".join(f"```{f}```" for f in fmts)
                 await event.answer(text)
             if warnings:
                 text = "**Warnings:**\n"
-                text += ",\n\n".join(f"`{w}`" for w in warnings)
+                text += ",\n\n".join(f"```{w}```" for w in warnings)
                 reply = True if fmts else False
                 await event.answer(text, reply=reply)
             return
@@ -194,7 +194,7 @@ async def yt_dl(event):
                 os.remove(thumb)
     if warnings:
         text = "**Warnings:**\n"
-        text += ",\n\n".join(f"`{w}`" for w in warnings)
+        text += ",\n\n".join(f"```{w}```" for w in warnings)
         await event.answer(text)
     else:
         await event.delete()

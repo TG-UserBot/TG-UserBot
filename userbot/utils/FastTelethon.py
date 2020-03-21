@@ -343,13 +343,13 @@ async def _internal_transfer_to_telegram(
 
 
 async def download_file(
-    client: TelegramClient, location: TypeLocation,
+    self: TelegramClient, location: TypeLocation,
     out: BinaryIO, progress_callback: callable = None
 ) -> BinaryIO:
     size = location.size
     dc_id, location = utils.get_input_location(location)
     # We lock the transfers because telegram has connection count limits
-    downloader = ParallelTransferrer(client, dc_id)
+    downloader = ParallelTransferrer(self, dc_id)
     downloaded = downloader.download(location, size)
     async for x in downloaded:
         out.write(x)
@@ -362,9 +362,9 @@ async def download_file(
 
 
 async def upload_file(
-    client: TelegramClient, file: BinaryIO, progress_callback: callable = None
+    self: TelegramClient, file: BinaryIO, progress_callback: callable = None
 ) -> TypeInputFile:
     res = (
-        await _internal_transfer_to_telegram(client, file, progress_callback)
+        await _internal_transfer_to_telegram(self, file, progress_callback)
     )[0]
     return res

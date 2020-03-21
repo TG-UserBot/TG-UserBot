@@ -18,11 +18,11 @@
 import configparser
 import dataclasses
 import logging
-from typing import BinaryIO, Dict, List
+from typing import Dict, List
 
-from telethon import events, TelegramClient, types
+from telethon import events, TelegramClient
 
-from .FastTelethon import download_file, upload_file, TypeLocation
+from .FastTelethon import download_file, upload_file
 from .parser import parse_arguments
 from .pluginManager import PluginManager
 from .events import MessageEdited, NewMessage
@@ -100,24 +100,6 @@ class UserBotClient(TelegramClient):
 
         return wrapper
 
-    async def fast_download_file(
-        self: TelegramClient, location: TypeLocation,
-        out: BinaryIO, progress_callback: callable = None
-    ) -> BinaryIO:
-        """Download files to Telethon with multiple connections."""
-        return await download_file(self, location, out, progress_callback)
-
-    async def fast_upload_file(
-        self: TelegramClient, file: BinaryIO,
-        progress_callback: callable = None
-    ) -> types.TypeInputFile:
-        """Upload files to Telethon with multiple connections."""
-        return await upload_file(self, file, progress_callback)
-
-    async def parse_arguments(self, args: str) -> tuple:
-        """Parse a string to get args and kwargs for commands."""
-        return await parse_arguments(args)
-
     def _updateconfig(self) -> bool:
         """Update the config. Sync method to avoid issues."""
         with open('config.ini', 'w+') as configfile:
@@ -141,3 +123,8 @@ def update_dict(category: dict, name: str, command: str or list) -> None:
     commands = command.split('/') if '/' in command else [command]
     for c in commands:
         category.setdefault(name, []).append(c)
+
+
+UserBotClient.fast_download_file = download_file
+UserBotClient.fast_upload_file = upload_file
+UserBotClient.parse_arguments = parse_arguments

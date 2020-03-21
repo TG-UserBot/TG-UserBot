@@ -33,7 +33,7 @@ pattern = (
     r'(?:^|;.+?)'  # Ensure that the expression doesn't go blatant
     r'([1-9]+?)?'  # line: Don't match a 0, sed counts lines from 1
     r'(?:sed|s)'  # The s command (as in substitute)
-    r'(?:(?P<d>.))'  # Unknown delimiter with a named group d
+    r'(?:(?P<d>[^\n\\]))'  # Unknown delimiter with a named group d
     r'((?:(?!(?<![^\\]\\)(?P=d)).)+)'  # regexp
     r'(?P=d)'  # Unknown delimiter
     r'((?:(?!(?<![^\\]\\)(?P=d)|(?<![^\\]\\);).)*)'  # replacement
@@ -41,7 +41,7 @@ pattern = (
     r'((?<!;)\w+)?'  # flags: Don't capture if it starts with a semicolon
     r'(?=;|$)'  # Ensure it ends with a semicolon for the next match
 )
-ub_sed_pattern = r"^(?:[1-9]+sed|[1-9]+s|sed)"
+ub_sed_pattern = r"^(?:[1-9]+s(ed)?|sed)"
 
 
 @client.onMessage(
