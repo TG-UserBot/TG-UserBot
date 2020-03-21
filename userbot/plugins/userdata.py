@@ -44,16 +44,16 @@ async def whois(event: NewMessage.Event) -> None:
         if "this" in entities:
             entities.remove("this")
             entities.append(event.chat_id)
-    else:
-        entities.append("self")
-
-    if event.reply_to_msg_id:
+    elif event.reply_to_msg_id:
         if not entities:
             reply = await event.get_reply_message()
             user = reply.sender_id
             if reply.fwd_from:
                 if reply.fwd_from.from_id:
                     user = reply.fwd_from.from_id
+            entities.append(user)
+    else:
+        entities.append("self")
 
     users = ""
     chats = ""
