@@ -898,8 +898,8 @@ async def bio_filter(event: ChatAction.Event) -> None:
                 await ban_user(event, blacklisted_text)
             return
         elif (
-            sender_id in getattr(GlobalBlacklist, 'tgid', []) +
-            getattr(localbl, 'tgid', [])
+            (GlobalBlacklist.tgid and sender_id in GlobalBlacklist.tgid) or
+            (localbl and localbl.tgid and sender_id in localbl.tgid)
         ):
             await ban_user(event, id_str.format(sender_id), 'bio', match)
             return

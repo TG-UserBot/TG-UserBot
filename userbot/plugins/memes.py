@@ -18,6 +18,8 @@
 import aiohttp
 from typing import Tuple, Union
 
+from telethon.errors import rpcerrorlist
+
 from userbot import client
 from userbot.utils.events import NewMessage
 
@@ -36,8 +38,11 @@ async def shibes(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
-    await event.delete()
+    try:
+        await event.answer(file=json[0], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
 
 
 @client.onMessage(
@@ -52,8 +57,11 @@ async def cats(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
-    await event.delete()
+    try:
+        await event.answer(file=json[0], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
 
 
 @client.onMessage(
@@ -68,8 +76,11 @@ async def birds(event: NewMessage.Event) -> None:
         return
 
     _, json = shibe
-    await event.answer(file=json[0], reply_to=event.reply_to_msg_id or None)
-    await event.delete()
+    try:
+        await event.answer(file=json[0], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
 
 
 async def _request(url: str) -> Union[Tuple[str, dict], None]:
