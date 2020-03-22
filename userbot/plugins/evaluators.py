@@ -49,8 +49,9 @@ async def evaluate(event: NewMessage.Event) -> None:
         return
 
     extra = await get_chat_link(event, event.id)
+    result = str(result) if result else "Success?"
     await event.answer(
-        "```" + result or 'Success?' + "```",
+        "```" + result + "```",
         log=("eval", f"Successfully evaluated {expression} in {extra}!"),
         reply=True
     )
