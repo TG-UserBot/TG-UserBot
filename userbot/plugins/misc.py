@@ -109,7 +109,8 @@ async def rmbg(event: NewMessage.Event) -> None:
                 await event.answer("`Invalid URL provided!`")
                 return
             except Exception as e:
-                await event.answer(f"`Unknown exception: {e}`")
+                exc = await client.get_traceback(e)
+                await event.answer(f"**Unknown exception:**\n```{exc}```")
                 return
         media = match
     elif reply and reply.media:
@@ -190,7 +191,7 @@ async def resolver(event: NewMessage.Event) -> None:
                 except (TypeError, ValueError):
                     break
                 except Exception as e:
-                    text += f"\n```{e}```"
+                    text += f"\n```{await client.get_traceback(e)}```"
                     break
 
                 if isinstance(chat, types.Channel):

@@ -228,8 +228,7 @@ async def extract_info(
         except youtube_dl.utils.ExtractorError:
             eStr = "`There was an error during info extraction.`"
         except Exception as e:
-            eStr = f"`{type(e)}: {e}`"
-            raise e
+            return e
         if eStr:
             return eStr
 

@@ -246,4 +246,4 @@ async def update_requirements():
         return process.returncode
     except Exception as e:
         LOGGER.exception(e)
-        return repr(e)
+        return await client.get_traceback(e)

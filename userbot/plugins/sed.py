@@ -116,10 +116,10 @@ async def regex_ninja(event: NewMessage.Event) -> None:
         return
 
     if arg == "on":
-        client.config['userbot']['userbot_regexninja'] = True
+        client.config['userbot']['userbot_regexninja'] = "True"
         value = "enabled"
     else:
-        client.config['userbot']['userbot_regexninja'] = False
+        client.config['userbot']['userbot_regexninja'] = "False"
         value = "disabled"
     client._updateconfig()
 

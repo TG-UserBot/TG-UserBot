@@ -186,27 +186,36 @@ async def disabled(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("help", plugin_category), builtin=True,
-    outgoing=True, regex=r"help(?: |$)(.*)?"
+    outgoing=True, regex=r"help(?: |$)(\w*)(?: |$)(dev|details|info)?"
 )
 async def helper(event: NewMessage.Event) -> None:
     """A list of commands categories, their commands or command's details."""
     arg = event.matches[0].group(1)
+    arg1 = event.matches[0].group(2)
     enabled, _ = await solve_commands(client.commands)
     disabled, _ = await solve_commands(client.disabled_commands)
     categories = client.commandcategories
     if arg:
-        arg = arg.strip().lower()
-        arg1 = True if arg.endswith(("dev", "details", "info")) else False
-        if arg1:
-            arg = ' '.join(arg.split(' ')[:-1])
+        arg = arg.lower()
         if arg == "all":
-            text = "**Enabled commands:**"
-            for name, command in sorted(enabled.items()):
-                text += f"\n**{name}**: `{command.info}`\n"
+            text = "**Enabled commands:**\n"
+            if arg1:
+                text += '\n\n'.join([
+                    f'`{n}`: `{i.info}`' for n, i in sorted(enabled.items())
+                ])
+            else:
+                text += ', '.join([f'`{name}`' for name in sorted(enabled)])
             if disabled:
                 text += "\n**Disabled commands:**"
-                for name, command in sorted(disabled.items()):
-                    text += f"\n**{name}**: `{command.info}`\n"
+                if arg1:
+                    text += '\n\n'.join([
+                        f'`{n}`: `{i.info}`'
+                        for n, i in sorted(disabled.items())
+                    ])
+                else:
+                    text += ', '.join([
+                        f'`{name}`' for name in sorted(disabled)
+                    ])
         elif arg in [*enabled, *disabled]:
             merged = {**enabled, **disabled}
             command = merged.get(arg)

@@ -80,7 +80,7 @@ success = "`Successfully downloaded` {}"
 
 @client.onMessage(
     command="ytdl",
-    outgoing=True, regex=r"ytdl(?: |$)([\s\S]*)"
+    outgoing=True, regex=r"ytdl(?: |$|\n)([\s\S]*)"
 )
 async def yt_dl(event):
     """Download videos from YouTube with their url in multiple formats."""
@@ -112,8 +112,12 @@ async def yt_dl(event):
                 )
                 if isinstance(info, dict):
                     fmts.append(await list_formats(info))
-                else:
+                elif isinstance(info, str):
                     warnings.append(info)
+                else:
+                    warning.append(
+                        f'```{await client.get_traceback(info)}```'
+                    )
             if fmts:
                 text = "**Formats:**\n"
                 text += ",\n\n".join(f"```{f}```" for f in fmts)
@@ -162,6 +166,8 @@ async def yt_dl(event):
         if isinstance(output, str):
             result = warning + output if not ffmpeg else output
             warnings.append(result)
+        elif isinstance(output, BaseException):
+            warning.append(f'```{await client.get_traceback(output)}```')
         else:
             path, thumb, info = output
             title = info.get('title', info.get('id', 'Unknown title'))
@@ -194,7 +200,7 @@ async def yt_dl(event):
                 os.remove(thumb)
     if warnings:
         text = "**Warnings:**\n"
-        text += ",\n\n".join(f"```{w}```" for w in warnings)
+        text += ",\n\n".join(warnings)
         await event.answer(text)
     else:
         await event.delete()

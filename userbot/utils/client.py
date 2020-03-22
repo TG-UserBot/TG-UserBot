@@ -18,6 +18,7 @@
 import configparser
 import dataclasses
 import logging
+import traceback
 from typing import Dict, List
 
 from telethon import events, TelegramClient
@@ -99,6 +100,11 @@ class UserBotClient(TelegramClient):
             return func
 
         return wrapper
+
+    async def get_traceback(self, exc: Exception) -> str:
+        return ''.join(traceback.format_exception(
+            etype=type(exc), value=exc, tb=exc.__traceback__
+        ))
 
     def _updateconfig(self) -> bool:
         """Update the config. Sync method to avoid issues."""

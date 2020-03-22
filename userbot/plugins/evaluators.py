@@ -16,12 +16,11 @@
 
 
 import asyncio
-import inspect
-import sys
 
 from userbot import client
 from userbot.utils.helpers import get_chat_link
 from userbot.utils.events import NewMessage
+from userbot.utils.meval import meval
 
 
 plugin_category = "terminal"
@@ -29,30 +28,29 @@ plugin_category = "terminal"
 
 @client.onMessage(
     command=("eval", plugin_category),
-    outgoing=True, regex=r"eval(?: |$)([\s\S]*)"
+    outgoing=True, regex=r"eval(?: |$|\n)([\s\S]*)"
 )
 async def evaluate(event: NewMessage.Event) -> None:
     """Evaluate Python expressions in the running script."""
     expression = event.matches[0].group(1).strip()
     reply = await event.get_reply_message()
     if not expression:
-        await event.answer("Evaluated the void.")
+        await event.answer("__Evaluated the void.__")
         return
 
     try:
-        result = eval(
-            expression, {'client': client, 'event': event, 'reply': reply}
+        result = await meval(
+            expression, globals(), client=client, event=event, reply=reply
         )
-        if inspect.isawaitable(result):
-            result = await result
-        result = str(result)
     except Exception as e:
-        await event.answer('`' + type(e).__name__ + ': ' + str(e) + '`')
+        await event.answer(
+            f"```{await client.get_traceback(e)}```", reply=True
+        )
         return
 
     extra = await get_chat_link(event, event.id)
     await event.answer(
-        "```" + result + "```",
+        "```" + result or 'Success?' + "```",
         log=("eval", f"Successfully evaluated {expression} in {extra}!"),
         reply=True
     )
@@ -64,52 +62,28 @@ async def evaluate(event: NewMessage.Event) -> None:
 )
 async def execute(event: NewMessage.Event) -> None:
     """Execute Python statements in a subprocess."""
-    message = (
-        str(event.chat_id) +
-        ':' +
-        str(event.message.id)
-    )
-    if client.running_processes.get(message, False):
+    statement = event.matches[0].group(1).strip()
+    reply = await event.get_reply_message()
+    if not statement:
+        await event.answer("__Executed the void.__")
+        return
+
+    try:
+        await meval(
+            statement, globals(), client=client, event=event, reply=reply
+        )
+    except Exception as e:
         await event.answer(
-            "A process for this event is already running!",
-            reply=True
+            f"```{await client.get_traceback(e)}```", reply=True
         )
         return
-
-    code = event.matches[0].group(1).strip()
-    if not code:
-        await event.answer("Executed the void.")
-        return
-
-    process = await asyncio.create_subprocess_exec(
-        sys.executable, '-c', code,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-
-    client.running_processes.update({message: process})
-    stdout, stderr = await process.communicate()
-
-    not_killed = client.running_processes.get(message, False)
-    if not_killed:
-        del client.running_processes[message]
-
-    text = f"[EXEC] Return code: {process.returncode}\n"
-
-    if stdout:
-        text += "\n[stdout]\n" + stdout.decode("UTF-8").strip() + "\n"
-    if stderr:
-        text += "\n[stderr]\n" + stderr.decode('UTF-8').strip() + "\n"
 
     extra = await get_chat_link(event, event.id)
-    if stdout or stderr:
-        await event.answer(
-            "```" + text + "```",
-            log=("exec", f"Successfully executed {code} in {extra}!"),
-            reply=True
-        )
-    else:
-        await event.answer("Nice, get off the void.\nNo output for you.")
+    await event.answer(
+        "`Success?`",
+        log=("exec", f"Successfully executed {statement} in {extra}!"),
+        reply=True
+    )
 
 
 @client.onMessage(

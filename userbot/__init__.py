@@ -25,7 +25,7 @@ import redis
 from telethon.tl import types
 
 from .utils.sessions import RedisSession
-from .utils.helpers import resolve_env
+from .utils.config_helper import resolve_env
 from .utils.client import UserBotClient
 
 
