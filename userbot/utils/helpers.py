@@ -213,7 +213,7 @@ async def disable_commands(client: UserBotClient, commands: str) -> None:
         target = client.commands.get(command, False)
         if target:
             client.remove_event_handler(target.func)
-            client.disabled_commands.update(command=target)
+            client.disabled_commands.update({command: target})
             del client.commands[command]
             LOGGER.debug("Disabled command: %s", command)
 

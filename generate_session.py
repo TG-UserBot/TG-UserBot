@@ -1,3 +1,4 @@
+import asyncio
 import configparser
 import os
 import platform
@@ -12,20 +13,53 @@ if platform.python_version_tuple() < ('3', '7', '3'):
     )
     sys.exit(1)
 
+if sys.platform.startswith('win'):
+    loop = asyncio.ProactorEventLoop()
+else:
+    loop = asyncio.get_event_loop()
+
+
+async def install_pip_package(package: str) -> bool:
+    python = sys.executable
+    cmd = await asyncio.create_subprocess_shell(
+        f'{python} -m pip install --upgrade --user {package}',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    await cmd.communicate()
+    return True if cmd.returncode == 0 else False
+
 
 try:
     import telethon
 except (ModuleNotFoundError, ImportError):
-    cmd = f'"python -m pip install -U telethon --user"'
-    print(
-        f"Telethon not found! Install it using {cmd} and run the script again"
-    )
+    print('Installing Telethon...')
+    pip = loop.run_until_complete(install_pip_package('telethon'))
+    if pip:
+        print('Successfully installed Telethon. Run the script again.')
+    else:
+        print(
+            'Failed to install Telethon. '
+            'Run the script again after installing it manually using:'
+        )
+        print('"python3 -m pip install -U telethon --user"')
     sys.exit()
 
 
+api_id = os.environ.get('api_id', None)
+api_hash = os.environ.get('api_hash', None)
+endpoint = os.environ.get('redis_endpoint', None)
+password = os.environ.get('redis_password', None)
 redis = False
 
-if os.path.exists('./config.ini'):
+if all((api_id, api_hash)):
+    redis_ip = input("Would you like to generate a Redis session? (yes/no): ")
+    if redis_ip.lower() in ('y', 'yes'):
+        if ':' not in endpoint:
+            print('Invalid Redis endpoint! Try again.')
+            sys.exit(1)
+        redis = True
+elif os.path.exists('./config.ini'):
     config = configparser.ConfigParser()
     config.read('./config.ini')
     api_id = config['telethon'].getint('api_id', False)
@@ -65,11 +99,16 @@ if redis:
     try:
         import redis
     except (ModuleNotFoundError, ImportError):
-        cmd = f'"python -m pip install -U redis --user"'
-        print(
-            f"Telethon not found! Install it using {cmd} and "
-            "run the script again"
-        )
+        print('Installing Redis...')
+        pip = loop.run_until_complete(install_pip_package('redis'))
+        if pip:
+            print('Successfully installed Redis. Run the script again.')
+        else:
+            print(
+                'Failed to install Redis. '
+                'Run the script again after installing it manually using:'
+            )
+            print('"python3 -m pip install -U redis --user"')
         sys.exit()
 
     from userbot.utils.sessions import RedisSession

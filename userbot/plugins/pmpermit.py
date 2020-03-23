@@ -69,7 +69,9 @@ esc_samedefault = re.escape(samedefault.format(r'\d')).replace(r'\\d', r'\d')
 esc_newdefault = re.escape(newdefault.format(r'\d')).replace(r'\\d', r'\d')
 
 blocked = "`You've been blocked and reported for spamming.`"
-blocklog = "{} `has been blocked for spamming, unblock them to see their messages.`"
+blocklog = (
+    "{} `has been blocked for spamming, unblock them to see their messages.`"
+)
 autoapprove = "`Successfully auto-approved` {}"
 
 DEFAULT_MUTE_SETTINGS = types.InputPeerNotifySettings(
@@ -269,7 +271,7 @@ async def block(event: NewMessage.Event) -> None:
         except Exception:
             pass
         if result:
-            text = f"`Successfully blocked:` {href}"
+            text = f"`Successfully blocked:` {href}."
             if PM_PERMIT and redis and user.id in approvedUsers:
                 approvedUsers.remove(user.id)
                 await update_db()
@@ -296,7 +298,7 @@ async def unblock(event: NewMessage.Event) -> None:
         except Exception:
             pass
         if result:
-            text = f"`Successfully unblocked:` {href}"
+            text = f"`Successfully unblocked:` {href}."
             await event.answer(text, log=('pmpermit', text))
         else:
             await event.answer(f"`Couldn't unblock` {href}.")

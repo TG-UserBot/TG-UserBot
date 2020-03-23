@@ -17,9 +17,8 @@
 
 from datetime import timedelta
 
-from userbot import client, LOGGER
-from userbot.helper_funcs.ids import get_entity_from_msg
-from userbot.helper_funcs.time import split_extra_string
+from userbot import client
+from userbot.helper_funcs.time import string_to_secs
 from userbot.utils.helpers import _humanfriendly_seconds, get_chat_link
 from userbot.utils.events import NewMessage
 
@@ -29,7 +28,7 @@ plugin_category = "admin"
 
 @client.onMessage(
     command=("promote", plugin_category),
-    outgoing=True, regex=r"promote(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"promote(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def promote(event: NewMessage.Event) -> None:
     """Promote a user in a group or channel."""
@@ -40,44 +39,52 @@ async def promote(event: NewMessage.Event) -> None:
         await event.answer("`You can't promote users in private chats.`")
         return
 
-    user, extra, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Promote machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    title = kwargs.get('title', None)
+    skipped = []
+    promoted = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_admin(
-            entity=entity,
-            user=user,
-            is_admin=True,
-            title=extra
-        )
-        text = "`Successfully promoted `{}` (``{}``)!`"
-        if extra:
-            text += f"\n`Title:` `{extra}`"
-        e1 = await get_chat_link(user)
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_admin(
+                entity=entity,
+                user=user,
+                is_admin=True,
+                title=title
+            )
+            promoted.append(user)
+        except Exception:
+            skipped.append(user)
+    if promoted:
+        text = f"`Successfully promoted:`\n"
+        text += ', '.join((f'`{x}`' for x in promoted))
+        if title:
+            text += f"\n`Title:` `{title}`"
+        if reason:
+            text += f"\n`Reason:` `{reason}`"
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully promoted {e1} in {e2}"
-        if extra:
-            log_msg += f"\nTitle: {extra}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("promote", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("promote", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("demote", plugin_category),
-    outgoing=True, regex=r"demote(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"demote(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def demote(event: NewMessage.Event) -> None:
     """Demote a user in a group or channel."""
@@ -90,43 +97,48 @@ async def demote(event: NewMessage.Event) -> None:
         await event.answer("`You can't demote users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Demote machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    demoted = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_admin(
-            entity=entity,
-            user=user,
-            is_admin=False
-        )
-        text = "`Successfully demoted `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_admin(
+                entity=entity,
+                user=user,
+                is_admin=False
+            )
+            demoted.append(user)
+        except Exception:
+            skipped.append(user)
+    if demoted:
+        text = f"`Successfully demoted:`\n"
+        text += ', '.join((f'`{x}`' for x in demoted))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully demoted {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("demote", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("demote", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("ban", plugin_category),
-    outgoing=True, regex=r"ban(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"ban(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def ban(event: NewMessage.Event) -> None:
     """Ban a user in a group or channel."""
@@ -137,43 +149,48 @@ async def ban(event: NewMessage.Event) -> None:
         await event.answer("`You can't ban users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Ban machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    banned = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            view_messages=False
-        )
-        text = "`Successfully banned `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                view_messages=False
+            )
+            banned.append(user)
+        except Exception:
+            skipped.append(user)
+    if banned:
+        text = f"`Successfully banned:`\n"
+        text += ', '.join((f'`{x}`' for x in banned))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully banned {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("ban", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("ban", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("unban", plugin_category),
-    outgoing=True, regex=r"unban(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"unban(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def unban(event: NewMessage.Event) -> None:
     """Un-ban a user in a group or channel."""
@@ -184,50 +201,55 @@ async def unban(event: NewMessage.Event) -> None:
         await event.answer("`You can't un-ban users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Un-ban machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    unbanned = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            view_messages=True,
-            send_messages=True,
-            send_media=True,
-            send_stickers=True,
-            send_gifs=True,
-            send_games=True,
-            send_inline=True,
-            send_polls=True
-        )
-        text = "`Successfully un-banned `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                view_messages=True,
+                send_messages=True,
+                send_media=True,
+                send_stickers=True,
+                send_gifs=True,
+                send_games=True,
+                send_inline=True,
+                send_polls=True
+            )
+            unbanned.append(user)
+        except Exception:
+            skipped.append(user)
+    if unbanned:
+        text = f"`Successfully unbanned:`\n"
+        text += ', '.join((f'`{x}`' for x in unbanned))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully unbanned {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("unban", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("unban", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("kick", plugin_category),
-    outgoing=True, regex=r"kick(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"kick(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def kick(event: NewMessage.Event) -> None:
     """Kick a user in a group or channel."""
@@ -238,42 +260,47 @@ async def kick(event: NewMessage.Event) -> None:
         await event.answer("`You can't kick users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Kick machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    kicked = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.kick_participant(
-            entity=entity,
-            user=user
-        )
-        text = "`Successfully kicked `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.kick_participant(
+                entity=entity,
+                user=user
+            )
+            kicked.append(user)
+        except Exception:
+            skipped.append(user)
+    if kicked:
+        text = f"`Successfully kicked:`\n"
+        text += ', '.join((f'`{x}`' for x in kicked))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully kicked {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("kick", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("kick", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("mute", plugin_category),
-    outgoing=True, regex=r"mute(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"mute(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def mute(event: NewMessage.Event) -> None:
     """Mute a user in a group or channel."""
@@ -284,43 +311,48 @@ async def mute(event: NewMessage.Event) -> None:
         await event.answer("`You can't mute users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Mute machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    muted = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            send_messages=False
-        )
-        text = "`Successfully muted `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                send_messages=False
+            )
+            muted.append(user)
+        except Exception:
+            skipped.append(user)
+    if muted:
+        text = f"`Successfully muted:`\n"
+        text += ', '.join((f'`{x}`' for x in muted))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully muted {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("mute", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("mute", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("unmute", plugin_category),
-    outgoing=True, regex=r"unmute(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"unmute(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def unmute(event: NewMessage.Event) -> None:
     """Un-mute a user in a group or channel."""
@@ -333,43 +365,48 @@ async def unmute(event: NewMessage.Event) -> None:
         await event.answer("`You can't un-mute users in private chats.`")
         return
 
-    user, reason, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`Un-mute machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    skipped = []
+    unmuted = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            send_messages=True
-        )
-        text = "`Successfully un-muted `{}` (``{}``)!`"
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                send_messages=True
+            )
+            unmuted.append(user)
+        except Exception:
+            skipped.append(user)
+    if unmuted:
+        text = f"`Successfully unmuted:`\n"
+        text += ', '.join((f'`{x}`' for x in unmuted))
         if reason:
             text += f"\n`Reason:` `{reason}`"
-        e1 = await get_chat_link(user)
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully un-muted {e1} in {e2}"
-        if reason:
-            log_msg += f"\nReason: {reason}"
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("unmute", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("unmute", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("tmute", plugin_category),
-    outgoing=True, regex=r"tmute(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"tmute(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def tmute(event: NewMessage.Event) -> None:
     """Temporary mute a user in a group or channel."""
@@ -380,57 +417,55 @@ async def tmute(event: NewMessage.Event) -> None:
         await event.answer("`You can't t-mute users in private chats.`")
         return
 
-    user, extra, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`T-mute machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    period = kwargs.get('time', None)
+    if not period:
+        await event.answer("`Specify the time by using time=<n>`")
+        return
+    period = await string_to_secs(period)
+    skipped = []
+    unmuted = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        time = None
-        reason = None
-        seconds = None
-        text = "`Successfully t-muted `{}` (``{}``)!`"
-        e1 = await get_chat_link(user)
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                until_date=timedelta(seconds=period),
+                send_messages=False
+            )
+            unmuted.append(user)
+        except Exception:
+            skipped.append(user)
+    if unmuted:
+        text = f"`Successfully tmuted:`\n"
+        text += ', '.join((f'`{x}`' for x in unmuted))
+        text += f"\n`Time:` `{await _humanfriendly_seconds(period)}`"
+        if reason:
+            text += f"\n`Reason:` `{reason}`"
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully tmuted {e1} in {e2}"
-        if extra:
-            reason, seconds = await split_extra_string(extra)
-            if reason:
-                text += f"\n`Reason:` `{reason}`"
-                log_msg += f"\nReason: {reason}"
-            if seconds:
-                time = timedelta(seconds=seconds)
-                text += f"\n`Time:` `{await _humanfriendly_seconds(seconds)}`"
-                log_msg += f"\nTime: {await _humanfriendly_seconds(seconds)}"
-
-        if not seconds:
-            await event.answer("`Provide the total time limit for t-mute!`")
-            return
-
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            until_date=time,
-            send_messages=False
-        )
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("tmute", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("tmute", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
     command=("tban", plugin_category),
-    outgoing=True, regex=r"tban(?: |$)(.*)$", require_admin=True
+    outgoing=True, regex=r"tban(?: |$|\n)([\s\S]*)", require_admin=True
 )
 async def tban(event: NewMessage.Event) -> None:
     """Temporary ban a user in a group or channel."""
@@ -441,52 +476,50 @@ async def tban(event: NewMessage.Event) -> None:
         await event.answer("`You can't t-ban users in private chats.`")
         return
 
-    user, extra, exception = await get_entity_from_msg(event)
-    if user:
-        if exception:
-            await event.answer(f"`T-ban machine broke!\n{user}`")
-            return
-    else:
+    match = event.matches[0].group(1)
+    if not match:
         await event.answer("`At least specifiy a user, maybe?`")
         return
+    args, kwargs = await client.parse_arguments(match)
+    reason = kwargs.get('reason', None)
+    period = kwargs.get('time', None)
+    if not period:
+        await event.answer("`Specify the time by using time=<n>`")
+        return
+    period = await string_to_secs(period)
+    skipped = []
+    banned = []
+    if not args and event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        args.append((await reply.get_input_sender()).user_id)
 
     entity = await event.get_chat()
-    try:
-        time = None
-        reason = None
-        seconds = None
-        text = "`Successfully t-banned `{}` (``{}``)!`"
-        e1 = await get_chat_link(user)
+    for user in args:
+        if isinstance(user, list):
+            continue
+        try:
+            await client.edit_permissions(
+                entity=entity,
+                user=user,
+                until_date=timedelta(seconds=period),
+                view_messages=False
+            )
+            banned.append(user)
+        except Exception:
+            skipped.append(user)
+    if banned:
+        text = f"`Successfully tbanned:`\n"
+        text += ', '.join((f'`{x}`' for x in banned))
+        text += f"\n`Time:` `{await _humanfriendly_seconds(period)}`"
+        if reason:
+            text += f"\n`Reason:` `{reason}`"
         e2 = await get_chat_link(entity, event.id)
-        log_msg = f"Successfully t-banned {e1} in {e2}"
-        if extra:
-            reason, seconds = await split_extra_string(extra)
-            if reason:
-                text += f"\n`Reason:` `{reason}`"
-                log_msg += f"\nReason: {reason}"
-            if seconds:
-                time = timedelta(seconds=seconds)
-                text += f"\n`Time:` `{await _humanfriendly_seconds(seconds)}`"
-                log_msg += f"Time: {await _humanfriendly_seconds(seconds)}"
-
-        if not seconds:
-            await event.answer("`Provide the total time limit for t-ban!`")
-            return
-
-        await client.edit_permissions(
-            entity=entity,
-            user=user,
-            until_date=time,
-            view_messages=False
-        )
-
-        await event.answer(
-            text.format(e1, user.id),
-            log=("tban", log_msg)
-        )
-    except Exception as e:
-        await event.answer(f"```{await client.get_traceback(e)}```")
-        LOGGER.exception(e)
+        log_msg = text + f"\n`Chat:` {e2}"
+        await event.answer(text, log=("tban", log_msg))
+    if skipped:
+        text = "`Skipped users:`"
+        text += ', '.join((f'`{x}`' for x in skipped))
+        await event.answer(text, reply=True)
 
 
 async def get_rights(
