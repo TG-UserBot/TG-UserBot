@@ -1195,12 +1195,15 @@ async def get_peer_id(entity: str or int) -> int:
 
 async def values_to_str(values_dict: dict) -> str:
     text = ""
+    id_str = "[{0}](tg://user?id={0})"
     for key, values in values_dict.items():
-        key = full_key_names.get(key, key)
+        title = full_key_names.get(key, key)
         if len(text) == 0:
-            text += f"**{key}:**\n  "
+            text += f"**{title}:**\n  "
         else:
-            text += f"\n\n**{key}**\n"
-        text += ", ".join(f'`{x}`' for x in values)
-
-    return text
+            text += f"\n\n**{title}**\n"
+        if key == "tgid":
+            text += ", ".join(id_str.format(x) for x in values)
+        else:
+            text += ", ".join(f'`{x}`' for x in values)
+    return text.isnumeric()
