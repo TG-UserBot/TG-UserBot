@@ -51,26 +51,26 @@ FTG_UNAPPROVED_MSG = (
 )
 
 warning = (
-    "**You have one message left, you'll be reported and blocked upon "
-    "sending the next message!**"
+    "`You have only` **1** `message left, if you send the next one "
+    "you will be blocked and reported!`"
 )
 default = (
-    "**This is an automated message, kindly wait until you're approved.**\n"
-    "__You have {} remaining messages.__"
+    "`This is an automated message, kindly wait until you're approved.`\n"
+    "`Messages remaining:` **{}**"
 )
-samedefault = "__You have {} remaining messages.__"
+samedefault = "`Messages Remaining:` **{}**"
 newdefault = (
     "**This is an automated message, kindly wait until you've been approved "
-    "otherwise you'll be reported and blocked for spamming.**\n\n"
-    "__You have {} remaining messages.__"
+    "otherwise you'll be blocked and reported for spamming.**\n\n"
+    "`Messages Remaining:` **{}**"
 )
 esc_default = re.escape(default.format(r'\d')).replace(r'\\d', r'\d')
 esc_samedefault = re.escape(samedefault.format(r'\d')).replace(r'\\d', r'\d')
 esc_newdefault = re.escape(newdefault.format(r'\d')).replace(r'\\d', r'\d')
 
-blocked = "**You've been blocked and reported for spamming.**"
-blocklog = "{} **has been blocked, unblock them to see their messages.**"
-autoapprove = "**Successfully auto-approved** {}"
+blocked = "`You've been blocked and reported for spamming.`"
+blocklog = "{} `has been blocked for spamming, unblock them to see their messages.`"
+autoapprove = "`Successfully auto-approved` {}"
 
 DEFAULT_MUTE_SETTINGS = types.InputPeerNotifySettings(
     silent=True,
@@ -108,7 +108,7 @@ async def pm_incoming(event: NewMessage.Event) -> None:
             await update_db()
             user = await get_chat_link(entity)
             text = (
-                autoapprove.format(user) + " **for being a mutual contact.**"
+                autoapprove.format(user) + " `for being a mutual contact.`"
             )
             await event.answer(
                 text, reply=True,
@@ -210,16 +210,16 @@ async def approve(event: NewMessage.Event) -> None:
     if user:
         if user.verified or user.support or user.bot:
             await event.answer(
-                "__You don't need to approve bots or verified/support users.__"
+                "`You don't need to approve bots or verified/support users.`"
             )
             return
         href = await get_chat_link(user)
         if user.id in approvedUsers:
-            await event.answer(f"{href} __is already approved.__")
+            await event.answer(f"{href} `is already approved.`")
         else:
             approvedUsers.append(user.id)
             await update_db()
-            text = f"__Successfully approved__ {href}"
+            text = f"`Successfully approved` {href}."
             await event.answer(text, log=('pmpermit', text))
         if user.id in spammers:
             _, _, sent, _ = spammers.pop(user.id)  # Reset the counter
@@ -245,10 +245,10 @@ async def disapprove(event: NewMessage.Event) -> None:
         if user.id in approvedUsers:
             approvedUsers.remove(user.id)
             await update_db()
-            text = f"__Successfully disapproved__ {href}"
+            text = f"`Successfully disapproved` {href}."
             await event.answer(text, log=('pmpermit', text))
         else:
-            await event.answer(f"{href} __hasn't been approved.__")
+            await event.answer(f"{href} `hasn't been approved.`")
         spammers.pop(user.id, None)  # Reset the counter
 
 
@@ -269,14 +269,14 @@ async def block(event: NewMessage.Event) -> None:
         except Exception:
             pass
         if result:
-            text = f"__Successfully blocked__ {href}"
+            text = f"`Successfully blocked:` {href}"
             if PM_PERMIT and redis and user.id in approvedUsers:
                 approvedUsers.remove(user.id)
                 await update_db()
-                text += " __and remove them from approved users.__"
+                text += " `and remove them from the list of approved users.`"
             await event.answer(text, log=('pmpermit', text))
         else:
-            await event.answer(f"__Couldn't block__ {href}")
+            await event.answer(f"`Couldn't block` {href}.")
 
 
 @client.onMessage(
@@ -296,10 +296,10 @@ async def unblock(event: NewMessage.Event) -> None:
         except Exception:
             pass
         if result:
-            text = f"__Successfully unblocked__ {href}"
+            text = f"`Successfully unblocked:` {href}"
             await event.answer(text, log=('pmpermit', text))
         else:
-            await event.answer(f"__Couldn't unblock__ {href}")
+            await event.answer(f"`Couldn't unblock` {href}.")
 
 
 @client.onMessage(
@@ -313,7 +313,7 @@ async def approved(event: NewMessage.Event) -> None:
         text += ', '.join([f'`{i}`' for i in approvedUsers])
         await event.answer(text)
     else:
-        await event.answer("**You currently have no approved users.**")
+        await event.answer("`You haven't approved anyone yet.`")
 
 
 async def get_user(event: NewMessage.Event) -> types.User or None:
