@@ -318,7 +318,7 @@ async def install_pip_packages(packages: List[str]) -> bool:
     packages = ' '.join(packages)
     python = sys.executable
     cmd = await asyncio.create_subprocess_shell(
-        f'{python} -m pip install --upgrade --user -y {packages}',
+        f'{python} -m pip install --upgrade --user {packages}',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )

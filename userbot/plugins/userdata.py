@@ -320,7 +320,7 @@ async def whichid(event: NewMessage.Event) -> None:
                 entity = await client.get_input_entity(user)
                 peer = get_peer_id(entity)
                 strings.append(
-                    f"[{peer}](tg://user?id={peer})"
+                    f"[{user}](tg://user?id={peer}) `{peer}`"
                 )
             except Exception as e:
                 failed.append(user)
