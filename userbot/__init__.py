@@ -42,6 +42,7 @@ LEVELS = {
     'CRITICAL': logging.CRITICAL
 }
 
+session = "userbot"
 redis_db = False
 config = configparser.ConfigParser()
 config_file = pathlib.Path('./config.ini')
@@ -124,9 +125,7 @@ if REDIS_ENDPOINT and REDIS_PASSWORD:
         sys.exit(1)
     LOGGER.debug("Connected to Redis successfully!")
     redis_db = redis_connection
-    if sql_session.exists():
-        session = "userbot"
-    else:
+    if not sql_session.exists():
         LOGGER.debug("Using Redis session!")
         session = RedisSession("userbot", redis_connection)
 
