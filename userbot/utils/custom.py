@@ -229,9 +229,9 @@ async def _resolve_entities(message: str, entities: list) -> dict:
             if end > 3 and not message[last_end:].startswith('\n'):
                 for e in entities[:end:-1]:
                     start = e.offset + e.length
-                    end = end - 1
                     if end == 2 or message[start:].startswith('\n'):
                         break
+                    end = end - 1
         e_chunk = entities[:end]
         next_offset, last_chunk = await _next_offset(end, entities)
         if last_chunk:
