@@ -53,6 +53,18 @@
         "pm_permit": {
             "description": "Whether you want PM Permit enabled or disabled.",
             "required": false
+        },
+        "user": {
+            "description": "Your github username/email to access private repos.",
+            "required": false
+        },
+        "token": {
+            "description": "Your github token to access private repos. Get it from https://github.com/settings/tokens/new and enable repo.",
+            "required": false
+        },
+        "repos": {
+            "description": "A list of the repos you want to add. eg: user/repo, user1/repo1",
+            "required": false
         }
     },
     "formation": {

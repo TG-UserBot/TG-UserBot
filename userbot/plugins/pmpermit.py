@@ -25,15 +25,11 @@ from telethon.tl import functions, types
 from userbot import client
 from userbot.utils.helpers import get_chat_link
 from userbot.utils.events import NewMessage
-from userbot.utils.sessions import RedisSession
 
 
 plugin_category = "pmpermit"
 PM_PERMIT = client.config['userbot'].getboolean('pm_permit', False)
-if isinstance(client.session, RedisSession):
-    redis = client.session.redis_connection
-else:
-    redis = None
+redis = client.database
 
 approvedUsers: List[int] = []
 spammers: Dict[int, tuple] = {}

@@ -34,10 +34,6 @@ summary = "\n[{rev}]({url}commit/{sha}) `{summary}`\n"
 commited = "{committer}` committed {elapsed} ago`\n"
 authored = "{author}` authored and `{committer}` committed {elapsed} ago`\n"
 main_repo = "https://github.com/kandnub/TG-UserBot.git"
-requirements_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    'requirements.txt'
-)
 
 
 @client.onMessage(
@@ -235,10 +231,12 @@ async def updater(event: NewMessage.Event) -> None:
 
 
 async def update_requirements():
-    reqs = str(requirements_path)
+    reqs = ' '.join([
+        sys.executable, "-m", "pip", "install", "-r", 'requirements.txt'
+    ])
     try:
         process = await asyncio.create_subprocess_shell(
-            ' '.join([sys.executable, "-m", "pip", "install", "-r", reqs]),
+            reqs,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )

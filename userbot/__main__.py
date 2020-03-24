@@ -92,6 +92,5 @@ if __name__ == "__main__":
         print()
         LOGGER.info("Exiting the script due to keyboard interruption.")
         client._kill_running_processes()
-        pass
     finally:
         client.disconnect()

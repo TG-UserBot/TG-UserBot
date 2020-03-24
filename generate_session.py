@@ -5,7 +5,10 @@ import platform
 import sys
 import os.path
 
-ERROR = "Something is wrong with your API ID or Hash, please double check and re-enter the same."
+ERROR = (
+    "Something is wrong with your API {}, "
+    "please double check and re-enter the same."
+)
 
 if platform.python_version_tuple() < ('3', '7', '3'):
     print(
@@ -85,16 +88,16 @@ elif os.path.exists('./config.ini'):
 else:
     while True:
         api_id = input("Enter your API ID: ")
-        if len(api_id) ==6 and api_id.isnumeric():
+        if len(api_id) >= 2 and api_id.isnumeric():
             break
         else:
-            print(ERROR)
+            print(ERROR.format('ID'))
     while True:
         api_hash = input("Enter your API hash: ")
-        if len(api_hash) ==32 and api_hash.isalnum():
+        if len(api_hash) == 32 and api_hash.isalnum():
             break
         else:
-            print(ERROR)
+            print(ERROR.format('hash'))
     redis_ip = input("Would you like to generate a Redis session? (yes/no): ")
     if redis_ip.lower() in ('y', 'yes'):
         while True:

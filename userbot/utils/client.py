@@ -46,6 +46,7 @@ class UserBotClient(TelegramClient):
     commandcategories: Dict[str, List[str]] = {}
     commands: Dict[str, Command] = {}
     config: configparser.ConfigParser = None
+    database: bool = True
     disabled_commands: Dict[str, Command] = {}
     failed_imports: list = []
     logger: bool = False

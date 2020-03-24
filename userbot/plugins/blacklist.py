@@ -25,15 +25,11 @@ from telethon.utils import get_display_name, resolve_invite_link
 
 from userbot import client, LOGGER
 from userbot.utils.events import NewMessage
-from userbot.utils.sessions import RedisSession
 from userbot.plugins.plugins_data import Blacklist, GlobalBlacklist
 
 
 plugin_category = "blacklisting"
-if isinstance(client.session, RedisSession):
-    redis = client.session.redis_connection
-else:
-    redis = None
+redis = client.database
 
 blacklisted_text = (
     "**Automatically banned** {} **because they're{}blacklisted!.**"
