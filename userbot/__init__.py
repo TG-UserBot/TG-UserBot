@@ -42,7 +42,7 @@ LEVELS = {
     'CRITICAL': logging.CRITICAL
 }
 
-session = "userbot"
+session = "userbot"
 redis_db = False
 config = configparser.ConfigParser()
 config_file = pathlib.Path('./config.ini')
