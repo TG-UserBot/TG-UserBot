@@ -41,7 +41,7 @@ def resolve_env(config: configparser.ConfigParser):
             os.getenv('userbot_regexninja', 'False')
         ),
         'self_destruct_msg': strtobool(
-            os.getenv('self_destruct_msg', 'False')
+            os.getenv('self_destruct_msg', 'True')
         ),
         'pm_permit': strtobool(os.getenv('pm_permit', 'False')),
         'console_logger_level': os.getenv('console_logger_level', None),

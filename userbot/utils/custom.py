@@ -135,7 +135,7 @@ async def answer(
 
     if (
         self_destruct and
-        self.client.config['userbot'].getboolean('self_destruct_msg', False)
+        self.client.config['userbot'].getboolean('self_destruct_msg', True)
     ):
         asyncio.create_task(_self_destructor(message_out, self_destruct))
 
