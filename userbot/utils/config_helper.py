@@ -62,8 +62,21 @@ def resolve_env(config: configparser.ConfigParser):
         )
     }
 
+    plugins = {
+        'repos': os.getenv(
+            'repos', None
+        ),
+        'user': os.getenv(
+            'user', None
+        ),
+        'token': os.getenv(
+            'token', None
+        )
+    }
+
     make_config(config, 'userbot', userbot)
     make_config(config, 'api_keys', api_keys)
+    make_config(config, 'plugins', plugins)
 
 
 def make_config(
