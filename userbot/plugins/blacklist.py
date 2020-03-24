@@ -1202,4 +1202,4 @@ async def values_to_str(values_dict: dict) -> str:
             text += ", ".join(id_str.format(x) for x in values)
         else:
             text += ", ".join(f'`{x}`' for x in values)
-    return text.isnumeric()
+    return text
