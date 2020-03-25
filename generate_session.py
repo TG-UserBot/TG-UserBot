@@ -142,11 +142,12 @@ if redis:
 else:
     session = "userbot"
 
+client = telethon.TelegramClient(session, api_id, api_hash)
 try:
-    with telethon.TelegramClient(session, api_id, api_hash) as client:
+    with client:
         me = client.loop.run_until_complete(client.get_me())
         name = telethon.utils.get_display_name(me)
-        print(f"Successfully generated a session for {name}")
+    print(f"Successfully generated a session for {name}")
 except (AuthKeyError, InvalidBufferError):
     client.session.delete()
     print(

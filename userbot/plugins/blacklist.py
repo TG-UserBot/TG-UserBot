@@ -95,10 +95,10 @@ acceptable_options = {
     'url': 'url'
 }
 full_key_names = {
-    'tgid': '[Telegram IDs]',
-    'bio': '[User Bios]',
-    'txt': '[Strings]',
-    'url': '[URLs]'
+    'tgid': 'Telegram IDs',
+    'bio': 'User Bios',
+    'txt': 'Strings',
+    'url': 'URLs'
 }
 
 temp_banlist: List[int] = []
