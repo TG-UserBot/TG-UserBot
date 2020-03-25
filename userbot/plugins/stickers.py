@@ -243,14 +243,14 @@ async def kang(event: NewMessage.Event) -> None:
     ))
     await _update_stickers_notif(DEFAULT_MUTE)
     if pack or len(kwargs) == 1:
-        if pack.lower() == "auto":
+        if pack and pack.lower() == "auto":
             pack, packnick = await _get_userbot_auto_pack(is_animated)
         if kwargs:
             pack = None
             packnick = None
-            for x, y in kwargs:
-                pack = x
-                packnick = y
+            for x, y in kwargs.items():
+                pack = str(x)
+                packnick = str(y)
             if not (pack and packnick):
                 await event.answer(
                     "`Are you sure you're using the correct syntax?`\n"
@@ -655,7 +655,7 @@ async def _resolve_messages(
             is_animated = True
 
     for i in args:
-        if re.search(r'[^\w\s,]'):
+        if re.search(r'[^\w\s,]', i):
             _emojis += i
         else:
             packs.append(i)
