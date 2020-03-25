@@ -36,6 +36,7 @@ async def install_pip_package(package: str) -> bool:
 
 try:
     import telethon
+    from telethon.errors import AuthKeyError, InvalidBufferError
 except (ModuleNotFoundError, ImportError):
     print('Installing Telethon...')
     pip = loop.run_until_complete(install_pip_package('telethon'))
@@ -125,7 +126,7 @@ if redis:
             print('"python3 -m pip install -U redis --user"')
         sys.exit()
 
-    from userbot.utils.sessions import RedisSession
+    from sessions.redis import RedisSession
 
     redis_connection = redis.Redis(
         host=endpoint.split(':')[0],
@@ -141,7 +142,15 @@ if redis:
 else:
     session = "userbot"
 
-with telethon.TelegramClient(session, api_id, api_hash) as client:
-    me = client.loop.run_until_complete(client.get_me())
-    name = telethon.utils.get_display_name(me)
-    print(f"Successfully generated a session for {name}")
+try:
+    with telethon.TelegramClient(session, api_id, api_hash) as client:
+        me = client.loop.run_until_complete(client.get_me())
+        name = telethon.utils.get_display_name(me)
+        print(f"Successfully generated a session for {name}")
+except (AuthKeyError, InvalidBufferError):
+    client.session.delete()
+    print(
+        "Your old session was invalid and has been automatically deleted! "
+        "Run the script again to generate a new session."
+    )
+    sys.exit(1)

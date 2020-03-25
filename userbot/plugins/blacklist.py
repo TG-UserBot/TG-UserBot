@@ -399,11 +399,10 @@ async def whitelister(event: NewMessage.Event) -> None:
         usertext = ''
         count = 0
         for user in users:
-            entity = await client.get_peer_id(user)
             name = get_display_name(user)
-            name = f"[{name}](tg://user?id={entity})"
-            if entity not in whitelistedUsers:
-                whitelistedUsers.append(entity)
+            name = f"[{name}](tg://user?id={user.id})"
+            if user.id not in whitelistedUsers:
+                whitelistedUsers.append(user.id)
                 usertext += f"  {name}"
                 count = 1
             else:
@@ -421,9 +420,8 @@ async def whitelister(event: NewMessage.Event) -> None:
                 name = f"[{chat.title}](tg://resolve?domain={chat.username})"
             else:
                 name = f"`{chat.id}`"
-            entity = await client.get_peer_id(chat)
-            if entity not in whitelistedChats:
-                whitelistedChats.append(entity)
+            if chat.id not in whitelistedChats:
+                whitelistedChats.append(chat.id)
                 chattext += f"  {name}"
                 count = 1
             else:
@@ -481,14 +479,13 @@ async def unwhitelister(event: NewMessage.Event) -> None:
     else:
         if event.reply_to_msg_id:
             entity = (await event.get_reply_message()).from_id
-            users.append(await client.get_peer_id(entity))
+            users.append(entity)
         else:
             entity = await event.get_chat()
-            entity = await client.get_peer_id(entity)
             if event.is_private:
-                users.append(entity)
+                users.append(entity.id)
             else:
-                chats.append(entity)
+                chats.append(entity.id)
 
     if users and whitelistedUsers:
         count = 0
@@ -570,12 +567,11 @@ async def unblacklistuser(event: NewMessage.Event) -> None:
     else:
         if event.reply_to_msg_id:
             entity = (await event.get_reply_message()).from_id
-            users.append(await client.get_peer_id(entity))
+            users.append(entity)
         else:
             entity = await event.get_chat()
-            entity = await client.get_peer_id(entity)
             if event.is_private:
-                users.append(entity)
+                users.append(entity.id)
 
     if users and blacklistedUsers:
         text = "**Un-blacklisted users:**\n"
@@ -932,15 +928,14 @@ async def inc_listener(event: NewMessage.Event) -> None:
                     event.text[entity.offset:entity.offset+entity.length]
                 )
                 entity = entity.group('e') if entity else entity
-                value = await client.get_peer_id(entity) if entity else 0
+                value = await client.get_peer_id(entity) if entity else None
             elif isinstance(entity, types.MessageEntityMentionName):
-                value = await client.get_peer_id(entity.user_id)
+                value = entity.user_id
             else:
                 value = None
 
             if value and invite:
-                temp = await client.get_peer_id(value, False)
-                if invite == temp:
+                if invite == value:
                     if await ban_user(event, id_str, 'tgid', value):
                         return
                     break
@@ -969,8 +964,8 @@ async def bio_filter(event: ChatAction.Event) -> None:
         try:
             sender = await event.get_input_user()
             chat = await event.get_chat()
-            sender_id = await client.get_peer_id(sender)
-            chat_id = await client.get_peer_id(chat)
+            sender_id = sender.user_id
+            chat_id = chat.id
             localbl = localBlacklists.get(chat_id, False)
         except (ValueError, TypeError):
             return
@@ -1160,7 +1155,10 @@ async def append_args_to_list(
     if isinstance(args_list, list):
         for i in args_list:
             if tg_id:
-                value = await get_peer_id(i)
+                if isinstance(i, int):
+                    value = i
+                else:
+                    value = await get_peer_id(i)
                 if value and value not in option:
                     option.append(value)
             else:
@@ -1169,7 +1167,8 @@ async def append_args_to_list(
                     option.append(i)
     else:
         if tg_id:
-            i = await get_peer_id(args_list)
+            if not isinstance(i, int):
+                i = await get_peer_id(args_list)
             if i and i not in option:
                 option.append(i)
         else:

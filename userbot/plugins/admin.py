@@ -40,17 +40,18 @@ async def promote(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     title = kwargs.get('title', None)
     skipped = []
     promoted = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -98,16 +99,17 @@ async def demote(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     demoted = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -150,16 +152,17 @@ async def ban(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     banned = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -202,16 +205,17 @@ async def unban(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     unbanned = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -261,16 +265,17 @@ async def kick(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     kicked = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -312,16 +317,17 @@ async def mute(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     muted = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -366,16 +372,17 @@ async def unmute(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     skipped = []
     unmuted = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -418,9 +425,6 @@ async def tmute(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     period = kwargs.get('time', None)
@@ -430,9 +434,13 @@ async def tmute(event: NewMessage.Event) -> None:
     period = await string_to_secs(period)
     skipped = []
     unmuted = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:
@@ -477,9 +485,6 @@ async def tban(event: NewMessage.Event) -> None:
         return
 
     match = event.matches[0].group(1)
-    if not match:
-        await event.answer("`At least specifiy a user, maybe?`")
-        return
     args, kwargs = await client.parse_arguments(match)
     reason = kwargs.get('reason', None)
     period = kwargs.get('time', None)
@@ -489,9 +494,13 @@ async def tban(event: NewMessage.Event) -> None:
     period = await string_to_secs(period)
     skipped = []
     banned = []
+
     if not args and event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        args.append((await reply.get_input_sender()).user_id)
+        args.append(reply.sender_id)
+    if not args:
+        await event.answer("`At least specifiy a user, maybe?`")
+        return
 
     entity = await event.get_chat()
     for user in args:

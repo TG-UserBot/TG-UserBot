@@ -12,6 +12,7 @@ userbot/__pycache__/*
 userbot/plugins/__pycache__/*
 userbot/helper_funcs/__pycache__/*
 userbot/utils/__pycache__/*
+sessions/__pycache__/*
 
 # Sphinx build folders
 docs/build/

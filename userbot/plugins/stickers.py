@@ -31,7 +31,7 @@ from userbot.utils.events import NewMessage
 
 plugin_category = "stickers"
 acceptable = []
-default_emoji = u"🤔"
+default_emoji = "🤔"
 conversation_args = {
     'entity': '@Stickers',
     'timeout': 10,
@@ -95,11 +95,11 @@ async def getsticker(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("stickerpack", plugin_category),
-    outgoing=True, regex="stickerpack(?: |$)(.*)$"
+    outgoing=True, regex=r"stickerpack(?: |$)(.*)"
 )
 async def stickerpack(event: NewMessage.Event) -> None:
     """Get your default kang's sticker packs or update them."""
-    match = event.matches[0].group(1).strip()
+    match = event.matches[0].group(1) or ''
     if not match:
         basic, animated = await _get_default_packs()
         basic = f"[{basic}](https://t.me/addstickers/{basic})"
@@ -108,16 +108,18 @@ async def stickerpack(event: NewMessage.Event) -> None:
         await event.answer(text.format(basic, animated))
         return
 
-    if ':' in match:
-        text = await _set_default_packs(match, ':')
-    elif '=' in match:
-        text = await _set_default_packs(match, '=')
-    elif match.strip().lower() == "reset":
-        await _set_default_packs("basic=reset", '=')
-        await _set_default_packs("animated=reset", '=')
+    args, kwargs = await client.parse_arguments(match)
+    if kwargs:
+        texts = []
+        for x, y in kwargs.itmes():
+            texts.append(await _set_default_packs(x, y))
+        text = '\n'.join(texts)
+    elif "reset" in args:
+        await _set_default_packs('basic', 'reset')
+        await _set_default_packs('animated', 'reset')
         text = "`Successfully reset both of your packs.`"
     else:
-        text = await _set_default_packs(f"basic:{match}", ':')
+        text = await _set_default_packs(f"basic", args[0])
     await event.answer(text, log=("stickerpack", text))
 
 
@@ -202,10 +204,11 @@ async def delsticker(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("kang", plugin_category),
-    outgoing=True, regex="kang(?: |$)(.*)$"
+    outgoing=True, regex=r"kang(?: |$)(.*)"
 )
 async def kang(event: NewMessage.Event) -> None:
     """Steal (AKA kang) stickers and images to your Sticker packs."""
+    match = event.matches[0].group(1) or ''
     if event.reply_to_msg_id:
         sticker_event = await event.get_reply_message()
         if not await _is_sticker_event(sticker_event):
@@ -230,22 +233,25 @@ async def kang(event: NewMessage.Event) -> None:
     new_pack = False
     first_msg = None
     new_first_msg = None
+    args, kwargs = await client.parse_arguments(match)
     pack, emojis, name, is_animated = await _resolve_messages(
-        event, sticker_event
+        args, kwargs, sticker_event
     )
     prefix = client.prefix if client.prefix is not None else '.'
     notif = await client(functions.account.GetNotifySettingsRequest(
         peer="Stickers"
     ))
     await _update_stickers_notif(DEFAULT_MUTE)
-    if pack:
-        if (':' in pack) or ('=' in pack):
-            text = event.matches[0].group(1)
-
-            pack, packnick, new_emojis = await _resolve_pack_name(
-                text, is_animated
-            )
-            if not pack and not packnick:
+    if pack or len(kwargs) == 1:
+        if pack.lower() == "auto":
+            pack, packnick = await _get_userbot_auto_pack(is_animated)
+        if kwargs:
+            pack = None
+            packnick = None
+            for x, y in kwargs:
+                pack = x
+                packnick = y
+            if not (pack and packnick):
                 await event.answer(
                     "`Are you sure you're using the correct syntax?`\n"
                     f"`{prefix}kang <packName>=<packsShortName>`\n"
@@ -262,12 +268,14 @@ async def kang(event: NewMessage.Event) -> None:
                 new_pack = True
             attribute_emoji = None
             if sticker_event.sticker:
-                attribute_emoji = (
-                    attribute.alt
-                    for attribute in sticker_event.media.document.attributes
-                    if isinstance(attribute, types.DocumentAttributeSticker)
-                )
-            emojis = new_emojis or attribute_emoji or default_emoji
+                for attribute in sticker_event.media.document.attributes:
+                    if isinstance(attribute, types.DocumentAttributeSticker):
+                        attribute_emoji = attribute.alt
+            if attribute_emoji:
+                if emojis and attribute_emoji not in emojis:
+                    emojis += attribute_emoji
+                else:
+                    emojis = attribute_emoji
         else:
             packs, first_msg = await _list_packs()
             is_pack = await _verify_cs_name(pack, packs)
@@ -295,11 +303,9 @@ async def kang(event: NewMessage.Event) -> None:
             if not pack:
                 if "_kang_pack" in animated:
                     await event.answer("`Making a custom TG-UserBot pack!`")
-                    user = await client.get_me()
-                    tag = '@' + user.username if user.username else user.id
-                    new_pack = True
                     pack = animated
-                    packnick = f"{tag}'s animated kang pack"
+                    _, packnick = await _get_userbot_auto_pack(is_animated)
+                    new_pack = True
                 else:
                     pack = animated or "a default animated pack"
                     await event.answer(FALSE_DEFAULT.format(pack, prefix))
@@ -311,11 +317,9 @@ async def kang(event: NewMessage.Event) -> None:
             if not pack:
                 if "_kang_pack" in basic:
                     await event.answer("`Making a custom TG-UserBot pack!`")
-                    user = await client.get_me()
-                    tag = '@' + user.username if user.username else user.id
-                    new_pack = True
                     pack = basic
-                    packnick = f"{tag}'s kang pack"
+                    _, packnick = await _get_userbot_auto_pack(is_animated)
+                    new_pack = True
                 else:
                     pack = basic or "a default pack"
                     await event.answer(FALSE_DEFAULT.format(pack, prefix))
@@ -485,10 +489,7 @@ async def kang(event: NewMessage.Event) -> None:
     await _update_stickers_notif(notif)
 
 
-async def _set_default_packs(string: str, delimiter: str) -> str:
-    splits = string.split(delimiter)
-    pack_type = splits[0].strip()
-    name = ''.join(splits[1:]).strip()
+async def _set_default_packs(pack_type: str, name: str) -> str:
     if pack_type.lower() == "animated":
         if name.lower() in ['reset', 'none']:
             is_pack = client.config['userbot'].get(
@@ -541,17 +542,19 @@ async def _get_new_ub_pack(packs: list, is_animated: bool) -> Tuple[str, str]:
     ub_packs = []
     for pack in packs:
         if "_kang_pack" in pack:
-            if is_animated and "_animated" in pack:
-                ub_packs = ub_packs.append(pack)
-            if not is_animated and "_animated" not in pack:
-                ub_packs = ub_packs.append(pack)
+            if "_animated" in pack:
+                if is_animated:
+                    ub_packs = ub_packs.append(pack)
+            else:
+                if not is_animated:
+                    ub_packs = ub_packs.append(pack)
 
-    pack = sorted(ub_packs)[-1]
-    l_char = pack[-1:]
+    pack = sorted(ub_packs)[-1]  # Fetch the last pack
+    l_char = pack[-1:]  # Check if the suffix is a digit
     if l_char.isdigit():
-        pack = pack[:-1] + str(int(l_char) + 1)
+        pack = pack[:-1] + str(int(l_char) + 1)  # ++ the suffix
     else:
-        pack = pack + "_1"
+        pack = pack + "_1"  # Append the suffix
 
     user = await client.get_me()
     tag = '@' + user.username if user.username else user.id
@@ -575,49 +578,6 @@ async def _verify_cs_name(packname: str or None, packs: list) -> str:
             correct_pack = pack
             break
     return correct_pack
-
-
-async def _resolve_pack_name(
-    text: str, is_animated: bool
-) -> Tuple[str, str, Union[str, None]]:
-    if ':' in text:
-        delimiter = ':'
-    else:
-        delimiter = '='
-
-    splits = text.split(delimiter)
-    if ' ' in splits[0].strip():
-        packname = "auto"
-        emojis = ''
-        name_and_emojis = splits[0].split(' ')
-        name_and_emojis = [x for x in name_and_emojis if x]
-        for i in name_and_emojis:
-            if re.match(r"\w+", i):
-                if packname == "auto":
-                    packname = ''
-                packname += i
-            else:
-                emojis += i
-        packnickname = ''.join(splits[1:]).strip()
-    else:
-        packname = splits[0].strip()
-        name_and_emojis = ''.join(splits[1:]).split(' ')
-        if len(name_and_emojis) > 1:
-            name_and_emojis = [x for x in name_and_emojis if x]
-            packnickname = ' '.join(name_and_emojis[:-1])
-            emojis = ''.join(name_and_emojis[-1:]) or None
-        else:
-            packnickname = name_and_emojis[0]
-            emojis = None
-
-    if packname == "auto":
-        user = (await client.get_me()).id
-        if is_animated:
-            packname = f"u{user}s_animated_kang_pack"
-        else:
-            packname = f"u{user}s_kang_pack"
-
-    return packname, packnickname, emojis or None
 
 
 async def _resize_image(
@@ -675,29 +635,15 @@ async def _list_packs() -> Tuple[List[str], types.Message]:
         return [button.text for button in buttons], first
 
 
-async def _extract_emojis(string: str) -> str:
-    text_emojis = re.findall(r'[^\w\s,]', string)
-    emojis = []
-    for emoji in text_emojis:
-        if emoji not in emojis:
-            emojis.append(emoji)
-
-    return ''.join(emojis) if len(emojis) > 0 else None
-
-
-async def _extract_pack_name(string: str) -> Union[str, None]:
-    name = string.encode('ascii', 'ignore').decode('ascii').strip()
-
-    return name.strip() if len(name) > 0 else None
-
-
 async def _resolve_messages(
-    event: NewMessage.Event, sticker_event: types.Message
+    args: list, kwargs: dict, sticker_event: types.Message
 ) -> Tuple[Union[str, None], str, str, bool]:
     sticker_name = "sticker.png"
-    text = event.matches[0].group(1).strip()
+    pack = None
     is_animated = False
     attribute_emoji = None
+    packs = kwargs.pop('pack', [])
+    _emojis = kwargs.pop('emojis', '')
 
     if sticker_event.sticker:
         document = sticker_event.media.document
@@ -708,20 +654,16 @@ async def _resolve_messages(
             sticker_name = 'AnimatedSticker.tgs'
             is_animated = True
 
-    emojis_in_text = await _extract_emojis(text)
-    pack_in_text = await _extract_pack_name(text)
-
-    if pack_in_text:
-        pack = pack_in_text
-    else:
-        pack = None
-        """basic, animated = await _get_default_packs()
-        if is_animated:
-            pack = animated
+    for i in args:
+        if re.search(r'[^\w\s,]'):
+            _emojis += i
         else:
-            pack = basic"""
+            packs.append(i)
 
-    emojis = emojis_in_text or attribute_emoji or default_emoji
+    if len(packs) == 1:
+        pack = packs[0]
+
+    emojis = _emojis or attribute_emoji or default_emoji
 
     return pack, emojis, sticker_name, is_animated
 
@@ -759,3 +701,15 @@ async def _update_stickers_notif(notif: types.PeerNotifySettings) -> None:
         peer="Stickers",
         settings=types.InputPeerNotifySettings(**vars(notif))
     ))
+
+
+async def _get_userbot_auto_pack(is_animated: bool = False) -> str:
+    user = await client.get_me()
+    tag = '@' + user.username if user.username else user.id
+    if is_animated:
+        pack = f"u{user.id}s_animated_kang_pack"
+        packnick = f"{tag}'s animated kang pack"
+    else:
+        pack = f"u{user.id}s_kang_pack"
+        packnick = f"{tag}'s kang pack"
+    return pack, packnick

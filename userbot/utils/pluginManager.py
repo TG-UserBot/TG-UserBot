@@ -260,7 +260,7 @@ class PluginManager:
             if content:
                 pname = "userbot.plugins." + name
                 spec = importlib.machinery.ModuleSpec(
-                    pname,
+                    path,
                     SourcelessPluginLoader(pname, content, path),
                     origin=path
                 )
