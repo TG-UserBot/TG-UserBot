@@ -126,7 +126,7 @@ async def answer(
         kwargs.setdefault('reply_to', reply_to)
         try:
             kwargs.setdefault('silent', True)
-            message_out = await self.client.send_file(
+            message_out = await self.client.respond(
                 self.chat_id, *args, **kwargs
             )
         except Exception as e:
