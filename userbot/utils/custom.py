@@ -54,7 +54,8 @@ async def answer(
         parser = html
     else:
         parser = markdown
-    if not any([k for k in file_kwargs if kwargs.get(k, False)]):
+    is_media = any([k for k in file_kwargs if kwargs.get(k, False)])
+    if len(args) == 1 and isinstance (args[0], str) and not is_media:
         is_reply = reply or kwargs.get('reply_to', False)
         text = args[0]
         msg, msg_entities = parser.parse(text)
@@ -126,9 +127,7 @@ async def answer(
         kwargs.setdefault('reply_to', reply_to)
         try:
             kwargs.setdefault('silent', True)
-            message_out = await self.client.respond(
-                self.chat_id, *args, **kwargs
-            )
+            message_out = await self.respond(*args, **kwargs)
         except Exception as e:
             raise e
 
