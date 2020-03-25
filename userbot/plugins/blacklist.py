@@ -1167,15 +1167,14 @@ async def append_args_to_list(
                     option.append(i)
     else:
         if tg_id:
-            if not isinstance(tg_id, int):
-                i = await get_peer_id(args_list)
-            if i and i not in option:
-                option.append(i)
+            if not isinstance(args_list, int):
+                args_list = await get_peer_id(args_list)
+            if args_list not in option:
+                option.append(args_list)
         else:
-            i = str(i)
-            if i not in option:
-                option.append(i)
-
+            args_list = str(args_list)
+            if args_list not in option:
+                option.append(args_list)
     return option
 
 
