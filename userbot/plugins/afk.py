@@ -69,7 +69,7 @@ async def out_listner(event: NewMessage.Event) -> None:
 
     os.environ.pop('userbot_afk_reason', None)
     _, chat, msg = userbot_afk.split('/')
-    await client.delete_messages(chat, msg)
+    await client.delete_messages(int(chat), int(msg))
 
     def_text = "`You received no messages nor were tagged at any time.`"
     pr_text = ''
