@@ -235,6 +235,13 @@ async def extract_info(
         if download:
             filen = ytdl.prepare_filename(info_dict)
             opath = downloads.pop(filen.split('.')[0], filen)
+            downloaded = pathlib.Path(opath)
+            if not downloaded.exists():
+                pattern = f"{downloaded.name}.*"
+                for f in pathlib.Path(downloaded.parent).glob(pattern):
+                    if f.suffix != '.jpg':
+                        opath = f"YT_DL/{f.name}{f.suffix}"
+                        break
             npath = re.sub(r'_\d+(\.\w+)$', r'\1', opath)
             thumb = pathlib.Path(re.sub(r'\.\w+$', r'.jpg', opath))
 
