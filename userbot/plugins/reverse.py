@@ -62,13 +62,19 @@ async def reverse(event: NewMessage.Event) -> None:
                 await event.answer("`Install FFMPEG to reverse search GIFs.`")
                 return
             ext = ".gif"
-        acceptable = [".jpg", ".gif", ".png", ".bmp", ".tif", ".webp"]
+        if reply.video:
+            if not ffmpeg:
+                await event.answer(
+                    "`Install FFMPEG to reverse search videos.`"
+                )
+                return
+        acceptable = [".jpg", ".gif", ".png", ".bmp", ".tif", ".webp", ".mp4"]
         if ext not in acceptable:
             await event.answer("`Nice try, fool!`")
             return
 
         await event.answer("`Downloading media...`")
-        if reply.gif and ffmpeg:
+        if (reply.video or reply.gif) and ffmpeg:
             message = f"{event.chat_id}:{event.message.id}"
             await client.download_media(reply, "media.mp4")
             filters = "fps=10,scale=320:-1:flags=lanczos,"
