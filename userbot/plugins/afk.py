@@ -84,7 +84,7 @@ async def out_listner(event: NewMessage.Event) -> None:
         for key, value in AFK.privates.items():
             await _update_notif_settings(key, value['PeerNotifySettings'])
             total_mentions += len(value['mentions'])
-            msg = "  `{} total mentions from `[{}](tg://user?id={})`.`"
+            msg = "  `{} total mentions from` [{}](tg://user?id={})"
             to_log.append(msg.format(
                 len(value['mentions']), value['title'], key
             ))
@@ -92,7 +92,7 @@ async def out_listner(event: NewMessage.Event) -> None:
         pr_text = "`Received {} message{} from {} private chat{}.`".format(
             *(await _correct_grammer(total_mentions, len(AFK.privates)))
         )
-        pr_log = pr_log + "\n".join("  " + t for t in to_log)
+        pr_log = pr_log + "\n\n".join("  " + t for t in to_log)
     if AFK.groups:
         total_mentions = 0
         to_log = []
@@ -102,7 +102,7 @@ async def out_listner(event: NewMessage.Event) -> None:
             total_mentions += len(value['mentions'])
             chat_msg_id = f"https://t.me/c/{key}/{value['unread_from']}"
             msg = f"[{value['title']}]({chat_msg_id}):"
-            msg += "\n    `Mentions: `"
+            msg += "\n    `Mentions:` "
             mentions = []
             for i in range(len(value['mentions'])):
                 msg_id = value['mentions'][i]
@@ -113,9 +113,9 @@ async def out_listner(event: NewMessage.Event) -> None:
         gr_text = "`Received {} mention{} from {} group{}.`".format(
             *(await _correct_grammer(total_mentions, len(AFK.groups)))
         )
-        gr_log = gr_log + "\n".join("  " + t for t in to_log)
+        gr_log = gr_log + "\n\n".join("  " + t for t in to_log)
 
-    main_text = '\n'.join([pr_text, gr_text]).strip()
+    main_text = '\n\n'.join([pr_text, gr_text]).strip()
     if not client.logger:
         main_text += "\n`Use a logger group for more detailed AFK mentions!`"
     status = await event.answer(
