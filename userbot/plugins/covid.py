@@ -23,8 +23,9 @@ from userbot.utils.events import NewMessage
 
 plugin_category = "pandemic"
 covid_str = (
-    "**{country}:**  🦠 **{active}**  ⚰️ **{deaths}**  💚 "
-    "**{recovered}**  ✅ **{confirmed}**  ⚠️  **{critical}**"
+    "**{country}:**\n"
+    "✅ **{confirmed}**  🦠 **{active}**\n"
+    "💚 **{recovered}**  ⚰️ **{deaths}**"
 )
 
 
@@ -45,11 +46,14 @@ async def covid19(event: NewMessage.Event) -> None:
             for c in args:
                 try:
                     country = covid.get_status_by_country_name(c)
-                    strings.append(covid_str.format(**country))
+                    string = covid_str.format(**country)
+                    if country['critical']:
+                        string += f"\n⚠️  **{country['critical']}**"
+                    strings.append(string)
                 except ValueError:
                     continue
         if strings:
-            await event.answer(',\n'.join(strings))
+            await event.answer('\n\n'.join(strings))
     else:
         country = "Worldwide"
         active = covid.get_total_active_cases()
@@ -58,6 +62,6 @@ async def covid19(event: NewMessage.Event) -> None:
         deaths = covid.get_total_deaths()
         string = covid_str.format(
             country=country, active=active, confirmed=confirmed,
-            recovered=recovered, deaths=deaths, critical='?'
+            recovered=recovered, deaths=deaths
         )
         await event.answer(string)
