@@ -37,13 +37,13 @@ audioFormats = [
     "m4a",
     "opus",
     "vorbis",
-    "wav"
+    "wav",
+    "ogg"
 ]
 
 videoFormats = [
     "mp4",
     "flv",
-    "ogg",
     "webm",
     "mkv",
     "avi"
@@ -175,7 +175,7 @@ async def yt_dl(event):
             result = warning + output if not ffmpeg else output
             warnings.append(result)
         elif isinstance(output, BaseException):
-            warning.append(f'```{await client.get_traceback(output)}```')
+            warnings.append(f'```{await client.get_traceback(output)}```')
         else:
             if upload:
                 path, thumb, info = output
