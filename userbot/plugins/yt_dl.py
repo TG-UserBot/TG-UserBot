@@ -37,13 +37,13 @@ audioFormats = [
     "m4a",
     "opus",
     "vorbis",
-    "wav",
-    "ogg"
+    "wav"
 ]
 
 videoFormats = [
     "mp4",
     "flv",
+    "ogg",
     "webm",
     "mkv",
     "avi"
