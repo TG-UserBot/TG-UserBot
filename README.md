@@ -5,7 +5,7 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 [![Documentation Status][docsbadge]][docs]
 # 
 
-## Heroku guide is available [here](heroku-guide).
+## Heroku guide is available [here][heroku-guide].
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
 
 
@@ -54,9 +54,9 @@ $ python3 -m userbot
 # 
 ## Resources:
 
-- [TG-UserBot Documentations](docs): Official userbot documentations. Here you can find all the help you need to get the bot up and running and can also find all the documented commands.
+- [TG-UserBot Documentations][docs]: Official userbot documentations. Here you can find all the help you need to get the bot up and running and can also find all the documented commands.
    - Regular maintenance of docs is not possible thus some new commands may be missing from the same.
-- [Telegram Support Group](support): Exclusive Telegram support group. On here you can ask for help, request a feature or provide feedback to improve the bot.Constructuive criticism is also appriciated
+- [Telegram Support Group][support]: Exclusive Telegram support group. On here you can ask for help, request a feature or provide feedback to improve the bot.Constructuive criticism is also appriciated
 
 
 
