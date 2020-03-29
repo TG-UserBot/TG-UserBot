@@ -41,13 +41,14 @@ LEVELS = {
     'ERROR': logging.ERROR,
     'CRITICAL': logging.CRITICAL
 }
+root = pathlib.Path(__file__).parent.parent
 
 session = "userbot"
 redis_db = False
 loop = None
 config = configparser.ConfigParser()
-config_file = pathlib.Path('./config.ini')
-sql_session = pathlib.Path('./userbot.session')
+config_file = pathlib.Path(root / 'config.ini')
+sql_session = pathlib.Path(root / 'userbot.session')
 
 ROOT_LOGGER = logging.getLogger()
 LOGGER = logging.getLogger(__name__)

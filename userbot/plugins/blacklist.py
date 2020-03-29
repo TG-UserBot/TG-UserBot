@@ -835,7 +835,7 @@ async def listbld(event: NewMessage.Event) -> None:
         else:
             text = "**Blacklisted users:**\n"
             text += ', '.join([
-                f'[{user}](tg://user?id={x})' for x in blacklistedUsers
+                f'[{user}](tg://user?id={user})' for user in blacklistedUsers
             ])
 
     await event.answer(text)
@@ -987,21 +987,20 @@ async def bio_filter(event: ChatAction.Event) -> None:
                 return
 
         user = await client(functions.users.GetFullUserRequest(id=sender))
+        if not user.about:
+            return
         if GlobalBlacklist.bio:
             for value in GlobalBlacklist.bio:
                 bio = await escape_string(value)
                 if re.search(bio, user.about, flags=re.I):
-                    match = value
+                    await ban_user(event, bio_text, 'bio', value, True)
                     break
         elif localbl and hasattr(localbl, 'bio'):
             for value in localBlacklists[chat_id].bio:
                 bio = await escape_string(value)
                 if re.search(bio, user.about, flags=re.I):
-                    match = value
+                    await ban_user(event, bio_text, 'bio', value)
                     break
-
-        if match:
-            await ban_user(event, bio_text.format(match), 'bio', match)
 
 
 async def escape_string(string: str) -> str:

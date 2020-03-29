@@ -20,15 +20,6 @@ ID's
     :show-inheritance:
 
 
-Log formatter
-=============
-
-.. automodule:: userbot.helper_funcs.log_formatter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Parser
 ======
 

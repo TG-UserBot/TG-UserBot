@@ -40,6 +40,11 @@ invite_links = {
 }
 usernexp = re.compile(r'@(\w{3,32})\[(.+?)\]')
 nameexp = re.compile(r'\[([\w\S]+)\]\(tg://user\?id=(\d+)\)\[(.+?)\]')
+dogheaders = {
+    'Content-type': 'text/plain',
+    'Accept': 'application/json',
+    'charset': 'utf-8'
+}
 
 
 def removebg_post(API_KEY: str, media: bytes or str):
@@ -284,3 +289,34 @@ async def git_repo(event: NewMessage.Event) -> None:
         LOGGER.debug(e)
         remote_url = "https://github.com/kandnub/TG-UserBot/"
     await event.answer(f"[TG-UserBot]({remote_url})")
+
+
+@client.onMessage(
+    command=('paste', plugin_category),
+    outgoing=True, regex=r'paste(?: |$|\n)([\s\S]*)'
+)
+async def deldog(event: NewMessage.Event) -> None:
+    """Paste the content to DelDog."""
+    match = event.matches[0].group(1)
+    if match:
+        text = match.strip()
+    elif event.reply_to_msg_id:
+        reply = await event.get_reply_message()
+        text = reply.raw_text
+    else:
+        await event.answer("`Provide something to paste on` https://del.dog")
+        return
+    response = requests.post(
+        'https://del.dog/documents',
+        data=text.encode('UTF-8'),
+        headers=dogheaders,
+    )
+    if not response.ok:
+        await event.answer(
+            "Couldn't post the data to [DelDog](https://del.dog/)", reply=True
+        )
+        return
+    key = response.json()['key']
+    await event.answer(
+        f'`Successfully pasted on` [DelDog](https://del.dog/{key})'
+    )

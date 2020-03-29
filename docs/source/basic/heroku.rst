@@ -66,7 +66,7 @@ Depolying to Heroku
 
 To deploy to heroku click on the Auto Deploy button given below:
 
-.. image:: /docs/source/_images/heroku.png
+.. image:: ../_images/heroku.png
     :width: 220px
     :align: center
     :height: 50px

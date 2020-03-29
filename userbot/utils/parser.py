@@ -41,7 +41,7 @@ KeywordArgument = Union[Value, range, List[Value]]
 async def _parse_arg(val: str) -> Union[int, str, float]:
     val = val.strip()
 
-    if re.match(r'-?\d+', val):
+    if re.match(r'^-?\d+$', val):
         return int(val)
 
     try:

@@ -55,7 +55,7 @@ async def answer(
     else:
         parser = markdown
     is_media = any([k for k in file_kwargs if kwargs.get(k, False)])
-    if len(args) == 1 and isinstance (args[0], str) and not is_media:
+    if len(args) == 1 and isinstance(args[0], str) and not is_media:
         is_reply = reply or kwargs.get('reply_to', False)
         text = args[0]
         msg, msg_entities = parser.parse(text)
