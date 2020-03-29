@@ -9,7 +9,7 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
 
 
-``Incase your Redis session renders invalid, run the userbot locally again, it will delete your old session from Redis. Then re-run the userbot again, login and exit it and restart your dyno on Heroku.``
+``Incase your Redis session renders invalid, stop your dyno & run the userbot locally again, it will delete your old session from Redis. Then re-run the userbot again, login and exit it and start your dyno on Heroku.``
 
 # 
 
