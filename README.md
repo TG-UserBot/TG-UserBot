@@ -3,24 +3,24 @@
 A modular Telegram UserBot for Python which uses the [Telethon][telethon] library. It is made to help you do your usual client tasks without the hassle and also has some additional useful features.
 
 [![Documentation Status][docsbadge]][docs]
+# 
 
-### Deploy to Heroku Directly
-- Go to https://redislabs.com/ and make a free 30 MB database and copy it's endpoint and password.
-- Clone the repository and install the requirements. Read the procedure section below.
-- Add your API keys and Redis endpoint and password in your config's telethon section.
-- Run the bot, login once till the bot running. Finally, exit the script with ``Ctrl + C`` and use the button below to deploy.
-- If the deploy button doesn't work for you, use this [template link][heroku-deploy-template].
-
+## Heroku guide is available [here](heroku-guide).
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)][heroku-deploy]
 
-``Incase your session becomes invalid, just run the bot locally again, it will delete your old session from Redis. Then run it again, login and exit it and restart your dyno on Heroku.``
 
-### Requirements
+``Incase your Redis session renders invalid, run the userbot locally again, it will delete your old session from Redis. Then re-run the userbot again, login and exit it and restart your dyno on Heroku.``
+
+# 
+
+## Requirements:
 
 - Python 3.7.3 or above.
 - A Telegram [API key][tg-apps] (API ID and hash).
+- Redis Endpoint and Password from [Redis Labs](redis)
+   - Redis session is optional but is needed if you are planning to use AFK and PM-Permit.
 
-### Procedure
+## Procedure:
 
 Clone the repository.
 
@@ -34,9 +34,7 @@ Change the current directory to the cloned one.
 $ cd TG-UserBot
 ```
 
-Edit the ``sample_config.ini`` with your API key, save it and rename it to ``config.ini``.
-You can use nano/vim or do it manually using a text editor.
-
+Edit the config either using Nano/Vim or a Text Editor and put your ENV Vars in the same.
 ```sh
 $ nano sample_config.ini
 $ mv sample_config.ini config.ini
@@ -53,20 +51,23 @@ Run the UserBot once you have a valid configuration file.
 ```sh
 $ python3 -m userbot
 ```
+# 
+## Resources:
 
-### Resources
+- [TG-UserBot Documentations](docs): Official userbot documentations. Here you can find all the help you need to get the bot up and running and can also find all the documented commands.
+   - Regular maintenance of docs is not possible thus some new commands may be missing from the same.
+- [Telegram Support Group](support): Exclusive Telegram support group. On here you can ask for help, request a feature or provide feedback to improve the bot.Constructuive criticism is also appriciated
 
-- View the [TG-UserBot documentation][docs] if you're stuck somewhere or need to find something.
-- Join the [Telegram support group][support] if you have any issues or feedback that you'd like to share.
 
-### Contributing
 
-Either submit pull requests or create an issue on here, if not, you can join the support group and let us know. Module/command requests or ways to improve the current code is also appreciated.
+## Contributing:
 
-### Copyright & License
+Either submit pull requests or create an issue on here.
 
-- Copyright (C) 2019 Kandarp <<https://github.com/kandnub>>
-- Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE)
+## Copyright & License
+
+- Copyright (C) 2019 [Kandarp](https://github.com/kandnub).
+- Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE).
 
 [//]: # (Comment)
    [telethon]: <https://github.com/LonamiWebs/Telethon/>
@@ -74,5 +75,6 @@ Either submit pull requests or create an issue on here, if not, you can join the
    [docs]: <https://tg-userbot.readthedocs.io/en/latest/>
    [docsbadge]: <https://readthedocs.org/projects/tg-userbot/badge/?version=latest>
    [support]: <https://t.me/tg_userbot_support>
-   [heroku-deploy]: <https://heroku.com/deploy>
-   [heroku-deploy-template]: <https://heroku.com/deploy?template=https://github.com/kandnub/TG-UserBot>
+   [redis]: <https://redislabs.com>
+   [heroku-deploy]: <https://heroku.com/deploy?template=https://github.com/kandnub/TG-UserBot>
+   [heroku-guide]: <https://tg-userbot.readthedocs.io/en/latest/basic/heroku.html>
