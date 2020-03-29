@@ -17,7 +17,7 @@ A modular Telegram UserBot for Python which uses the [Telethon][telethon] librar
 
 - Python 3.7.3 or above.
 - A Telegram [API key][tg-apps] (API ID and hash).
-- Redis Endpoint and Password from [Redis Labs](redis)
+- Redis Endpoint and Password from [Redis Labs][redis]
    - Redis session is optional but needed if you are planning to use AFK and PM-Permit.
 
 ## Procedure:
@@ -66,7 +66,7 @@ Either submit pull requests or create an issue on here.
 
 ## Copyright & License
 
-- Copyright (C) 2019 [Kandarp](https://github.com/kandnub).
+- Copyright (C) 2020 [Kandarp](https://github.com/kandnub).
 - Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE).
 
 [//]: # (Comment)
