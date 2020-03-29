@@ -69,6 +69,13 @@ discuss something then you may join the `support group`_ on Telegram.
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Heroku
+
+   basic/heroku
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
    :caption: UserBot
 
    userbot/commands
