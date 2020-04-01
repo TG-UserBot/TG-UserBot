@@ -31,7 +31,7 @@ plugin_category = "memes"
     outgoing=True, regex="shibe$"
 )
 async def shibes(event: NewMessage.Event) -> None:
-    """Get random pictures of Shibes."""
+    """Get random pictures of shibes."""
     shibe = await _request('http://shibe.online/api/shibes')
     if not shibe:
         await event.answer("`Couldn't fetch a shibe for you :(`")
@@ -47,10 +47,10 @@ async def shibes(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("cat", plugin_category),
-    outgoing=True, regex="cat$"
+    outgoing=True, regex=r"(cat|🐈)$"
 )
 async def cats(event: NewMessage.Event) -> None:
-    """Get random pictures of Cats."""
+    """Get random pictures of cats."""
     shibe = await _request('http://shibe.online/api/cats')
     if not shibe:
         await event.answer("`Couldn't fetch a cat for you :(`")
@@ -66,10 +66,10 @@ async def cats(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("bird", plugin_category),
-    outgoing=True, regex="bird$"
+    outgoing=True, regex=r"(bird|🐦)$"
 )
 async def birds(event: NewMessage.Event) -> None:
-    """Get random pictures of Birds."""
+    """Get random pictures of birds."""
     shibe = await _request('http://shibe.online/api/birds')
     if not shibe:
         await event.answer("`Couldn't fetch a bird for you :(`")
@@ -78,6 +78,92 @@ async def birds(event: NewMessage.Event) -> None:
     _, json = shibe
     try:
         await event.answer(file=json[0], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
+
+
+@client.onMessage(
+    command=("dog", plugin_category),
+    outgoing=True, regex=r"(?:🐕|dog)(?: |$)(\w+)?(?: |$)(\w+)?"
+)
+async def dogs(event: NewMessage.Event) -> None:
+    """Get random pictures of dogs."""
+    breed = event.matches[0].group(1)
+    subbreed = event.matches[0].group(2)
+    if breed and subbreed:
+        url = f"https://dog.ceo/api/breed/{breed}/{subbreed}/images/random"
+    elif breed:
+        url = f"https://dog.ceo/api/breed/{breed}/images/random"
+    else:
+        url = "https://dog.ceo/api/breeds/image/random"
+    dog = await _request(url)
+    if not dog:
+        await event.answer("`Couldn't fetch a dog for you :(`")
+        return
+
+    _, json = dog
+    try:
+        await event.answer(
+            file=json['message'], reply_to=event.reply_to_msg_id
+        )
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
+
+
+@client.onMessage(
+    command=("fox", plugin_category),
+    outgoing=True, regex=r"(fox|🦊)$"
+)
+async def foxes(event: NewMessage.Event) -> None:
+    """Get random pictures of foxes."""
+    fox = await _request('https://some-random-api.ml/img/fox')
+    if not fox:
+        await event.answer("`Couldn't fetch a fox for you :(`")
+        return
+
+    _, json = fox
+    try:
+        await event.answer(file=json['link'], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
+
+
+@client.onMessage(
+    command=("panda", plugin_category),
+    outgoing=True, regex=r"(panda|🐼)$"
+)
+async def pandas(event: NewMessage.Event) -> None:
+    """Get random pictures of pandas."""
+    panda = await _request('http://shibe.online/api/panda')
+    if not panda:
+        await event.answer("`Couldn't fetch a panda for you :(`")
+        return
+
+    _, json = panda
+    try:
+        await event.answer(file=json['link'], reply_to=event.reply_to_msg_id)
+        await event.delete()
+    except rpcerrorlist.TimeoutError:
+        await event.answer("`Event timed out!`")
+
+
+@client.onMessage(
+    command=("redpanda", plugin_category),
+    outgoing=True, regex=r"red(panda|🐼)$"
+)
+async def redpandas(event: NewMessage.Event) -> None:
+    """Get random pictures of red pandas."""
+    panda = await _request('http://shibe.online/api/red_panda')
+    if not panda:
+        await event.answer("`Couldn't fetch a red panda for you :(`")
+        return
+
+    _, json = panda
+    try:
+        await event.answer(file=json['link'], reply_to=event.reply_to_msg_id)
         await event.delete()
     except rpcerrorlist.TimeoutError:
         await event.answer("`Event timed out!`")

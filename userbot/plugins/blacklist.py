@@ -881,9 +881,10 @@ async def inc_listener(event: NewMessage.Event) -> None:
                 if await ban_user(event, str_text, 'txt', value, True):
                     return
                 break
-    elif localbl and hasattr(localbl, 'txt'):
-        if not localBlacklists[event.chat_id].txt:
-            pass
+    elif (
+        localbl and hasattr(localbl, 'txt') and
+        localBlacklists[event.chat_id].txt
+    ):
         for value in localBlacklists[event.chat_id].txt:
             string = await escape_string(value)
             if re.search(string, event.text, flags=re.I):
@@ -898,9 +899,10 @@ async def inc_listener(event: NewMessage.Event) -> None:
                 if await ban_user(event, url_str, 'url', value, True):
                     return
                 break
-    elif localbl and hasattr(localbl, 'url'):
-        if not localBlacklists[event.chat_id].url:
-            pass
+    elif (
+        localbl and hasattr(localbl, 'url') and
+        localBlacklists[event.chat_id].url
+    ):
         for value in localBlacklists[event.chat_id].url:
             string = re.sub(r'(?<!\\)\*', r'\\w+', value, count=0)
             if re.search(string, event.text, flags=re.I):
@@ -948,9 +950,10 @@ async def inc_listener(event: NewMessage.Event) -> None:
                 if await ban_user(event, id_str, 'tgid', value, True):
                     return
                 break
-            elif localbl and hasattr(localbl, 'tgid'):
-                if not localBlacklists[event.chat_id].tgid:
-                    pass
+            elif (
+                localbl and hasattr(localbl, 'tgid') and
+                localBlacklists[event.chat_id].tgid
+            ):
                 if value in localBlacklists[event.chat_id].tgid:
                     if await ban_user(event, id_str, 'tgid', value):
                         return
@@ -1001,9 +1004,10 @@ async def bio_filter(event: ChatAction.Event) -> None:
                 if re.search(bio, user.about, flags=re.I):
                     await ban_user(event, bio_text, 'bio', value, True)
                     break
-        elif localbl and hasattr(localbl, 'bio'):
-            if not localBlacklists[event.chat_id].bio:
-                pass
+        elif (
+            localbl and hasattr(localbl, 'bio') and
+            localBlacklists[event.chat_id].bio
+        ):
             for value in localBlacklists[chat_id].bio:
                 bio = await escape_string(value)
                 if re.search(bio, user.about, flags=re.I):

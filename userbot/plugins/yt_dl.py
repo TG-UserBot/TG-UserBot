@@ -129,11 +129,11 @@ async def yt_dl(event):
                     )
             if fmts:
                 text = "**Formats:**\n"
-                text += ",\n\n".join(f"```{f}```" for f in fmts)
+                text += "\n\n".join(fmts)
                 await event.answer(text)
             if warnings:
                 text = "**Warnings:**\n"
-                text += ",\n\n".join(f"```{w}```" for w in warnings)
+                text += "\n\n".join(f"```{w}```" for w in warnings)
                 reply = True if fmts else False
                 await event.answer(text, reply=reply)
             return
