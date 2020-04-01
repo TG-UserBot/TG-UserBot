@@ -137,7 +137,7 @@ async def foxes(event: NewMessage.Event) -> None:
 )
 async def pandas(event: NewMessage.Event) -> None:
     """Get random pictures of pandas."""
-    panda = await _request('http://shibe.online/api/panda')
+    panda = await _request('https://some-random-api.ml/img/panda')
     if not panda:
         await event.answer("`Couldn't fetch a panda for you :(`")
         return
@@ -156,7 +156,7 @@ async def pandas(event: NewMessage.Event) -> None:
 )
 async def redpandas(event: NewMessage.Event) -> None:
     """Get random pictures of red pandas."""
-    panda = await _request('http://shibe.online/api/red_panda')
+    panda = await _request('https://some-random-api.ml/img/red_panda')
     if not panda:
         await event.answer("`Couldn't fetch a red panda for you :(`")
         return
