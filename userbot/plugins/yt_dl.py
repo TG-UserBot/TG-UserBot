@@ -64,7 +64,7 @@ ydl_opts = {
     'addmetadata': True,
     'writethumbnail': True,
     'ignoreerrors': False,
-    'noplaylist': True
+    'noplaylist': False
 }
 
 ffurl = (
