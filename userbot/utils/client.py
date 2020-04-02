@@ -17,6 +17,7 @@
 
 import configparser
 import dataclasses
+import inspect
 import logging
 import traceback
 from typing import Dict, List
@@ -90,7 +91,7 @@ class UserBotClient(TelegramClient):
                 UBcommand = Command(
                     func,
                     handlers,
-                    info or func.__doc__ or no_info,
+                    info or inspect.cleandoc(func.__doc__) or no_info,
                     builtin
                 )
                 category = category.lower()
