@@ -147,7 +147,6 @@ async def yt_dl(event):
                 }
             )
         elif fmt in videoFormats and ffmpeg:
-            params.update(format='bestvideo')
             params['postprocessors'].append(
                 {
                     'key': 'FFmpegVideoConvertor',
