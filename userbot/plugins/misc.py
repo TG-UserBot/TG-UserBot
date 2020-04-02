@@ -263,11 +263,26 @@ async def bot_mention(event: NewMessage.Event) -> None:
         for match in usernexp.finditer(newstr):
             user = match.group(1)
             text = match.group(2)
-            newstr = re.sub(
-                re.escape(match.group(0)),
-                f'<a href="tg://resolve?domain={user}">{text}</a>',
-                newstr
-            )
+            name, entities = await client._parse_message_text(text, 'md')
+            rep = f'<a href="tg://resolve?domain={user}">{name}</a>'
+            if entities:
+                for e in entities:
+                    tag = None
+                    if isinstance(e, types.MessageEntityBold):
+                        tag = "<b>{}</b>"
+                    elif isinstance(e, types.MessageEntityItalic):
+                        tag = "<i>{}</i>"
+                    elif isinstance(e, types.MessageEntityCode):
+                        tag = "<code>{}</code>"
+                    elif isinstance(e, types.MessageEntityStrike):
+                        tag = "<s>{}</s>"
+                    elif isinstance(e, types.MessageEntityPre):
+                        tag = "<pre>{}</pre>"
+                    elif isinstance(e, types.MessageEntityUnderline):
+                        tag = "<u>{}</u>"
+                    if tag:
+                        rep = tag.format(rep)
+            newstr = re.sub(re.escape(match.group(0)), rep, newstr)
     if newstr != event.text:
         await event.answer(newstr, parse_mode='html')
 
