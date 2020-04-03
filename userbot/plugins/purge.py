@@ -100,7 +100,7 @@ async def delete(event: NewMessage.Event) -> None:
         await event.answer("`There's nothing for me to delete!`")
         return
 
-    if not reply.from_id == (await client.get_me()).id:
+    if reply.from_id != (await client.get_me()).id:
         if (
             event.is_group and
             (event.chat.creator or event.chat.admin_rights.delete_messages)

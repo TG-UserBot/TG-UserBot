@@ -65,6 +65,7 @@ class UserBotClient(TelegramClient):
         command: str or tuple = None,
         edited: bool = True,
         info: str = None,
+        doc_kwargs: dict = {},
         **kwargs
     ) -> callable:
         """Method to register a function without the client"""
@@ -87,11 +88,12 @@ class UserBotClient(TelegramClient):
                         raise ValueError
                 else:
                     com = command
+                help_doc = info or func.__doc__ or no_info
 
                 UBcommand = Command(
                     func,
                     handlers,
-                    info or inspect.cleandoc(func.__doc__) or no_info,
+                    inspect.cleandoc(help_doc).format(**doc_kwargs),
                     builtin
                 )
                 category = category.lower()
