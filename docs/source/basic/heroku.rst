@@ -54,7 +54,7 @@ To generate the session do:
 
 .. code:: sh
 
-    $ python3 generate_session.python3
+    $ python3 generate_session.py
 
 
 Simply follow the on-screen instructions and you'll get a confirmation message saying:
