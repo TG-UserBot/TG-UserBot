@@ -36,6 +36,7 @@ class NewMessage(events.NewMessage):
         disable_prefix: bool = None,
         regex: Tuple[str, int] or str = None,
         require_admin: bool = None,
+        inline: bool = False,
         **kwargs
     ):
         """Overriding the default init to add additional attributes"""
@@ -58,12 +59,17 @@ class NewMessage(events.NewMessage):
 
         self.disable_prefix = disable_prefix
         self.require_admin = require_admin
+        self.inline = inline
 
     def filter(self, event):
         """Overriding the default filter to check additional values"""
         event = super().filter(event)
         if not event:
             return
+
+        if self.inline is not None:
+            if bool(self.inline) != bool(event.message.via_bot_id):
+                return
 
         if event._client.prefix:
             prefix = re.escape(event._client.prefix)

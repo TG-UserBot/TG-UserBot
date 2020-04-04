@@ -62,7 +62,7 @@ class Parser:
             text += f"\n  **Last name:** `{last_name}`"
         if about:
             about = re.sub(r'(@\w{5,32})', r'`\1`', about, count=0)
-            text += f"\n  **Bio:** `{about}`"
+            text += re.sub(r'`{2}', r'', f"\n  **Bio:** `{about}`")
         if username:
             text += f"\n  **Username:** @{username}"
         if common_chats_count:
@@ -136,7 +136,7 @@ class Parser:
             text += f"\n  **Title:** `{title}`"
         if about:
             about = re.sub(r'(@\w{5,32})', r'`\1`', about, count=0)
-            text += f"\n  **About:** `{about}`"
+            text += re.sub(r'`{2}', r'', f"\n  **About:** `{about}`")
         if username:
             text += f"\n  **Username:** @{username}"
         if participants:
