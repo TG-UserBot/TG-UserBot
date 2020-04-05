@@ -300,8 +300,8 @@ async def whichid(event: NewMessage.Event) -> None:
     match = event.matches[0].group(1)
     text = ""
     if not match and not event.reply_to_msg_id:
-        if event.chat:
-            text = f"{event.chat.title}: "
+        attr = "first_name" if event.is_private else "title"
+        text = f"{getattr(event.chat, attr)}: "
         text += f"`{get_peer_id(event.chat_id)}`"
     elif event.reply_to_msg_id:
         reply = await event.get_reply_message()
