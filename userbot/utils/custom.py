@@ -19,6 +19,7 @@ import asyncio
 import datetime
 import io
 import logging
+import re
 from typing import Sequence, Tuple, Union
 
 from telethon import errors
@@ -28,6 +29,7 @@ from telethon.tl import custom, functions, types
 
 LOGGER = logging.getLogger(__name__)
 MAXLIM: int = 4096
+whitespace_exp: re.Pattern = re.compile(r'^\s')
 file_kwargs = (
     'file', 'caption', 'force_document', 'clear_draft', 'progress_callback',
     'reply_to', 'attributes', 'thumb', 'allow_cache', 'voice_note',
@@ -224,11 +226,11 @@ async def _resolve_entities(message: str, entities: list) -> dict:
 
         _, last_chunk = await _next_offset(end, entities)
         if not last_chunk:
-            last_end = entities[end+1].offset + entities[end+1].length
-            if end > 3 and not message[last_end:].startswith('\n'):
+            last_end = entities[end].offset + entities[end].length
+            if end > 3 and not whitespace_exp.search(message[last_end:]):
                 for e in entities[:end:-1]:
                     start = e.offset + e.length
-                    if end == 2 or message[start:].startswith('\n'):
+                    if end == 2 or whitespace_exp.search(message[start:]):
                         break
                     end = end - 1
         e_chunk = entities[:end]

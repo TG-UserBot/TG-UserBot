@@ -318,12 +318,14 @@ async def deldog(event: NewMessage.Event) -> None:
     elif event.reply_to_msg_id:
         reply = await event.get_reply_message()
         text = reply.raw_text
+        if reply.document and reply.document.mime_type.startswith('text'):
+            text = await reply.download_media(file=bytes)
     else:
         await event.answer("`Provide something to paste on` https://del.dog")
         return
     response = requests.post(
         'https://del.dog/documents',
-        data=text.encode('UTF-8'),
+        data=text.encode('UTF-8') if isinstance(text, str) else text,
         headers=dogheaders,
     )
     if not response.ok:

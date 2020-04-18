@@ -1141,6 +1141,8 @@ async def get_values(args: list, kwargs: dict) -> Dict[str, List]:
     await append_args_to_list(bio, temp_bio)
 
     temp_string = kwargs.get('string', [])
+    if not isinstance(temp_string, list):
+        temp_string = [temp_string]
     temp_str = kwargs.get('str', [])
     if isinstance(temp_str, list):
         temp_string.extend(temp_str)
@@ -1149,6 +1151,8 @@ async def get_values(args: list, kwargs: dict) -> Dict[str, List]:
     await append_args_to_list(txt, temp_string)
 
     temp_domain = kwargs.get('domain', [])
+    if not isinstance(temp_domain, list):
+        temp_domain = [temp_domain]
     temp_url = kwargs.get('url', [])
     if isinstance(temp_url, list):
         temp_domain.extend(temp_url)
