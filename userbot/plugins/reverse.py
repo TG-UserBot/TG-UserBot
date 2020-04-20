@@ -194,7 +194,7 @@ async def _scrape_url(googleurl):
     ).find_all('div', {'class': 'g'})
 
     if best_guess:
-        result['best_guess'] = best_guess.get_text() + best_guess.a.get_text()
+        result['best_guess'] = best_guess.get_text()
 
     if similar_images:
         result['similar_images'] = (
