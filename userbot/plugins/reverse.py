@@ -87,7 +87,7 @@ async def reverse(event: NewMessage.Event) -> None:
             client.running_processes[message] = process
             await event.answer("`Converting the mp4 to a gif...`")
             await process.communicate()
-            del client.running_processes[message]
+            client.running_processes.pop(message)
             photo = io.BytesIO(io.open("media.gif", mode="rb").read())
             os.remove("media.mp4")
             os.remove("media.gif")
@@ -127,7 +127,7 @@ async def reverse(event: NewMessage.Event) -> None:
         if matching_text and matching:
             text += "\n\n**" + matching_text + ":**"
             for title, link in matching.items():
-                text += f"\n[{title}]({link})"
+                text += f"\n-  [{title}]({link})"
         msg = await get_chat_link(event, event.id)
         extra = f"Successfully reversed media in {msg}: [{guess}]({fetchUrl})"
         await event.answer(text, log=("reverse", extra))
@@ -184,39 +184,36 @@ async def _scrape_url(googleurl):
         'matching': {}
     }
 
-    first = "div", {'class': 'med', 'id': 'res', 'role': 'main'}
-    second = "div", {'id': 'topstuff'}
-    third = "div", {'class': 'r5a77d'}
-    fourth = "div", {'id': 'search'}
-    fifth = 'a', {'class': 'iu-card-header'}
-    sixth = "div", {'class': 'rg-header V5niGc dPAwzb'}
-    seventh = "div", {'class': 'bkWMgd'}
-    eighth = 'a', {'href': True, 'ping': True}
+    best_guess = soup.find('div', {'class': 'r5a77d'})
+    similar_images = soup.find('div', {'class': 'e2BEnf U7izfe'}).find('a')
+    matching_text = soup.find(
+        'div', {'class': 'rg-header V5niGc dPAwzb', 'role': 'heading'}
+    )
+    matching = soup.find(
+        'div', {'id': 'search'}
+    ).find_all('div', {'class': 'g'})
 
-    for main in soup.findAll(*first):
-        for related in main.find(*second).findAll(*third):
-            result['best_guess'] = related.get_text()
+    if best_guess:
+        result['best_guess'] = best_guess.get_text() + best_guess.a.get_text()
 
-        for search in main.find(*fourth):
-            for similar_image in search.findAll(*fifth):
-                result['similar_images'] = (
-                    "https://www.google.com" + similar_image.get('href')
-                    )
+    if similar_images:
+        result['similar_images'] = (
+            "https://www.google.com" + similar_images.get('href')
+        )
 
-            for match_text in search.findAll(*sixth):
-                result['matching_text'] = match_text.get_text()
+    if matching_text:
+        result['matching_text'] = matching_text.get_text()
 
-            sseventh = search.findAll(*seventh)
-            if sseventh:
-                for match in sseventh[-1]:
-                    for links in match.findAll(*eighth):
-                        if len(links.attrs) == 2:
-                            text = links.h3.get_text().strip()
-                            text = text.replace('[', '').replace(']', '')
-                            link = urllib.parse.quote_plus(
-                                links.get('href'), safe=":/-&"
-                            )
-                            result['matching'][text] = link
+    if matching:
+        for tag in matching:
+            tmp = tag.find('a', {'href': True, 'ping': True})
+            if tmp and len(tmp.attrs) == 2:
+                text = tmp.h3.get_text().strip()
+                text = text.replace('[', '').replace(']', '')
+                link = urllib.parse.quote_plus(
+                    tmp.get('href'), safe=":/-&"
+                )
+                result['matching'][text] = link
 
     return result
 
