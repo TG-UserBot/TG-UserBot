@@ -227,9 +227,9 @@ async def helper(event: NewMessage.Event) -> None:
                 f"  **Info:** `{command.info}`\n"
             )
             if arg1:
-                filename = os.path.relpath(command.func.__code__.co_filename)
+                filename = command.func.__code__.co_filename
                 if not filename.startswith('http'):
-                    filename = f"`{filename}`"
+                    filename = f"`{os.path.relpath(filename)}`"
                 text += (
                     f"  **Registered function:** `{command.func.__name__}`\n"
                     f"    **File:** {filename}\n"
