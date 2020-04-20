@@ -923,22 +923,24 @@ async def inc_listener(event: NewMessage.Event) -> None:
             if await ban_user(event, id_str, 'tgid', value.sender_id):
                 return
         entities = getattr(event, 'entities', None) or []
+        counter = 0
         for entity in entities:
             if (
                 isinstance(
                     entity,
                     (types.MessageEntityMention, types.MessageEntityUrl)
-                )
+                ) and counter <= 3
             ):
                 entity = id_pattern.search(
                     event.text[entity.offset:entity.offset+entity.length]
                 )
                 entity = entity.group('e') if entity else entity
                 value = await client.get_peer_id(entity) if entity else None
+                counter = counter + 1
             elif isinstance(entity, types.MessageEntityMentionName):
                 value = entity.user_id
             else:
-                value = None
+                continue
 
             if value and invite:
                 if invite == value:

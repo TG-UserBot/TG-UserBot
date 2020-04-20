@@ -41,7 +41,7 @@ pattern = (
     r'((?<!;)\w+)?'  # flags: Don't capture if it starts with a semicolon
     r'(?=;|$)'  # Ensure it ends with a semicolon for the next match
 )
-ub_sed_pattern = r"^(?:[1-9]+s(ed)?|sed)"
+ub_sed_pattern = r"^{}(?:\d+)?s(ed)?"
 
 
 @client.onMessage(
@@ -50,7 +50,10 @@ ub_sed_pattern = r"^(?:[1-9]+s(ed)?|sed)"
 )
 async def sed_substitute(event: NewMessage.Event) -> None:
     """Perfom a GNU like SED substitution of the matched text."""
-    if not re.match(ub_sed_pattern, event.raw_text, re.IGNORECASE):
+    if not re.match(
+        ub_sed_pattern.format(client.prefix or '.'),
+        event.raw_text
+    ):
         return
 
     matches = event.matches

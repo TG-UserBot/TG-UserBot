@@ -16,6 +16,7 @@
 
 
 import os.path
+import re
 from typing import Tuple
 
 from userbot import client
@@ -25,6 +26,7 @@ from userbot.utils.events import NewMessage
 plugin_category: str = "helper"
 link: str = "https://tg-userbot.readthedocs.io/en/latest/userbot/commands.html"
 chunk: int = 5
+split_exp: re.Pattern = re.compile(r'\||\/')
 
 
 @client.onMessage(
@@ -90,18 +92,18 @@ async def enable(event: NewMessage.Event) -> None:
         await event.answer("`Enable what? The void?`")
         return
     commands, command_list = await solve_commands(client.disabled_commands)
-    command = commands.get(arg, False)
+    command = {**commands, **command_list}.get(arg, False)
     if command:
         for handler in command.handlers:
             client.add_event_handler(command.func, handler)
         if arg in command_list:
             com = command_list.get(arg)
             client.commands[com] = command
-            del client.disabled_commands[com]
-            enabled_coms = ', '.join(com.split('/'))
+            client.disabled_commands.pop(com)
+            enabled_coms = ', '.join(split_exp.split(com))
         else:
             client.commands[arg] = command
-            del client.disabled_commands[arg]
+            client.disabled_commands.pop(arg)
             enabled_coms = arg
 
         await event.answer(
@@ -126,7 +128,7 @@ async def disable(event: NewMessage.Event) -> None:
         await event.answer("`Disable what? The void?`")
         return
     commands, command_list = await solve_commands(client.commands)
-    command = commands.get(arg, False)
+    command = {**commands, **command_list}.get(arg, False)
     if command:
         if command.builtin:
             await event.answer("`Cannot disable a builtin command.`")
@@ -135,11 +137,11 @@ async def disable(event: NewMessage.Event) -> None:
             if arg in command_list:
                 com = command_list.get(arg)
                 client.disabled_commands[com] = command
-                del client.commands[com]
-                disabled_coms = ', '.join(com.split('/'))
+                client.commands.pop(com)
+                disabled_coms = ', '.join(split_exp.split(com))
             else:
                 client.disabled_commands[arg] = command
-                del client.commands[arg]
+                client.commands.pop(arg)
                 disabled_coms = arg
             await event.answer(
                 f"`Successfully disabled {disabled_coms}`",
@@ -160,7 +162,7 @@ async def commands(event: NewMessage.Event) -> None:
     enabled = sorted(commands.keys())
     for i in range(0, len(enabled), chunk):
         response += "\n  "
-        response += ", ".join('`' + c + '`' for c in enabled[i:i+chunk])
+        response += ",\t\t".join('`' + c + '`' for c in enabled[i:i+chunk])
     await event.answer(response)
 
 
@@ -180,7 +182,7 @@ async def disabled(event: NewMessage.Event) -> None:
     disabled = sorted(disabled_commands.keys())
     for i in range(0, len(disabled), chunk):
         response += "\n  "
-        response += ", ".join('`' + c + '`' for c in disabled[i:i+chunk])
+        response += ",\t\t".join('`' + c + '`' for c in disabled[i:i+chunk])
     await event.answer(response)
 
 
@@ -204,7 +206,7 @@ async def helper(event: NewMessage.Event) -> None:
                     f'`{n}`: `{i.info}`' for n, i in sorted(enabled.items())
                 ])
             else:
-                text += ', '.join([f'`{name}`' for name in sorted(enabled)])
+                text += ",\t\t".join([f'`{name}`' for name in sorted(enabled)])
             if disabled:
                 text += "\n**Disabled commands:**"
                 if arg1:
@@ -213,7 +215,7 @@ async def helper(event: NewMessage.Event) -> None:
                         for n, i in sorted(disabled.items())
                     ])
                 else:
-                    text += ', '.join([
+                    text += ",\t\t".join([
                         f'`{name}`' for name in sorted(disabled)
                     ])
         elif arg in [*enabled, *disabled]:
@@ -226,16 +228,18 @@ async def helper(event: NewMessage.Event) -> None:
             )
             if arg1:
                 filename = os.path.relpath(command.func.__code__.co_filename)
+                if not filename.startswith('http'):
+                    filename = f"`{filename}`"
                 text += (
                     f"  **Registered function:** `{command.func.__name__}`\n"
-                    f"    **File:** `{filename}`\n"
+                    f"    **File:** {filename}\n"
                     f"    **Line:** `{command.func.__code__.co_firstlineno}`\n"
                 )
         elif arg in categories:
             category = categories.get(arg)
             text = f"**{arg.title()} commands:**"
             for com in sorted(category):
-                text += f"\n    **{com}**"
+                text += f"\n    **{' | '.join(split_exp.split(com))}**"
         else:
             await event.answer(
                 "`Couldn't find the specified command or command category!`"
@@ -259,10 +263,11 @@ async def solve_commands(commands: dict) -> Tuple[dict, dict]:
     new_dict: dict = {}
     com_tuples = {}
     for com_names, command in commands.items():
-        if '/' in com_names:
-            for n in com_names.split('/'):
+        splat = split_exp.split(com_names)
+        if splat:
+            for n in splat:
                 com_tuples[n] = com_names
-                new_dict[n] = command
+            new_dict[' | '.join(splat)] = command
         else:
             new_dict[com_names] = command
     return new_dict, com_tuples

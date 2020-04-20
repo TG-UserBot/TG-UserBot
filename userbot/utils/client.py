@@ -99,9 +99,11 @@ class UserBotClient(TelegramClient):
                 )
                 category = category.lower()
                 self.commands.update({com: UBcommand})
-                update_dict(self.commandcategories, category, com)
+                self.commandcategories.setdefault(category, []).append(com)
                 if builtin:
-                    update_dict(self.commandcategories, 'builtin', com)
+                    self.commandcategories.setdefault(
+                        'builtin', []
+                    ).append(com)
             return func
 
         return wrapper
@@ -128,12 +130,6 @@ class UserBotClient(TelegramClient):
             except Exception as e:
                 LOGGER.debug(e)
         self.running_processes.clear()
-
-
-def update_dict(category: dict, name: str, command: str or list) -> None:
-    commands = command.split('/') if '/' in command else [command]
-    for c in commands:
-        category.setdefault(name, []).append(c)
 
 
 UserBotClient.fast_download_file = download_file
