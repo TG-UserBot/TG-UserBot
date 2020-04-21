@@ -71,7 +71,7 @@ async def resetprefix(event: NewMessage.Event) -> None:
         del client.config['userbot']['userbot_prefix']
         client.prefix = None
         await event.answer(
-            "`Successfully reset your prefix to the deafult ones!`",
+            "`Successfully reset your prefix to the default ones!`",
             log=("resetprefix", "Successfully reset your prefix")
         )
         client._updateconfig()
