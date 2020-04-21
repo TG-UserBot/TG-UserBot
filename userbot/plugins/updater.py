@@ -121,7 +121,7 @@ async def updater(event: NewMessage.Event) -> None:
 
     now = datetime.datetime.now(datetime.timezone.utc)
     def_changelog = changelog = "**TG-UserBot changelog:**"
-    for commit in fetched_commits:
+    for commit in reversed(fetched_commits):
         changelog += summary.format(
             rev=repo.git.rev_parse(commit.hexsha, short=7),
             summary=commit.summary, url=remote_url, sha=commit.hexsha
