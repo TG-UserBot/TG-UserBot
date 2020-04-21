@@ -121,7 +121,7 @@ async def reverse(event: NewMessage.Event) -> None:
     matching = match['matching']
 
     if guess:
-        text = f"[{guess}]({fetchUrl})"
+        text = f"**Possible related search:** [{guess}]({fetchUrl})"
         if imgspage:
             text += f"\n\n[Visually similar images]({imgspage})"
         if matching_text and matching:
@@ -194,7 +194,7 @@ async def _scrape_url(googleurl):
     ).find_all('div', {'class': 'g'})
 
     if best_guess:
-        result['best_guess'] = best_guess.get_text()
+        result['best_guess'] = best_guess.a.get_text()
 
     if similar_images:
         result['similar_images'] = (
