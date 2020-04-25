@@ -11,7 +11,7 @@ Heroku Guide
 .. note::
     This guide only shows how to generate a Redis session and deploy the bot to `Heroku`_.
 
-We would encourange you to use Termux, an app available on the Play Store.
+We would encourange you to use `Termux`_, an app available on the Play Store.
 Open the same and follow along. 
 
 .. contents::
@@ -40,6 +40,14 @@ cloned folders directory using the `cd` command.
     $ cd TG-UserBot
 
 
+Installing Python 3
+-----------------------------
+
+.. code:: sh
+
+    $ pkg install python
+
+
 Installing Redis and Telethon
 -----------------------------
 
@@ -57,7 +65,7 @@ To generate the session do:
     $ python3 generate_session.py
 
 
-Simply follow the on-screen instructions and you'll get a confirmation message saying:
+Simply follow the on-screen instructions and once done you'll get a confirmation message saying:
 
     Succesfully generated a session for "name"
 
@@ -78,6 +86,7 @@ If you get stuck somewhere or get an error while building/deploying the UserBot,
 the `support group`_.
 
 .. _Heroku: https://www.heroku.com
+.. _Termux: https://play.google.com/store/apps/details?id=com.termux&hl=en_IN
 .. _Telegram: https://my.telegram.org/apps
 .. _TG-UserBot repository: https://www.github.com/kandnub/TG-UserBot
 .. _Redis Labs: https://redislabs.com/
