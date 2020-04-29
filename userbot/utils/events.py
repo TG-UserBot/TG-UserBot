@@ -148,9 +148,12 @@ class MessageEdited(NewMessage):
 
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        """Required to check if message is edited, double events"""
-        if isinstance(update, (types.UpdateEditMessage,
-                               types.UpdateEditChannelMessage)):
+        """
+        Required to check if message is edited, double events.
+        Note: Don't handle UpdateEditChannelMessage since the update doesn't
+              show which user edited the message
+        """
+        if isinstance(update, types.UpdateEditMessage):
             return cls.Event(update.message)
 
     class Event(NewMessage.Event):
