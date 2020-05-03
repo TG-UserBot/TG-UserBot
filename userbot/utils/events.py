@@ -78,6 +78,7 @@ class NewMessage(events.NewMessage):
 
         if self.regex:
             exp, flags = self.regex
+            exp = exp.format(prefix=prefix)
 
             if not self.disable_prefix:
                 pattern = re.compile(

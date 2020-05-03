@@ -310,7 +310,7 @@ async def whichid(event: NewMessage.Event) -> None:
             if reply.fwd_from.from_id:
                 user = reply.fwd_from.from_id
         peer = get_peer_id(user)
-        text = f"[{peer}](tg://user?id={peer})"
+        text = f"[{peer}](tg://user?id={peer}): `{peer}`"
     else:
         failed = []
         strings = []
@@ -320,7 +320,7 @@ async def whichid(event: NewMessage.Event) -> None:
                 entity = await client.get_input_entity(user)
                 peer = get_peer_id(entity)
                 strings.append(
-                    f"[{user}](tg://user?id={peer}) `{peer}`"
+                    f"[{user}](tg://user?id={peer}): `{peer}`"
                 )
             except Exception as e:
                 failed.append(user)

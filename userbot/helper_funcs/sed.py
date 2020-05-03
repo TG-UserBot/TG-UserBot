@@ -20,6 +20,15 @@ from enum import Enum
 from typing import Tuple, Union
 
 
+caseConversions = (r'\U', r'\L', r'\E', r'\u', r'\l', r'\I', r'\F')
+endCaseConversions = {
+    r'\U': r'\\EU',
+    r'\L': r'\\EL',
+    r'\I': r'\\EI',
+    r'\F': r'\\EF'
+}
+
+
 class UnknownFlagError(Exception):
     """Used to raise an Exception for an unknown flag."""
     def __init__(self, flag):
@@ -44,6 +53,19 @@ async def match_splitter(match: re.Match) -> Tuple[str, str, str, str]:
     fr = match.group(3)
     to = match.group(4) if match.group(4) else ''
     to = re.sub(r'\\/', '/', to)
+    for c in caseConversions:
+        case = re.escape(c)
+        exp = re.compile(r'(?<!\\)' + case + r'(\d+)?')
+        while True:
+            tmp = exp.search(to)
+            if not tmp:
+                break
+            start, end = tmp.span()
+            group = tmp.group(1) or ''
+            if group:
+                group = r"\g<0>" if group == '0' else '\\' + group
+                group += endCaseConversions.get(c, '')
+            to = to.replace(to[start:end], case + group)
     to = re.sub(r'(?<!\\)\\0', r'\g<0>', to)
     fl = match.group(5) if match.group(5) else ''
 
@@ -92,6 +114,105 @@ async def resolve_flags(fl: str) -> Tuple[int, Union[int, Enum]]:
     return count, flags
 
 
+async def convertCharacterCase(string: str, case: str) -> str:
+    """Convert the case of a character if found. Used for \\u and \\l.
+
+    Args:
+        string (``str``):
+            The string containing the case.
+        case (``str``):
+            The raw string of the case.
+
+    Returns:
+        ``str`` | ``None``:
+            The replaced string on success, None otherwise.
+    """
+    case = re.escape(case)
+    match = re.search(case, string)
+    if match:
+        start, end = match.span()
+        repl = string[end]
+        tmp = repl.upper() if case == r"\\u" else repl.lower()
+        string = string[:end-2] + tmp + string[end+1:]
+    return string
+
+
+async def convertStringCase(string: str, case: str) -> str:
+    """Convert the matched string in the necessary case. Used for \\U and \\L.
+
+    Args:
+        string (``str``):
+            The string containing the case.
+        case (``str``):
+            The case to search for.
+
+    Returns:
+        ``str`` | ``None``:
+            The replaced string on success, None otherwise.
+    """
+    opp = r"\\L" if case == r"\\U" else r"\\U"
+    trmintr = endCaseConversions.get(case)
+    exp = "({}).+?({}|{}|{}|$)".format(re.escape(case), trmintr, opp, r'\\E')
+    match = re.search(exp, string, flags=re.DOTALL)
+    if match:
+        start, end = match.span()
+        toStrip = match.group(1)
+        terminator = match.group(2)
+        if terminator:
+            tend = -2 if terminator == r"\E" else -3
+            tmp = match.group(0)
+            if toStrip == r"\U":
+                string = string[:start] + tmp.upper()[2:tend] + string[end:]
+            else:
+                string = string[:start] + tmp.lower()[2:tend] + string[end:]
+        else:
+            tmp = string[start:]
+            if toStrip == r"\U":
+                string = string[:start] + tmp.upper()[2:]
+            else:
+                string = string[:start] + tmp.lower()[2:]
+    return string
+
+
+async def convertWordCase(string: str, case: str) -> str:
+    """Convert the matched words in the necessary case. Used for \\F and \\I.
+
+    Args:
+        string (``str``):
+            The string containing the case.
+        case (``str``):
+            The case to search for.
+
+    Returns:
+        ``str`` | ``None``:
+            The replaced string on success, None otherwise.
+    """
+    trmintr = endCaseConversions.get(case)
+    exp = "({}).+?({}|{}|$)".format(re.escape(case), trmintr, r'\\E')
+    match = re.search(exp, string, flags=re.DOTALL)
+    if match:
+        start, end = match.span()
+        toStrip = match.group(1)
+        terminator = match.group(2)
+        if terminator:
+            tend = -2 if terminator == r"\E" else -3
+            tmp = match.group(0)
+            tmp1 = tmp[2:tend]
+            if toStrip == r"\F":
+                repl = tmp1[0].upper() + tmp1[1:].lower()
+                string = string[:start] + repl + string[end:]
+            else:
+                string = string[:start] + tmp1.title() + string[end:]
+        else:
+            tmp = string[start:]
+            tmp1 = tmp[2:]
+            if toStrip == r"\F":
+                string = string[:start] + tmp1[0].upper() + tmp1[1:].lower()
+            else:
+                string = string[:start] + tmp1.title()
+    return string
+
+
 async def substitute(
     fr: str,
     to: str,
@@ -122,6 +243,7 @@ async def substitute(
         ``str`` | ``None``:
             The replaced string on success, None otherwise.
     """
+    newStr = None
     if line:
         line = int(line)
         lines = original.splitlines()
@@ -130,16 +252,26 @@ async def substitute(
         newLine, i = re.subn(
             fr, to, lines[line - 1], count=count, flags=flags
         )
-        if i > 0:
-            lines[line - 1] = newLine
-            newStr = '\n'.join(lines)
-            return newStr
+        if i == 0:
+            return
+        lines[line - 1] = newLine
+        newStr = '\n'.join(lines)
     else:
-        s, i = re.subn(fr, to, original, count=count, flags=flags)
-        if i > 0:
-            return s
+        newStr, i = re.subn(fr, to, original, count=count, flags=flags)
+        if i == 0:
+            return
 
-    return
+    for i in (r'\U', r'\L'):
+        while i in newStr:
+            newStr = await convertStringCase(newStr, i)
+    for i in (r'\u', r'\l'):
+        while i in newStr:
+            newStr = await convertCharacterCase(newStr, i)
+    for i in (r'\I', r'\F'):
+        while i in newStr:
+            newStr = await convertWordCase(newStr, i)
+
+    return newStr
 
 
 async def sub_matches(matches: list, original: str) -> Union[str, None]:
