@@ -18,10 +18,11 @@
 import asyncio
 import inspect
 
+from meval import meval
+
 from userbot import client
 from userbot.utils.helpers import get_chat_link
 from userbot.utils.events import NewMessage
-from userbot.utils.meval import meval
 
 
 plugin_category = "terminal"

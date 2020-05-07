@@ -17,7 +17,6 @@
 
 import asyncio
 import concurrent
-import datetime
 import sys
 from typing import Tuple
 
@@ -42,19 +41,6 @@ testing = "`Testing from %(isp)s`"
 hosted = "`Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: %(latency)s ms`"
 download = "`Download: %0.2f %s%s/s`"
 upload = "`Upload: %0.2f %s%s/s`"
-
-
-@client.onMessage(
-    command=("ping", plugin_category),
-    outgoing=True, regex="ping$"
-)
-async def ping(event: NewMessage.Event) -> None:
-    """Check how long it takes to get an update and respond to it."""
-    start = datetime.datetime.now()
-    await event.answer("**PONG**")
-    duration = (datetime.datetime.now() - start)
-    milliseconds = duration.microseconds / 1000
-    await event.answer(f"**PONG:** `{milliseconds}ms`")
 
 
 @client.onMessage(

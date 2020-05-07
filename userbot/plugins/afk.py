@@ -37,6 +37,13 @@ AFK = plugins_data.AFK
 AFK.privates = plugins_data.load_data('userbot_afk_privates')
 AFK.groups = plugins_data.load_data('userbot_afk_groups')
 AFK.sent = plugins_data.load_data('userbot_afk_sent')
+going_afk = "**I am AFK!**"
+going_afk_reason = going_afk + "\n**Reason:** __{reason}__"
+not_afk = "`I am no longer AFK!`"
+currently_afk = "`I am currently AFK.`\n`Last seen: {elapsed} ago.`"
+currently_afk_reason = (
+    "`I am currently AFK because {reason}.`\n`Last seen: {elapsed} ago.`"
+)
 
 
 @client.onMessage(
@@ -48,15 +55,19 @@ async def awayfromkeyboard(event: NewMessage.Event) -> None:
     arg = event.matches[0].group(1)
     curtime = time.time().__str__()
     os.environ['userbot_afk'] = f"{curtime}/{event.chat_id}/{event.id}"
-    text = "**I am AFK!**"
-    if arg:
-        os.environ['userbot_afk_reason'] = arg.strip()
-        text += f"\n**Reason:** __{arg.strip()}__"
     extra = await get_chat_link(event, event.id)
-    await event.answer(
-        text,
-        log=("afk", f"You just went AFK in {extra}!")
-    )
+    log = ("afk", f"You just went AFK in {extra}!")
+    if arg:
+        arg = arg.strip()
+        os.environ['userbot_afk_reason'] = arg
+        await event.resanswer(
+            going_afk_reason, plugin='afk', name='going_afk_reason',
+            formats={'reason': arg}, log=log
+        )
+    else:
+        await event.resanswer(
+            going_afk, plugin='afk', name='going_afk', log=log
+        )
     raise StopPropagation
 
 
@@ -118,11 +129,12 @@ async def out_listner(event: NewMessage.Event) -> None:
     main_text = '\n\n'.join([pr_text, gr_text]).strip()
     if not client.logger:
         main_text += "\n`Use a logger group for more detailed AFK mentions!`"
-    status = await event.answer(
-        "`I am no longer AFK!`", reply_to=event.id, self_destruct=4
+    status = await event.resanswer(
+        not_afk, plugin='afk', name='not_afk', reply_to=event.id,
+        self_destruct=4
     )
     await event.answer(
-        message=main_text or def_text,
+        main_text or def_text,
         reply_to=status.id,
         self_destruct=4,
         log=("afk", '\n'.join([pr_log, gr_log]).strip() or def_text)
@@ -154,10 +166,6 @@ async def inc_listner(event: NewMessage.Event) -> None:
     now = datetime.datetime.now(datetime.timezone.utc)
     reason = os.environ.get('userbot_afk_reason', False)
     elapsed = await _humanfriendly_seconds((now - since).total_seconds())
-    text = "`I am currently AFK{}.`\n`Last seen: {} ago.`".format(
-        ' because ' + reason if reason else '', elapsed
-    )
-
     chat = await event.get_chat()
     if event.is_private:
         await _append_msg(AFK.privates, chat.id, event.id)
@@ -169,7 +177,16 @@ async def inc_listner(event: NewMessage.Event) -> None:
         if round((now - AFK.sent[chat.id][-1][1]).total_seconds()) <= 150:
             return
 
-    result = await event.answer(message=text, reply_to=None)
+    if reason:
+        result = await event.resanswer(
+            currently_afk_reason, plugin='afk', name='currently_afk_reason',
+            formats={'elapsed': elapsed, 'reason': reason}, reply_to=None
+        )
+    else:
+        result = await event.resanswer(
+            currently_afk, plugin='afk', name='currently_afk',
+            formats={'elapsed': elapsed}, reply_to=None
+        )
     AFK.sent.setdefault(chat.id, []).append((result.id, result.date))
 
 

@@ -16,6 +16,7 @@
 
 
 import asyncio
+import configparser
 import dataclasses
 import importlib
 import inspect
@@ -25,6 +26,7 @@ import os.path
 import pathlib
 import re
 import requests
+import shutil
 import sys
 import types
 from typing import Dict, List, Tuple, Union
@@ -37,8 +39,12 @@ package_patern = re.compile(r'([\w-]+)(?:=|<|>|!)')
 github_patern = re.compile(
     r'(?:https?)?(?:www.)?(?:github.com/)?([\w\-.]+/[\w\-.]+)/?'
 )
+github_raw_pattern = re.compile(
+    r'(?:https?)?(?:raw.)?(?:githubusercontent.com/)?([\w\-.]+/[\w\-.]+)/?'
+)
 trees_pattern = "https://api.github.com/repos/{}/git/trees/master"
 raw_pattern = "https://raw.githubusercontent.com/{}/master/{}"
+root = pathlib.Path(__file__).parent.parent.parent
 
 
 @dataclasses.dataclass
@@ -121,7 +127,8 @@ class PluginManager:
         for plugin_name, path in self._list_plugins():
             to_import[plugin_name] = (plugin_name, path, False)
 
-        for name, raw in self._list_git_plugins().items():
+        repo_plugins, repo_helpers = self._resolve_repo()
+        for name, raw in repo_plugins.items():
             url, path = raw
             resp = requests.get(url, auth=self.auth)
             if not resp.ok:
@@ -132,6 +139,14 @@ class PluginManager:
                 to_import.pop(name)
                 LOGGER.debug(f"Overwrote {oldurl} with {url}")
             to_import.update({name: (path, url, resp.content)})
+
+        for name, raw in repo_helpers.items():
+            url, path = raw
+            resp = requests.get(url, auth=self.auth)
+            if not resp.ok:
+                continue
+            path = path[:-3].replace('\\', '.').replace('/', '.')
+            self._import_helper(path, url, resp.content)
 
         if self.new_requirements:
             LOGGER.warning("Installing missing requirements.")
@@ -155,7 +170,7 @@ class PluginManager:
                     )
                     LOGGER.debug("Skipped importing %s", plugin_name)
                     continue
-            self._import_module(name, path, content)
+            self._import_plugin(name, path, content)
 
     def add_handlers(self) -> None:
         """Apply event handlers to all the found callbacks."""
@@ -192,12 +207,25 @@ class PluginManager:
                     plugins.append((name, path))
         return plugins
 
-    def _list_git_plugins(self) -> Dict[str, str]:
+    def _resolve_repo(self) -> Tuple[Dict[str, str], Dict[str, str]]:
         """Fetch all the files from a repository recusrively."""
-        LOGGER.info("Fetching all the external plugins from git repos.")
+        LOGGER.info("Fetching all the external plugins from git repos")
         plugins: Dict[str, str] = {}
+        helpers: Dict[str, str] = {}
         repos: List[str] = []
+        resources = root / 'resources'
+        rconfig_path = resources / 'config.ini'
         tmp = self.config.get('repos', None)
+
+        rconfig = configparser.ConfigParser()
+        resources.mkdir(exist_ok=True)
+        rconfig_path.touch()
+        rconfig.read(rconfig_path)
+        if "sha" not in rconfig:
+            rconfig['sha'] = {}
+        if "size" not in rconfig:
+            rconfig['size'] = {}
+
         if tmp:
             tmp = _split_plugins(tmp)
             for url in tmp:
@@ -215,11 +243,16 @@ class PluginManager:
                 continue
 
             for f in tree.json().get('tree', ()):
-                filen = f['path']
+                filen = f.get('path', '_')
+                sha = f.get('sha', None)
+                size = f.get('size', None)
+                if not (filen and sha and size):
+                    continue
+                size = str(size)
                 if filen == "requirements.txt":
                     resp = requests.get(
-                        raw_pattern.format(repo, 'requirements.txt'),
-                        auth=self.auth
+                        raw_pattern.format(repo, filen),
+                        auth=self.auth, stream=True
                     )
                     if resp.ok:
                         raw = resp.content.decode('utf-8')
@@ -227,25 +260,74 @@ class PluginManager:
                         self.new_requirements.extend([
                             x for x in req if x not in self.requirements
                         ])
+                    continue
+                elif filen.startswith('resources/'):
+                    rfilen = filen.rsplit('/', maxsplit=1)[1]
+                    fsize = rconfig['size'].get(rfilen, None)
+                    fsha = rconfig['sha'].get(rfilen, None)
+                    if size == fsize and sha == fsha:
+                        continue
+                    url = raw_pattern.format(repo, filen)
+                    LOGGER.info(
+                        f'Downloading resource {rfilen} from {repo}'
+                    )
+                    resp = requests.get(url, auth=self.auth, stream=True)
+                    if resp.ok:
+                        resp.raw.decode_content = True
+                        newResource = resources / rfilen
+                        with open(newResource, 'wb') as f:
+                            shutil.copyfileobj(resp.raw, f)
+                        rconfig['size'][rfilen] = size
+                        rconfig['sha'][rfilen] = sha
+                    else:
+                        LOGGER.warning(f'Failed to download {url}')
+                    continue
+                elif filen.startswith('helper_funcs/'):
+                    mod = filen.split('/', maxsplit=1)[1]
+                    if mod[0] not in ('.', '_') and mod[-3:] == '.py':
+                        splat = filen[:-3].rsplit('/', maxsplit=1)
+                        mod_name = splat[0] if len(splat) == 1 else splat[1]
+                        if mod_name in helpers:
+                            LOGGER.debug(
+                                f"Overwrote {mod_name} from {repo}/{filen}"
+                            )
+                        helpers.update({
+                            mod_name: (raw_pattern.format(repo, filen), filen)
+                        })
+                        LOGGER.debug(f"Found {mod_name} in {repo}/{filen}!")
+                    continue
 
-                plugin = filen.split('/')[-1]
+                splat = filen.rsplit('/', maxsplit=1)
+                plugin = splat[0] if len(splat) == 1 else splat[1]
                 if plugin[0] not in ('.', '_') and plugin[-3:] == '.py':
-                    plugin_name = filen[:-3].split('/')[-1]
-                    if plugin_name in plugins:
+                    splat = filen[:-3].rsplit('/', maxsplit=1)
+                    plugin_name = splat[0] if len(splat) == 1 else splat[1]
+                    if plugin_name == 'builtin':
+                        LOGGER.info(
+                            'Ignoring the builtin plugin, cannot overwrite it.'
+                        )
+                        continue
+                    elif plugin_name in plugins:
                         LOGGER.debug(
-                            f"Overwrote {plugin_name} with {f['url']}"
+                            f"Overwrote {plugin_name} from {repo}/{filen}"
                         )
                     plugins.update({
                         plugin_name: (raw_pattern.format(repo, filen), filen)
                     })
-                    LOGGER.debug(f"Found {plugin} in {repo}!")
-        return plugins
+                    LOGGER.debug(f"Found {plugin} in {repo}/{filen}!")
 
-    def _import_module(self, name: str, path: str, content: str) -> None:
+        with open(rconfig_path, 'w') as configfile:
+            rconfig.write(configfile)
+
+        return plugins, helpers
+
+    def _import_plugin(self, name: str, path: str, content: str) -> None:
         """Import file and bytecode plugins."""
         to_overwrite: Union[None, str] = None
         callbacks: List[Callback] = []
         ppath = self.plugin_path.absolute() / name.replace('.', '/') / '.py'
+        ubotpath = "userbot.plugins." + name
+        log = "Successfully imported {}".format(name)
 
         for plugin in self.active_plugins:
             if plugin.name == name:
@@ -258,12 +340,13 @@ class PluginManager:
 
         try:
             if content:
-                pname = "userbot.plugins." + name
                 spec = importlib.machinery.ModuleSpec(
                     path,
-                    SourcelessPluginLoader(pname, content, path),
+                    SourcelessPluginLoader(ubotpath, content, path),
                     origin=path
                 )
+                match = github_raw_pattern.search(path)
+                log += " from {}".format(match.group(1))
             else:
                 # Local files use SourceFileLoader
                 spec = importlib.util.find_spec(path)
@@ -271,7 +354,7 @@ class PluginManager:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             # To make plugins impoartable use "sys.modules[path] = module".
-            sys.modules[ppath] = module
+            sys.modules[ubotpath] = module
 
             for n, cb in vars(module).items():
                 if inspect.iscoroutinefunction(cb) and not n.startswith('_'):
@@ -279,7 +362,38 @@ class PluginManager:
                         callbacks.append(Callback(n, cb))
 
             self.active_plugins.append(Plugin(name, callbacks, ppath, module))
-            LOGGER.info("Successfully Imported %s", path if content else name)
+            LOGGER.info(log)
+        except Exception as e:
+            self.client.failed_imports.append(path)
+            LOGGER.error(
+                "Failed to import %s due to the error(s) below.", path
+            )
+            LOGGER.exception(e)
+
+    def _import_helper(self, name: str, path: str, content: str) -> None:
+        """Import file and bytecode plugins."""
+        ubotpath = "userbot." + name
+        ppath = root / (ubotpath.replace('.', '/') + '.py')
+        match = github_raw_pattern.search(path).group(1)
+        log = "Successfully imported helper {} from {}".format(name, match)
+        if ppath.exists():
+            LOGGER.info(
+                "Cannot overwrite %s helper from %s", ubotpath, match
+            )
+            return
+
+        try:
+            spec = importlib.machinery.ModuleSpec(
+                path,
+                SourcelessPluginLoader(ubotpath, content, path),
+                origin=path
+            )
+
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            # To make plugins impoartable use "sys.modules[path] = module".
+            sys.modules[ubotpath] = module
+            LOGGER.info(log)
         except Exception as e:
             self.client.failed_imports.append(path)
             LOGGER.error(

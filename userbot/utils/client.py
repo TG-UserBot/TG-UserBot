@@ -28,6 +28,7 @@ from .FastTelethon import download_file, upload_file
 from .parser import parse_arguments
 from .pluginManager import PluginManager
 from .events import MessageEdited, NewMessage
+from .custom import answer, resanswer
 
 
 LOGGER = logging.getLogger(__name__)
@@ -135,3 +136,5 @@ class UserBotClient(TelegramClient):
 UserBotClient.fast_download_file = download_file
 UserBotClient.fast_upload_file = upload_file
 UserBotClient.parse_arguments = parse_arguments
+UserBotClient.answer = answer
+UserBotClient.resanswer = resanswer

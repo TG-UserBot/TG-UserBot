@@ -23,15 +23,10 @@ from telethon.errors import AuthKeyError, InvalidBufferError
 
 import userbot
 from userbot import client
-from .utils import helpers, log_formatter, pluginManager
+from .utils import helpers, pluginManager
 
 
-handler = logging.StreamHandler()
 LOGGER = logging.getLogger('userbot')
-
-handler.setFormatter(log_formatter.CustomFormatter(datefmt="%X"))
-userbot.ROOT_LOGGER.addHandler(handler)
-
 print(userbot.__copyright__)
 print("Licensed under the terms of the " + userbot.__license__)
 

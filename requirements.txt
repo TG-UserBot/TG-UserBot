@@ -7,6 +7,7 @@ gitpython>=3.0.3
 hachoir>=3.0a5
 heroku3>=3.4.0
 hiredis>=1.0.0
+meval>=2.5
 Pillow>=6.0.0
 redis>=3.3.10
 requests>=2.22.0

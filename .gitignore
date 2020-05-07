@@ -4,6 +4,7 @@ userbot.session
 userbot.session-journal
 unknown_errors.txt
 downloads/
+resources/
 YT_DL/
 
 # Python's cache folders
