@@ -101,6 +101,7 @@ async def flushLevelChanger(event: NewMessage.Event) -> None:
     outgoing=True, regex=r'logs(?: |$)(\d+|\w+)?', builtin=True
 )
 async def logsDump(event: NewMessage.Event) -> None:
+    """Get a text file of all the logs pending in the memory buffer"""
     match = event.matches[0].group(1)
     level = None
     if match:
