@@ -283,12 +283,15 @@ async def resanswer(
         chat_id = getattr(mod, 'chat_id', chat_id)
     if isinstance(chat_id, str) and chat_id.isdigit():
         chat_id = int(chat_id)
+    if not isinstance(chat_id, list):
+        chat_id = [chat_id]
 
     for string in estrings:
         try:
-            await self.send_message(
-                chat_id, string.format(**formats), **kwargs
-            )
+            for chat in chat_id:
+                await self.send_message(
+                    chat, string.format(**formats), **kwargs
+                )
         except KeyError:
             LOGGER.warning(
                 'Invalid extra string %s found in %s resource', name, plugin
