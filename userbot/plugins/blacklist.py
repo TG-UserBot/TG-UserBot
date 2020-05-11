@@ -925,7 +925,7 @@ async def listbld(event: NewMessage.Event) -> None:
         await event.answer(text, reply=True)
 
 
-@client.onMessage(incoming=True)
+@client.onMessage(incoming=True, forwards=True)
 async def inc_listener(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
     broadcast = getattr(event.chat, 'broadcast', False)
