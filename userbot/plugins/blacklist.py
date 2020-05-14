@@ -1166,10 +1166,6 @@ async def ban_user(
             redis.set('blacklist:users', dill.dumps(blacklistedUsers))
     except Exception as e:
         exc = await client.get_traceback(e)
-        await event.respond(
-            "**Couldn't ban user despite a blacklist match. "
-            "Exception sent to logger group**"
-        )
         await client.send_message(exc_logger, exc)
         LOGGER.exception(e)
         return False
@@ -1211,9 +1207,6 @@ async def ban_user(
         return True
     except Exception as e:
         exc = await client.get_traceback(e)
-        await event.respond(
-            "**Something went wrong. Exception sent to logger group**"
-        )
         await client.send_message(exc_logger, exc)
         LOGGER.exception(e)
         return False

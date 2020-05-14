@@ -24,7 +24,7 @@ import logging
 import re
 from typing import Sequence, Tuple, Union
 
-from telethon import errors
+from telethon import errors, events
 from telethon.extensions import markdown, html
 from telethon.tl import custom, functions, types
 
@@ -56,7 +56,8 @@ async def answer(
     message_out = None
     start_date = datetime.datetime.now(datetime.timezone.utc)
     parse_mode = kwargs.setdefault('parse_mode', 'md')
-    reply_to = event.reply_to_msg_id or event.id if reply else None
+    reply_to = event.reply_to_msg_id or event.id if reply and event else None
+    _reply_to = kwargs.get('reply_to', None)
     is_outgoing = event.out if event else False
     is_forward = event.fwd_from if event else False
     parser = html if parse_mode in ('html', 'HTML') else markdown
@@ -64,6 +65,10 @@ async def answer(
         is_media = any([k for k in file_kwargs if getattr(event, k, False)])
     else:
         is_media = any([k for k in file_kwargs if kwargs.get(k, False)])
+    if _reply_to and not isinstance(_reply_to, int):
+        if isinstance(_reply_to, events.ChatAction.Event):
+            action = _reply_to.action_message
+            kwargs['reply_to'] = action.reply_to_msg_id or action.id
 
     if isinstance(message, str) and not is_media:
         is_reply = reply or kwargs.get('reply_to', False)
