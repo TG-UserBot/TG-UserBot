@@ -172,6 +172,7 @@ def verifyLoggerGroup(client: UserBotClient) -> None:
                         "Permissions missing to send messages "
                         "for the specified Logger group."
                     )
+        client.logger = entity
     except ValueError:
         disable_logger(
             "Logger group ID cannot be found. "

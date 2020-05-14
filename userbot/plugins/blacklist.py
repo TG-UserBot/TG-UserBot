@@ -925,7 +925,7 @@ async def listbld(event: NewMessage.Event) -> None:
         await event.answer(text, reply=True)
 
 
-@client.onMessage(incoming=True, forwards=True)
+@client.onMessage(incoming=True, forwards=None)
 async def inc_listener(event: NewMessage.Event) -> None:
     """Filter incoming messages for blacklisting."""
     broadcast = getattr(event.chat, 'broadcast', False)
@@ -1149,18 +1149,28 @@ async def ban_user(
     chat = await event.get_chat()
     ban_right = getattr(chat.admin_rights, 'ban_users', False)
     delete_messages = getattr(chat.admin_rights, 'delete_messages', False)
+    exc_logger = client.logger if client.logger else 'self'
+
     if not (ban_right or chat.creator):
         return False
     user_href = "[{0}](tg://user?id={0})".format(sender.user_id)
+
     try:
         await client.edit_permissions(
             entity=chat.id,
             user=sender,
             view_messages=False
         )
+        if bl_type and match and sender.user_id not in blacklistedUsers:
+            blacklistedUsers.update({sender.user_id: (bl_type, match)})
+            redis.set('blacklist:users', dill.dumps(blacklistedUsers))
     except Exception as e:
         exc = await client.get_traceback(e)
-        await event.respond(f"**Couldn't ban user. Exception:\n**```{exc}```")
+        await event.respond(
+            "**Couldn't ban user despite a blacklist match. "
+            "Exception sent to logger group**"
+        )
+        await client.send_message(exc_logger, exc)
         LOGGER.exception(e)
         return False
     try:
@@ -1177,8 +1187,8 @@ async def ban_user(
             'user_link': user_href
         }
         await client.resanswer(
-            event, text, plugin='blacklist', name=var,
-            formats=formats, chat_override=True, reply_to=event
+            await event.get_input_chat(), text, plugin='blacklist', name=var,
+            formats=formats, reply_to=event
         )
         if client.logger:
             logger_group = client.config['userbot'].getint(
@@ -1198,15 +1208,13 @@ async def ban_user(
             if bl_type and match:
                 log_text += f"Blacklist type: `{bl_type}`.\nMatch: `{match}`"
             await client.send_message(logger_group, log_text)
-        if bl_type and match and sender.user_id not in blacklistedUsers:
-            blacklistedUsers.update({sender.user_id: (bl_type, match)})
-            redis.set('blacklist:users', dill.dumps(blacklistedUsers))
         return True
     except Exception as e:
         exc = await client.get_traceback(e)
         await event.respond(
-            f"**Something went wrong. Exception:\n**```{exc}```"
+            "**Something went wrong. Exception sent to logger group**"
         )
+        await client.send_message(exc_logger, exc)
         LOGGER.exception(e)
         return False
     finally:

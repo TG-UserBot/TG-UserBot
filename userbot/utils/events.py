@@ -23,33 +23,16 @@ from telethon.tl import custom, functions, types
 
 
 async def answer(self, *args, **kwargs):
-    message = kwargs.get('message', None)
-
-    if message is not None:
-        args = message, *args
-
     if self._client:
         return await self._client.answer(
-            await self.get_input_chat(), self, *args, **kwargs
+            await self.get_input_chat(), event=self, *args, **kwargs
         )
 
 
 async def resanswer(self, *args, **kwargs):
-    message = kwargs.get('message', None)
-    kwargs.update(message=self)
-
-    if message is None and len(args) >= 1:
-        message = args[0]
-        args = args[1:]
-
-    if message is None:
-        raise Exception(
-            'Cannot call client.resanswer without a default message'
-        )
-
     if self._client:
         return await self._client.resanswer(
-            await self.get_input_chat(), message, *args, **kwargs
+            await self.get_input_chat(), event=self, *args, **kwargs
         )
 
 

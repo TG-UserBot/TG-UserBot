@@ -23,6 +23,7 @@ import traceback
 from typing import Dict, List
 
 from telethon import events, TelegramClient
+from telethon.tl import types
 
 from .FastTelethon import download_file, upload_file
 from .parser import parse_arguments
@@ -51,7 +52,7 @@ class UserBotClient(TelegramClient):
     database: bool = True
     disabled_commands: Dict[str, Command] = {}
     failed_imports: list = []
-    logger: bool = False
+    logger: bool or types.Channel or types.User = False
     pluginManager: PluginManager = None
     plugins: list = []
     prefix: str = None

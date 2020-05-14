@@ -34,61 +34,59 @@ MAXLIM: int = 4096
 whitespace_exp: re.Pattern = re.compile(r'^\s')
 file_kwargs = (
     'file', 'caption', 'force_document', 'clear_draft', 'progress_callback',
-    'reply_to', 'attributes', 'thumb', 'allow_cache', 'voice_note',
-    'video_note', 'buttons', 'supports_streaming'
+    'attributes', 'thumb', 'allow_cache', 'voice_note', 'video_note',
+    'buttons', 'supports_streaming'
 )
 
 
 async def answer(
     self,
     entity,
-    message: custom.Message or str or None,
+    message: str or None,
     *args,
     log: str or Tuple[str, str] = None,
     reply: bool = False,
     self_destruct: int = None,
+    event: custom.Message = None,
     **kwargs
-) -> Union[custom.Message, Sequence[custom.Message]]:
+) -> Union[None, custom.Message, Sequence[custom.Message]]:
     """Custom bound method for the Message object"""
-    message_out = []
+    if hasattr(entity, 'get_input_chat'):
+        entity = await entity.get_input_chat()
+    message_out = None
     start_date = datetime.datetime.now(datetime.timezone.utc)
-    if hasattr(message, 'reply_to_msg_id'):
-        reply_to = message.reply_to_msg_id or message.id
+    parse_mode = kwargs.setdefault('parse_mode', 'md')
+    reply_to = event.reply_to_msg_id or event.id if reply else None
+    is_outgoing = event.out if event else False
+    is_forward = event.fwd_from if event else False
+    parser = html if parse_mode in ('html', 'HTML') else markdown
+    if event is not None:
+        is_media = any([k for k in file_kwargs if getattr(event, k, False)])
     else:
-        reply_to = None
-    if kwargs.setdefault('parse_mode', 'md') in ['html', 'HTML']:
-        parser = html
-    else:
-        parser = markdown
-    is_media = any([k for k in file_kwargs if kwargs.get(k, False)])
-    if len(args) == 1 and isinstance(args[0], str) and not is_media:
+        is_media = any([k for k in file_kwargs if kwargs.get(k, False)])
+
+    if isinstance(message, str) and not is_media:
         is_reply = reply or kwargs.get('reply_to', False)
-        text = args[0]
-        msg, msg_entities = parser.parse(text)
+        msg, msg_entities = parser.parse(message)
         if len(msg) <= MAXLIM:
-            if (
-                isinstance(message, str) or not (message and message.out) or
-                is_reply or message.fwd_from or
-                (message.media and not isinstance(
-                    message.media, types.MessageMediaWebPage
-                ))
-            ):
+            if is_reply or not is_outgoing or is_forward:
                 kwargs.setdefault('reply_to', reply_to)
                 try:
                     kwargs.setdefault('silent', True)
                     message_out = await self.send_message(
-                        entity, text, **kwargs
+                        entity, message, **kwargs
                     )
                 except Exception as e:
                     raise e
             else:
+                message_out = []
                 if len(msg_entities) > 100:
                     messages = await _resolve_entities(msg, msg_entities)
                     chunks = [parser.unparse(t, e) for t, e in messages]
                     try:
-                        if isinstance(message, custom.Message) and message.out:
+                        if event and is_outgoing:
                             first_msg = await self.edit_message(
-                                entity, message, chunks[0], **kwargs
+                                event.chat_id, event.id, chunks[0], **kwargs
                             )
                         else:
                             first_msg = await self.send_message(
@@ -112,30 +110,27 @@ async def answer(
                             raise e
                 else:
                     try:
-                        if isinstance(message, custom.Message) and message.out:
+                        if event and is_outgoing:
                             first_msg = await self.edit_message(
-                                entity, message, text, **kwargs
+                                event.chat_id, event.id, message, **kwargs
                             )
                         else:
                             first_msg = await self.send_message(
-                                entity, text, **kwargs
+                                entity, message, **kwargs
                             )
                     except errors.rpcerrorlist.MessageIdInvalidError:
                         first_msg = await self.send_message(
-                            entity, text, **kwargs
+                            entity, message, **kwargs
                         )
                     except Exception as e:
                         raise e
                     message_out.append(first_msg)
         else:
-            if (
-                message and message.out and
-                not (message.fwd_from or message.media)
-            ):
+            if event and not is_forward and not is_media and is_outgoing:
                 try:
-                    await self.send_message(
-                        entity, "`Output exceeded the limit.`",
-                        reply_to=reply_to
+                    await self.edit_message(
+                        event.chat_id, event.id,
+                        "`Output exceeded the limit.`"
                     )
                 except Exception as e:
                     raise e
@@ -154,20 +149,15 @@ async def answer(
                 raise e
     else:
         kwargs.setdefault('reply_to', reply_to)
-        if (
-            isinstance(message, str) and
-            not (len(args) == 1 and isinstance(args[0], str))
-        ):
-            args = message, *args
         try:
             kwargs.setdefault('silent', True)
             message_out = await self.send_message(
-                entity, *args, **kwargs
+                entity, message, *args, **kwargs
             )
         except Exception as e:
             raise e
 
-    if message_out:
+    if message_out is not None:
         if isinstance(message_out, list):
             for message in message_out:
                 message.date = start_date
@@ -189,71 +179,58 @@ async def answer(
         else:
             text = f"**USERBOT LOG** `Executed command:` #{log}"
         if self.logger:
-            logger_group = self.config['userbot'].getint(
-                'logger_group_id', False
+            message, msg_entities = await self._parse_message_text(
+                text, kwargs.get('parse_mode')
             )
-            entity = False
-            try:
-                entity = await self.get_input_entity(logger_group)
-            except TypeError:
-                LOGGER.info("Your logger group ID is unsupported")
-            except ValueError:
-                LOGGER.info("Your logger group ID cannot be found")
-            except Exception as e:
-                raise e
-
-            if entity:
-                message, msg_entities = await self._parse_message_text(
-                    text, kwargs.get('parse_mode')
-                )
-                if len(message) <= MAXLIM and len(msg_entities) < 100:
-                    messages = [(message, msg_entities)]
-                else:
-                    messages = await _resolve_entities(message, msg_entities)
-                for text, entities in messages:
-                    try:
-                        await self(
-                            functions.messages.SendMessageRequest(
-                                peer=entity,
-                                message=text,
-                                no_webpage=True,
-                                silent=True,
-                                entities=entities
-                            )
+            if len(message) <= MAXLIM and len(msg_entities) < 100:
+                messages = [(message, msg_entities)]
+            else:
+                messages = await _resolve_entities(message, msg_entities)
+            for text, entities in messages:
+                try:
+                    await self(
+                        functions.messages.SendMessageRequest(
+                            peer=self.logger,
+                            message=text,
+                            no_webpage=True,
+                            silent=True,
+                            entities=entities
                         )
-                        await asyncio.sleep(2)
-                    except Exception as e:
-                        LOGGER.error("Report this error to the support group.")
-                        raise e
+                    )
+                    await asyncio.sleep(2)
+                except Exception as e:
+                    LOGGER.error("Report this error to the support group.")
+                    raise e
     return message_out
 
 
 async def resanswer(
     self,
     entity,
-    default: str,
+    message: str,
     plugin: str = None, name: str = None, formats: dict = {},
-    chat_override: bool = False, **kwargs
+    **kwargs
 ) -> custom.Message or None:
+    if hasattr(entity, 'get_input_chat'):
+        entity = await entity.get_input_chat()
     sent = None
     chat_id = entity
-    # Required to handle replies and edits
-    message = kwargs.pop('message', None)
+
     if not (plugin and name):
         return await self.answer(
-            entity, message, default.format(**formats), **kwargs
+            entity, message.format(**formats), **kwargs
         )
 
     try:
         mod = importlib.import_module('.' + plugin, package='resources')
     except (ImportError, ModuleNotFoundError):
         return await self.answer(
-            entity, message, default.format(**formats), **kwargs
+            entity, message.format(**formats), **kwargs
         )
 
     if not hasattr(mod, name):
         sent = await self.answer(
-            entity, message, default.format(**formats), **kwargs
+            entity, message.format(**formats), **kwargs
         )
 
     strings = getattr(mod, name, [])
@@ -263,24 +240,23 @@ async def resanswer(
 
     try:
         text = strings[0] if len(strings) >= 1 else None
-        if text:
+        if text is not None:
             sent = await self.answer(
-                entity, message, text.format(**formats), **kwargs
+                entity, text.format(**formats), **kwargs
             )
     except KeyError:
         LOGGER.error(
             'Invalid string %s found in %s resource', name, plugin
         )
         sent = await self.answer(
-            entity, message, default.format(**formats), **kwargs
+            entity, message.format(**formats), **kwargs
         )
 
     # Wouldn't want to reply to a random message in a different groupchat
     kwargs.pop('reply_to', None)
     kwargs.pop('reply', None)
     # Only use a different chat_id for extra messages
-    if chat_override:
-        chat_id = getattr(mod, 'chat_id', chat_id)
+    chat_id = getattr(mod, 'chat_id', chat_id)
     if isinstance(chat_id, str) and chat_id.isdigit():
         chat_id = int(chat_id)
     if not isinstance(chat_id, list):
