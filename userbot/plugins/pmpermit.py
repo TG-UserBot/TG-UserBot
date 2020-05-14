@@ -110,9 +110,8 @@ async def pm_incoming(event: NewMessage.Event) -> None:
             approvedUsers.append(sender)
             await update_db()
             user = await get_chat_link(entity)
-            text = (
-                autoapprove.format(user) + " `for being a mutual contact.`"
-            )
+            text = autoapprove.format(user=user)
+            text += " `for being a mutual contact.`"
             await event.answer(
                 text, reply=True,
                 self_destruct=2, log=('pmpermit', text)
