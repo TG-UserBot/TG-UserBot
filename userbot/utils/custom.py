@@ -22,11 +22,12 @@ import inspect
 import io
 import logging
 import re
-from typing import Sequence, Tuple, Union
+import typing
 
 from telethon import errors, events
 from telethon.extensions import markdown, html
 from telethon.tl import custom, functions, types
+from telethon.hints import FileLike, MarkupLike, DateLike
 
 
 LOGGER = logging.getLogger(__name__)
@@ -42,22 +43,42 @@ file_kwargs = (
 async def answer(
     self,
     entity,
-    message: str or None,
-    *args,
-    log: str or Tuple[str, str] = None,
+    message: str or None = '',
+    *,
+    reply_to: typing.Union[int, types.Message] = None,
+    parse_mode: typing.Optional[str] = 'markdown',
+    link_preview: bool = False,
+    file: typing.Union[FileLike, typing.Sequence[FileLike]] = None,
+    force_document: bool = False,
+    clear_draft: bool = False,
+    buttons: MarkupLike = None,
+    silent: bool = True,
+    schedule: DateLike = None,
+    log: str or typing.Tuple[str, str] = None,
     reply: bool = False,
     self_destruct: int = None,
-    event: custom.Message = None,
-    **kwargs
-) -> Union[None, custom.Message, Sequence[custom.Message]]:
+    event: custom.Message = None
+) -> typing.Union[None, custom.Message, typing.Sequence[custom.Message]]:
     """Custom bound method for the Message object"""
     if hasattr(entity, 'get_input_chat'):
         entity = await entity.get_input_chat()
     message_out = None
+    kwargs = {
+        'parse_mode': parse_mode,
+        'link_preview': link_preview,
+        'file': file,
+        'force_document': force_document,
+        'buttons': buttons,
+        'schedule': schedule,
+    }
+    kwargs2 = {
+        'reply_to': reply_to,
+        'silent': silent,
+        'clear_draft': clear_draft,
+    }
     start_date = datetime.datetime.now(datetime.timezone.utc)
-    parse_mode = kwargs.setdefault('parse_mode', 'md')
     reply_to = event.reply_to_msg_id or event.id if reply and event else None
-    _reply_to = kwargs.get('reply_to', None)
+    _reply_to = kwargs2.get('reply_to', None)
     is_outgoing = event.out if event else False
     is_forward = event.fwd_from if event else False
     parser = html if parse_mode in ('html', 'HTML') else markdown
@@ -68,18 +89,18 @@ async def answer(
     if _reply_to and not isinstance(_reply_to, int):
         if isinstance(_reply_to, events.ChatAction.Event):
             action = _reply_to.action_message
-            kwargs['reply_to'] = action.reply_to_msg_id or action.id
+            kwargs2['reply_to'] = action.reply_to_msg_id or action.id
+    if kwargs2['reply_to'] is None:
+        kwargs2['reply_to'] = reply_to
 
-    if isinstance(message, str) and not is_media:
-        is_reply = reply or kwargs.get('reply_to', False)
+    if message and isinstance(message, str) and not is_media:
+        is_reply = reply or kwargs2.get('reply_to', False)
         msg, msg_entities = parser.parse(message)
         if len(msg) <= MAXLIM:
             if is_reply or not is_outgoing or is_forward:
-                kwargs.setdefault('reply_to', reply_to)
                 try:
-                    kwargs.setdefault('silent', True)
                     message_out = await self.send_message(
-                        entity, message, **kwargs
+                        entity, message, **kwargs, **kwargs2
                     )
                 except Exception as e:
                     raise e
@@ -95,20 +116,19 @@ async def answer(
                             )
                         else:
                             first_msg = await self.send_message(
-                                entity, chunks[0], **kwargs
+                                entity, chunks[0], **kwargs, **kwargs2
                             )
                     except errors.rpcerrorlist.MessageIdInvalidError:
                         first_msg = await self.send_message(
-                            entity, chunks[0], **kwargs
+                            entity, chunks[0], **kwargs, **kwargs2
                         )
                     except Exception as e:
                         raise e
                     message_out.append(first_msg)
                     for chunk in chunks[1:]:
                         try:
-                            kwargs.setdefault('silent', True)
                             sent = await self.send_message(
-                                entity, chunk, **kwargs
+                                entity, chunk, **kwargs, **kwargs2
                             )
                             message_out.append(sent)
                         except Exception as e:
@@ -121,11 +141,11 @@ async def answer(
                             )
                         else:
                             first_msg = await self.send_message(
-                                entity, message, **kwargs
+                                entity, message, **kwargs, **kwargs2
                             )
                     except errors.rpcerrorlist.MessageIdInvalidError:
                         first_msg = await self.send_message(
-                            entity, message, **kwargs
+                            entity, message, **kwargs, **kwargs2
                         )
                     except Exception as e:
                         raise e
@@ -140,24 +160,22 @@ async def answer(
                 except Exception as e:
                     raise e
 
-            kwargs.setdefault('reply_to', reply_to)
             output = io.BytesIO(msg.strip().encode())
             output.name = "output.txt"
             try:
-                kwargs.setdefault('silent', True)
                 message_out = await self.send_message(
-                    entity, file=output, **kwargs
+                    entity, file=output, **kwargs, **kwargs2
                 )
                 output.close()
             except Exception as e:
                 output.close()
                 raise e
     else:
-        kwargs.setdefault('reply_to', reply_to)
         try:
-            kwargs.setdefault('silent', True)
+            if is_outgoing and not reply:
+                await event.delete()
             message_out = await self.send_message(
-                entity, message, *args, **kwargs
+                entity, message, **kwargs, **kwargs2
             )
         except Exception as e:
             raise e
@@ -176,7 +194,7 @@ async def answer(
         asyncio.create_task(_self_destructor(message_out, self_destruct))
 
     if log:
-        if isinstance(log, tuple):
+        if isinstance(log, typing.Tuple):
             command, extra = log
             text = f"**USERBOT LOG** #{command}"
             if extra:
@@ -342,7 +360,7 @@ async def _reset_entities(entities: list, end: int, next_offset: int) -> None:
         entity.offset = entity.offset + increment - offset
 
 
-async def _next_offset(end, entities) -> Tuple[int, bool]:
+async def _next_offset(end, entities) -> typing.Tuple[int, bool]:
     """Find out how much length we need to skip ahead for the next entities"""
     last_chunk = False
     if len(entities) >= end+1:
@@ -355,9 +373,9 @@ async def _next_offset(end, entities) -> Tuple[int, bool]:
 
 
 async def _self_destructor(
-    event: Union[custom.Message, Sequence[custom.Message]],
+    event: typing.Union[custom.Message, typing.Sequence[custom.Message]],
     timeout: int or float
-) -> Union[custom.Message, Sequence[custom.Message]]:
+) -> typing.Union[custom.Message, typing.Sequence[custom.Message]]:
     await asyncio.sleep(timeout)
     if isinstance(event, list):
         deleted = []
