@@ -943,7 +943,7 @@ async def inc_listener(event: NewMessage.Event) -> None:
         return
 
     invite = False
-    invite_match = invite_pattern.search(event.text)
+    invite_match = invite_pattern.search(event.text) if event.text else None
     tgid_check = False
     localbl = localBlacklists.get(event.chat_id, False)
 
