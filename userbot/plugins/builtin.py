@@ -121,4 +121,4 @@ async def logsDump(event: NewMessage.Event) -> None:
         output.name = "logs.txt"
         await event.answer(file=output)
     else:
-        await event.answer(`'No Logs Found`')
+        await event.answer('`No logs found`')
