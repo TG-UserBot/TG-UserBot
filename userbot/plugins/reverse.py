@@ -156,13 +156,14 @@ async def reverse(event: NewMessage.Event) -> None:
 def _post(name: str, media: io.BytesIO):
     searchUrl = 'https://www.google.com/searchbyimage/upload'
     multipart = {'encoded_image': (name, media), 'image_content': ''}
+    headers = {'User-Agent': heavy_ua1}
 
     response = requests.post(
         searchUrl,
         files=multipart,
-        allow_redirects=False
+        allow_redirects=False,
+        headers=headers
     )
-
     return response
 
 
@@ -170,7 +171,7 @@ async def _scrape_url(googleurl):
     """Parse/Scrape the HTML code for the info we want."""
 
     UA = random.choice([heavy_ua1, heavy_ua2])
-    opener.addheaders = [('User-agent', UA)]
+    opener.addheaders = [('User-Agent', UA)]
 
     source = await _run_sync(functools.partial(opener.open, googleurl))
     if isinstance(source, urllib.error.HTTPError):
@@ -221,7 +222,7 @@ async def _scrape_url(googleurl):
 async def _get_similar_links(link: str, lim: int = 2):
     """Parse/Scrape the HTML code for the info we want."""
 
-    opener.addheaders = [('User-agent', light_useragent)]
+    opener.addheaders = [('User-Agent', light_useragent)]
 
     source = await _run_sync(functools.partial(opener.open, link))
     if isinstance(source, urllib.error.HTTPError):

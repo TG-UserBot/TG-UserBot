@@ -16,7 +16,6 @@
 
 
 import concurrent
-import datetime
 import functools
 import os
 import pathlib
@@ -66,10 +65,11 @@ class YTdlLogger(object):
 
 class ProgressHook():
     """Custom hook with the event stored for YTDL."""
-    def __init__(self, event):
+    def __init__(self, event, update=5):
         self.event = event
-        self.last_edit = None
+        self.downloaded = 0
         self.tasks = []
+        self.update = update
 
     def callback(self, task):
         """Cancel pending tasks else skip them if completed."""
@@ -85,7 +85,7 @@ class ProgressHook():
         task = self.event.client.loop.create_task(
             self.event.answer(*args, **kwargs)
         )
-        task.add_done_callback(self.callback)
+        # task.add_done_callback(self.callback)
         self.tasks.append(task)
         return task
 
@@ -93,9 +93,6 @@ class ProgressHook():
         """
             YoutubeDL's hook which logs progress and errors to UserBot logger.
         """
-        if not self.last_edit:
-            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
-        now = datetime.datetime.now(datetime.timezone.utc)
         if d['status'] == 'downloading':
             filen = d.get('filename', 'Unknown filename')
             prcnt = d.get('_percent_str', None)
@@ -112,10 +109,8 @@ class ProgressHook():
                 )
             )
             LOGGER.debug(finalStr)
-            if (
-                not self.last_edit or
-                (now - self.last_edit).total_seconds() > 5
-            ):
+            if float(prcnt[:-1]) - self.downloaded >= self.update:
+                self.downloaded = float(prcnt[:-1])
                 filen = re.sub(r'YT_DL\\(.+)_\d+\.', r'\1.', filen)
                 self.edit(
                     f"`Downloading {filen} at {spdstr}.`\n"
@@ -237,7 +232,7 @@ async def extract_info(
             opath = downloads.pop(filen.rsplit('.', maxsplit=1)[0], filen)
             downloaded = pathlib.Path(opath)
             if not downloaded.exists():
-                pattern = f"{downloaded.name}.*"
+                pattern = f"*{info_dict['title']}*"
                 for f in pathlib.Path(downloaded.parent).glob(pattern):
                     if f.suffix != ".jpg":
                         opath = f"YT_DL/{f.name}{f.suffix}"
@@ -265,6 +260,7 @@ async def extract_info(
     # Future blocks the running event loop
     # fut = executor.submit(downloader, url, download)
     # result = fut.result()
+    result = None
     try:
         result = await loop.run_in_executor(
             concurrent.futures.ThreadPoolExecutor(),

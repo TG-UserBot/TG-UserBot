@@ -97,10 +97,11 @@ async def yt_dl(event):
     auto_delete = kwargs.get('delete', False)
     upload = kwargs.get('upload', True)
     round_message = kwargs.get('round_message', kwargs.get('round', False))
+    update = kwargs.get('update', 10)
     supports_streaming = kwargs.get(
         'supports_streaming', kwargs.get('stream', False)
     )
-    progress = kwargs.get('progress', False)
+    progress = kwargs.get('progress', True)
     if not upload and auto_delete:
         await event.answer(
             "`The void doesn't make sense! Either don't upload or delete.`"
@@ -162,9 +163,10 @@ async def yt_dl(event):
                     params['postprocessors'].append({'key': 'EmbedThumbnail'})
 
     if progress:
-        progress = ProgressHook(event)
+        event.media = None
+        progress = ProgressHook(event, update)
         params['progress_hooks'].append(progress.hook)
-        progress_cb = ProgressCallback(event)
+        progress_cb = ProgressCallback(event, update=update)
 
     for url in args:
         await event.answer(f"`Processing {url}...`")
@@ -177,6 +179,9 @@ async def yt_dl(event):
             warnings.append(result)
         elif isinstance(output, BaseException):
             warnings.append(f'```{await client.get_traceback(output)}```')
+        elif output is None:
+            await event.answer('`Oh oh, sum ting went wong`')
+            return
         else:
             if upload:
                 path, thumb, info = output

@@ -352,7 +352,9 @@ async def kang(event: NewMessage.Event) -> None:
             await client.send_read_acknowledge(conv.chat_id)
             if "120 stickers" in r2.text:
                 if "_kang_pack" in pack:
-                    pack, packnick, new_pack = await _get_new_ub_pack(conv, packs, is_animated)
+                    pack, packnick, new_pack = await _get_new_ub_pack(
+                        conv, packs, is_animated
+                    )
                     if new_pack:
                         await event.answer(
                             "`Current userbot pack is full, making a new one!`"
@@ -361,13 +363,13 @@ async def kang(event: NewMessage.Event) -> None:
                         r12 = await conv.get_response()
                         LOGGER.debug("Stickers:" + r12.text)
                         await client.send_read_acknowledge(conv.chat_id)
-                        packtype = "/newanimated" if is_animated else "/newpack"
-                        await conv.send_message(packtype)
+                        ptype = "/newanimated" if is_animated else "/newpack"
+                        await conv.send_message(ptype)
                         r13 = await conv.get_response()
                         LOGGER.debug("Stickers:" + r12.text)
                         await client.send_read_acknowledge(conv.chat_id)
                         await conv.send_message(packnick)
-                        r14 = await conv.get_response()
+                        _ = await conv.get_response()
                         LOGGER.debug("Stickers:" + r13.text)
                         await client.send_read_acknowledge(conv.chat_id)
                 else:
@@ -536,8 +538,9 @@ async def _delete_sticker_messages(
     return await client.delete_messages('@Stickers', messages)
 
 
-async def _get_new_ub_pack(conv: custom.conversation.Conversation,
-                           packs: list, is_animated: bool) -> Tuple[str, str, bool]:
+async def _get_new_ub_pack(
+    conv: custom.conversation.Conversation, packs: list, is_animated: bool
+) -> Tuple[str, str, bool]:
     ub_packs = []
     new_pack = False
     user = await client.get_me()
@@ -633,13 +636,13 @@ async def _list_packs() -> Tuple[List[str], types.Message]:
         if r2.text.startswith("You don't have any sticker packs yet."):
             return [], first
         await client.send_read_acknowledge(conv.chat_id)
-        buttons = list(itertools.chain.from_iterable(r2.buttons))
+        buttons = list(itertools.chain.from_iterable(r2.buttons or []))
         await conv.send_message('/cancel')
         r3 = await conv.get_response()
         LOGGER.debug("Stickers:" + r3.text)
         await client.send_read_acknowledge(conv.chat_id)
 
-        return [button.text for button in buttons], first
+        return [button.text for button in buttons] if buttons else [], first
 
 
 async def _resolve_messages(

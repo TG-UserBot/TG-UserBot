@@ -250,10 +250,16 @@ class PluginManager:
                     continue
                 size = str(size)
                 if filen == "requirements.txt":
-                    resp = requests.get(
-                        raw_pattern.format(repo, filen),
-                        auth=self.auth, stream=True
-                    )
+                    try:
+                        resp = requests.get(
+                            raw_pattern.format(repo, filen),
+                            auth=self.auth, stream=True
+                        )
+                    except requests.exceptions.ConnectionError:
+                        LOGGER.error(
+                            f'Failed to open {resp.url}, skipping {repo}'
+                        )
+                        break  # The plugins wouldn't load without the reqs
                     if resp.ok:
                         raw = resp.content.decode('utf-8')
                         req = run_async(get_pip_packages(raw))

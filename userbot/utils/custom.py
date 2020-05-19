@@ -105,8 +105,8 @@ async def answer(
                 except Exception as e:
                     raise e
             else:
-                message_out = []
                 if len(msg_entities) > 100:
+                    message_out = []
                     messages = await _resolve_entities(msg, msg_entities)
                     chunks = [parser.unparse(t, e) for t, e in messages]
                     try:
@@ -136,20 +136,19 @@ async def answer(
                 else:
                     try:
                         if event and is_outgoing:
-                            first_msg = await self.edit_message(
+                            message_out = await self.edit_message(
                                 event.chat_id, event.id, message, **kwargs
                             )
                         else:
-                            first_msg = await self.send_message(
+                            message_out = await self.send_message(
                                 entity, message, **kwargs, **kwargs2
                             )
                     except errors.rpcerrorlist.MessageIdInvalidError:
-                        first_msg = await self.send_message(
+                        message_out = await self.send_message(
                             entity, message, **kwargs, **kwargs2
                         )
                     except Exception as e:
                         raise e
-                    message_out.append(first_msg)
         else:
             if event and not is_forward and not is_media and is_outgoing:
                 try:
@@ -162,9 +161,10 @@ async def answer(
 
             output = io.BytesIO(msg.strip().encode())
             output.name = "output.txt"
+            kwargs['file'] = output
             try:
                 message_out = await self.send_message(
-                    entity, file=output, **kwargs, **kwargs2
+                    entity, **kwargs, **kwargs2
                 )
                 output.close()
             except Exception as e:
@@ -172,7 +172,7 @@ async def answer(
                 raise e
     else:
         try:
-            if is_outgoing and not reply:
+            if is_outgoing and (reply or reply_to):
                 await event.delete()
             message_out = await self.send_message(
                 entity, message, **kwargs, **kwargs2

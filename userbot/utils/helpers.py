@@ -236,68 +236,18 @@ async def format_speed(speed_per_second, unit):
         speed /= base
 
 
-async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
-    if total is None or total == 0:
-        return 0
-    if current == 0 or elp < 0.001:
-        return 0
-    speed = speed if speed else 1
-    return int((float(total) - float(current)) / speed)
-
-
-def ul_progress(d: dict, event) -> Tuple[Union[str, bool], bool]:
-    """ Logs the upload progress """
-    now = datetime.datetime.now(datetime.timezone.utc)
-    log_text = (
-        "Uploaded %(current)s of %(total)s. "
-        "Progress: %(percentage)s%% speed: %(speed)s"
-        "Time elapsed: %(elp)s"
-    )
-    LOGGER.debug(log_text % d)
-    text = (
-        "`Uploading %(filen)s at %(speed)s.`\n"
-        "__Progress: %(percentage)s%% of %(total)s__\n"
-        "__ETA: %(eta)s, Elapsed: %(elp)s__"
-    )
-
-    if d.get('percentage', 0) == 100:
-        return "__Successfully uploaded %(filen)s in %(elp)s!__" % d, True
-    elif (now - event.date).total_seconds() > 5:
-        return text % d, False
-    return False, False
-
-
-def dl_progress(d: dict, event) -> Tuple[Union[str, bool], bool]:
-    """ Logs the download progress """
-    now = datetime.datetime.now(datetime.timezone.utc)
-    log_text = (
-        "Downloaded %(current)s of %(total)s. "
-        "Progress: %(percentage)s%%"
-        "Time elapsed: %(elp)s"
-    )
-    LOGGER.debug(log_text % d)
-    text = (
-        "`Downloading %(filen)s at %(speed)s.`\n"
-        "__Progress: %(percentage)s%% of %(total)s__\n"
-        "__ETA: %(eta)s, Elapsed: %(elp)s__"
-    )
-
-    if d.get('percentage', 0) == 100:
-        return "__Successfully downloaded %(filen)s in %(elp)s!__" % d, True
-    elif (now - event.date).total_seconds() > 5:
-        return text % d, False
-    return False, False
-
-
 class ProgressCallback():
     """Custom class to handle upload and download progress."""
-    def __init__(self, event, start=None, filen='unamed'):
+    def __init__(self, event, start=None, filen='unamed', update=5):
         self.event = event
         self.start = start or time.time()
         self.last_edit = None
         self.filen = filen
         self.upload_finished = False
         self.download_finished = False
+        self._uploaded = 0
+        self._downloaded = 0
+        self.update = update
 
     async def resolve_prog(self, current, total):
         """Calculate the necessary info and make a dict from it."""
@@ -312,7 +262,8 @@ class ProgressCallback():
         t0, t1, t2 = await format_speed(total, ("byte", 1))
         percentage = round(current / total * 100, 2)
         return {
-            'filen': self.filen, 'percentage': percentage,
+            'filen': self.filen,
+            'percentage': percentage,
             'eta': await _humanfriendly_seconds(eta),
             'elp': await _humanfriendly_seconds(elp),
             'current': f'{c0:.2f}{c1}{c2[0]}',
@@ -323,7 +274,7 @@ class ProgressCallback():
     async def up_progress(self, current, total):
         """Handle the upload progress only."""
         d = await self.resolve_prog(current, total)
-        edit, finished = ul_progress(d, self.event)
+        edit, finished = ul_prog(d, self)
         if finished:
             if not self.upload_finished:
                 self.event = await self.event.answer(edit)
@@ -334,10 +285,69 @@ class ProgressCallback():
     async def dl_progress(self, current, total):
         """Handle the download progress only."""
         d = await self.resolve_prog(current, total)
-        edit, finished = dl_progress(d, self.event)
+        edit, finished = dl_prog(d, self)
         if finished:
             if not self.download_finished:
                 self.event = await self.event.answer(edit)
                 self.download_finished = True
         elif edit:
             self.event = await self.event.answer(edit)
+
+
+async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
+    if total is None or total == 0:
+        return 0
+    if current == 0 or elp < 0.001:
+        return 0
+    speed = speed if speed else 1
+    return int((float(total) - float(current)) / speed)
+
+
+def ul_prog(d: dict, cb: ProgressCallback) -> Tuple[Union[str, bool], bool]:
+    """ Logs the upload progress """
+    uploaded = cb._uploaded
+    current = d.get('percentage', 0)
+    # now = datetime.datetime.now(datetime.timezone.utc)
+    log_text = (
+        "Uploaded %(current)s of %(total)s. "
+        "Progress: %(percentage)s%% speed: %(speed)s"
+        "Time elapsed: %(elp)s"
+    )
+    LOGGER.debug(log_text % d)
+    text = (
+        "`Uploading %(filen)s at %(speed)s.`\n"
+        "__Progress: %(percentage)s%% of %(total)s__\n"
+        "__ETA: %(eta)s, Elapsed: %(elp)s__"
+    )
+
+    if current == 100:
+        return "__Successfully uploaded %(filen)s in %(elp)s!__" % d, True
+    elif current - uploaded >= cb.update:
+        cb._uploaded = current
+        return text % d, False
+    return False, False
+
+
+def dl_prog(d: dict, cb: ProgressCallback) -> Tuple[Union[str, bool], bool]:
+    """ Logs the download progress """
+    downloaded = cb._downloaded
+    current = d.get('percentage', 0)
+    # now = datetime.datetime.now(datetime.timezone.utc)
+    log_text = (
+        "Downloaded %(current)s of %(total)s. "
+        "Progress: %(percentage)s%%"
+        "Time elapsed: %(elp)s"
+    )
+    LOGGER.debug(log_text % d)
+    text = (
+        "`Downloading %(filen)s at %(speed)s.`\n"
+        "__Progress: %(percentage)s%% of %(total)s__\n"
+        "__ETA: %(eta)s, Elapsed: %(elp)s__"
+    )
+
+    if current == 100:
+        return "__Successfully downloaded %(filen)s in %(elp)s!__" % d, True
+    elif current - downloaded >= cb.update:
+        cb._downloaded = current
+        return text % d, False
+    return False, False
