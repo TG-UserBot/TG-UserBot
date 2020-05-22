@@ -78,10 +78,12 @@ class CustomFormatter(logging.Formatter):
         """Format a log record without ANSI escapes for dumping"""
         super().format(record)
         record.__dict__.update(levelAlias=record.levelname[:1])
-        fmt = "{asctime} [{levelAlias}] - {name}: {message}"
+        fmt = "{asctime} [{levelAlias}] - {name}: {message}".format(
+            **record.__dict__
+        )
         if record.exc_text:
             fmt += f"\n{record.exc_text}"
-        return fmt.format(**record.__dict__)
+        return fmt
 
 
 class TargetNotSetError(Exception):

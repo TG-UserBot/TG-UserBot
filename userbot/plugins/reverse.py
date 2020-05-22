@@ -191,20 +191,24 @@ async def _scrape_url(googleurl):
     }
 
     best_guess = soup.find('div', {'class': 'r5a77d'})
-    similar_images = soup.find('div', {'class': 'e2BEnf U7izfe'}).find('a')
+    similar_images = soup.find('div', {'class': 'e2BEnf U7izfe'})
     matching_text = soup.find(
         'div', {'class': 'rg-header V5niGc dPAwzb', 'role': 'heading'}
     )
-    matching = soup.find(
+    _matching = soup.find(
         'div', {'id': 'search'}
-    ).find_all('div', {'class': 'g'})
+    )
+    if _matching:
+        matching = _matching.find_all('div', {'class': 'g'})
+    else:
+        matching = None
 
     if best_guess:
         result['best_guess'] = best_guess.a.get_text()
 
     if similar_images:
         result['similar_images'] = (
-            "https://www.google.com" + similar_images.get('href')
+            "https://www.google.com" + similar_images.find('a').get('href')
         )
 
     if matching_text:
