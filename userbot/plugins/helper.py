@@ -34,7 +34,13 @@ split_exp: re.Pattern = re.compile(r'\||\/')
     outgoing=True, regex=r"setprefix (.+)", builtin=True
 )
 async def setprefix(event: NewMessage.Event) -> None:
-    """Change the bot's default prefix."""
+    """
+    Change the bot's default prefix.
+
+
+    {prefix}setprefix (new preifx)**
+        **Example:** `{prefix}setprefix .`
+    """
     match = event.matches[0].group(1).strip()
     old_prefix = client.prefix
     client.prefix = match
@@ -65,7 +71,12 @@ async def setprefix(event: NewMessage.Event) -> None:
     builtin=True
 )
 async def resetprefix(event: NewMessage.Event) -> None:
-    """Reset the bot's prefix to the default ones."""
+    """
+    Reset the bot's prefix to the default ones.
+
+
+    `resetprefix`
+    """
     prefix = client.config['userbot'].get('userbot_prefix', None)
     if prefix:
         del client.config['userbot']['userbot_prefix']
@@ -86,7 +97,13 @@ async def resetprefix(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"enable(?: |$)(\w+)?$", builtin=True
 )
 async def enable(event: NewMessage.Event) -> None:
-    """Enable a command IF it's already disabled."""
+    """
+    Enable a command IF it's already disabled.
+
+
+    **{prefix}enable (command)**
+        **Example:** `{prefix}enable afk`
+    """
     arg = event.matches[0].group(1)
     if not arg:
         await event.answer("`Enable what? The void?`")
@@ -123,7 +140,13 @@ async def enable(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"disable(?: |$)(\w+)?$", builtin=True
 )
 async def disable(event: NewMessage.Event) -> None:
-    """Disable a command IF it's already enabled."""
+    """
+    Disable a command IF it's already enabled.
+
+
+    **{prefix}disable (command)**
+        **Example:** `{prefix}disable afk`
+    """
     arg = event.matches[0].group(1)
     if not arg:
         await event.answer("`Disable what? The void?`")
@@ -158,7 +181,12 @@ async def disable(event: NewMessage.Event) -> None:
     outgoing=True, regex="enabled$", builtin=True
 )
 async def commands(event: NewMessage.Event) -> None:
-    """A list of all the currently enabled commands."""
+    """
+    A list of all the currently enabled commands.
+
+
+    `{prefix}enabled`
+    """
     response = "**Enabled commands:**"
     commands, _ = await solve_commands(client.commands)
     enabled = sorted(commands.keys())
@@ -173,7 +201,12 @@ async def commands(event: NewMessage.Event) -> None:
     outgoing=True, regex="disabled$", builtin=True
 )
 async def disabled(event: NewMessage.Event) -> None:
-    """A list of all the currently disabled commands."""
+    """
+    A list of all the currently disabled commands.
+
+
+    `{prefix}disabled`
+    """
     disabled_commands, _ = await solve_commands(client.disabled_commands)
 
     if not disabled_commands:
@@ -193,12 +226,19 @@ async def disabled(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"help(?: |$)(\w*)(?: |$)(dev|details|info)?"
 )
 async def helper(event: NewMessage.Event) -> None:
-    """A list of commands categories, their commands or command's details."""
+    """
+    A list of commands categories, their commands or command's details.
+
+
+    **{prefix}help (all|category|command) [dev|details|info]**
+        **Example:** `{prefix}help afk` or `{prefix}help afk dev`
+    """
     arg = event.matches[0].group(1)
     arg1 = event.matches[0].group(2)
-    enabled, _ = await solve_commands(client.commands)
-    disabled, _ = await solve_commands(client.disabled_commands)
+    enabled, senabled = await solve_commands(client.commands)
+    disabled, sdisabled = await solve_commands(client.disabled_commands)
     categories = client.commandcategories
+    prefix = client.prefix or '.'
     if arg:
         arg = arg.lower()
         if arg == "all":
@@ -220,13 +260,17 @@ async def helper(event: NewMessage.Event) -> None:
                     text += ",\t\t".join([
                         f'`{name}`' for name in sorted(disabled)
                     ])
-        elif arg in [*enabled, *disabled]:
-            merged = {**enabled, **disabled}
-            command = merged.get(arg)
+        elif arg in (*enabled, *disabled, *senabled, *sdisabled):
+            command = None
+            for i in (enable, disable, senabled, sdisabled):
+                if arg in i:
+                    command = i.get(arg)
+                    break
             text = (
                 f"**{arg.title()} command:**\n"
-                f"  **Disableable:** `{not command.builtin}`\n"
-                f"  **Info:** `{command.info}`\n"
+                f"  **Disableable:** `{not command.builtin}`\n\n"
+                f"  **Info:** `{command.info}`\n\n"
+                f"  **Usage:** {command.usage.format(prefix=prefix)}\n\n"
             )
             if arg1:
                 filename = command.func.__code__.co_filename

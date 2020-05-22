@@ -218,7 +218,12 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"approve(?: |$)(.+)?$"
 )
 async def approve(event: NewMessage.Event) -> None:
-    """Approve an user for PM-Permit."""
+    """
+    Approve an user for PM-Permit.
+
+
+    `{prefix}approve` in reply to a user/chat or **{prefix}approve (user)**
+    """
     if not PM_PERMIT or not redis:
         await event.answer("PM-Permit is disabled.")
         return
@@ -251,7 +256,12 @@ async def approve(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(?:un|dis)approve(?: |$)(.+)?$"
 )
 async def disapprove(event: NewMessage.Event) -> None:
-    """Disapprove an user for PM-Permit."""
+    """
+    Disapprove an user for PM-Permit.
+
+
+    `{prefix}unapprove` in reply to a user/chat or **{prefix}unapprove (user)**
+    """
     if not PM_PERMIT or not redis:
         await event.answer("PM-Permit is disabled.")
         return
@@ -273,7 +283,12 @@ async def disapprove(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"block(?: |$)(.+)?$"
 )
 async def block(event: NewMessage.Event) -> None:
-    """Block an user and remove them from approved users."""
+    """
+    Block an user and remove them from approved users.
+
+
+    `{prefix}block` in reply to a user/chat or **{prefix}block (user)**
+    """
     result = False
     user = await get_user(event)
     if user:
@@ -300,7 +315,12 @@ async def block(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"unblock(?: |$)(.+)?$"
 )
 async def unblock(event: NewMessage.Event) -> None:
-    """Unblock an user."""
+    """
+    Unblock an user.
+
+
+    `{prefix}unblock` in reply to a user/chat or **{prefix}unblock (user)**
+    """
     result = False
     user = await get_user(event)
     if user:
@@ -323,7 +343,12 @@ async def unblock(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"approved$"
 )
 async def approved(event: NewMessage.Event) -> None:
-    """Get a list of all the approved users for PM-Permit."""
+    """
+    Get a list of all the approved users for PM-Permit.
+
+
+    `{prefix}approved`
+    """
     if approvedUsers:
         text = "**Approved users:**\n"
         text += ', '.join([f'`{i}`' for i in approvedUsers])

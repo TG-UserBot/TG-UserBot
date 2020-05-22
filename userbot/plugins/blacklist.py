@@ -81,8 +81,7 @@ dwl_pattern = (
     r"(?: |$|\n)(?P<match>[\s\S]*)"
 )
 dbld_pattern = (
-    r"(?:remove|un)"
-    r"b(?:lack)?l(?:ist)?"
+    r"unb(?:lack)?l(?:ist)?"
     r"(?: |$|\n)(?P<match>[\s\S]*)"
 )
 bls_pattern = (
@@ -278,7 +277,18 @@ async def unappend(
     outgoing=True, regex=bl_pattern
 )
 async def blacklister(event: NewMessage.Event) -> None:
-    """Add a blacklisted item in the Redis DB"""
+    """
+    Add a blacklisted item in the Redis DB.
+
+
+    **{prefix}[global]blacklist "string1" "string2" [kwargs]**
+        By default it is set to string blacklists but you can use arguments
+        **Arguments:**
+            `id` (Will look for this id in user's text or profile),
+            `bio` (Will look for this string in user's bio),
+            `str` or `string` (Will search for this string in new texts),
+            `url` or `domain` (Same as str but you can use * and ?)
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -336,7 +346,17 @@ async def blacklister(event: NewMessage.Event) -> None:
     outgoing=True, regex=dbl_pattern
 )
 async def unblacklister(event: NewMessage.Event) -> None:
-    """Remove a blacklisted item from the dict stored on Redis"""
+    """Remove a blacklisted item from the dict stored on Redis
+
+
+    **{prefix}remove[global]blacklist "string1" "string2" [kwargs]**
+        By default it is set to string blacklists but you can use arguments
+        **Arguments:**
+            `id` (Will look for this id in user's text or profile),
+            `bio` (Will look for this string in user's bio),
+            `str` or `string` (Will search for this string in new texts),
+            `url` or `domain` (Same as str but you can use * and ?)
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -387,7 +407,12 @@ async def unblacklister(event: NewMessage.Event) -> None:
     outgoing=True, regex=wl_pattern
 )
 async def whitelister(event: NewMessage.Event) -> None:
-    """Add a whitelisted user or chat in the Redis DB"""
+    """
+    Add a whitelisted user or chat in the Redis DB
+
+
+    `{prefix}whitelist` or **{prefix}whitelist (users/chats)**
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -476,7 +501,12 @@ async def whitelister(event: NewMessage.Event) -> None:
     outgoing=True, regex=dwl_pattern
 )
 async def unwhitelister(event: NewMessage.Event) -> None:
-    """Remove a whitelisted id from the dict stored on Redis"""
+    """
+    Remove a whitelisted id from the dict stored on Redis
+
+
+    `{prefix}removewhitelist` or **{prefix}removewhitelist (users/chats)**
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -570,7 +600,12 @@ async def unwhitelister(event: NewMessage.Event) -> None:
     outgoing=True, regex=dbld_pattern
 )
 async def unblacklistuser(event: NewMessage.Event) -> None:
-    """Unblacklist a user."""
+    """
+    Unblacklist the blacklisted users.
+
+
+    `{prefix}unblacklist` or **{prefix}unblacklist (users)**
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -629,7 +664,15 @@ async def unblacklistuser(event: NewMessage.Event) -> None:
     outgoing=True, regex=bls_pattern
 )
 async def listbls(event: NewMessage.Event) -> None:
-    """Get a list of all the (global) blacklists"""
+    """Get a list of all the (global) blacklists
+
+
+    **{prefix}[global]blacklists [type] [kwargs]**
+        If only type is specified, it'll return all blacklists for that type.
+        **Arguments:**
+            `type`: This being (id/bio/str/url)
+            `index`: The index of the blacklist for the specified type
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -747,7 +790,15 @@ async def listbls(event: NewMessage.Event) -> None:
     outgoing=True, regex=wls_pattern
 )
 async def listwls(event: NewMessage.Event) -> None:
-    """Get a list of all the whitelists"""
+    """
+    Get a list of all the whitelists.
+
+
+    `{prefix}whitelists` or **{prefix}whitelists (users/chats) [kwargs]**
+        It'll return all the whitelisted users/chats if only that's specified.
+        If args are used, it'll look for those values in the whitelists.
+        **Arguments:** `user` and `chat`
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -764,7 +815,7 @@ async def listwls(event: NewMessage.Event) -> None:
         await event.answer(
             "`Invalid argument. Available options:`\n"
             "__user(s) or chat(s)__\n"
-            "ex: `.wls user=<123>` or `.wls chat=<456>`"
+            "ex: `.wls user=kandnub` or `.wls chat=tg_userbot_support`"
         )
         return
 
@@ -830,7 +881,17 @@ async def listwls(event: NewMessage.Event) -> None:
     outgoing=True, regex=bld_pattern
 )
 async def listbld(event: NewMessage.Event) -> None:
-    """Get a list of all the blacklisted users"""
+    """
+    Get a list of all the blacklisted users.
+
+
+    `{prefix}blacklisted` or **{prefix}blacklisted (users|type) [kwargs]**
+        You can specify one user or multiple.
+        **Types:** `txt`, `tgid` `bio` and `url`
+        **Arguments:**
+            `user` Check if that user is blacklisted and what for
+            `file` Whether to send the final text as a text file or not
+    """
     if not redis:
         await event.answer(
             "`You need to use a Redis session to use blacklists.`"
@@ -845,7 +906,7 @@ async def listbld(event: NewMessage.Event) -> None:
     doc = kwargs.get('file', None)
     option = args[0] if len(args) == 1 and isinstance(args[0], str) else None
 
-    if option and option.lower() not in ['txt', 'tgid', 'url']:
+    if option and option.lower() not in ('txt', 'tgid', 'url', 'bio'):
         await event.answer(
             "`Invalid argument. Available options:`\n"
             "__txt or tgid or url__"

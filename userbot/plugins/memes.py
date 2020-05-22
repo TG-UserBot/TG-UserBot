@@ -31,7 +31,12 @@ plugin_category = "memes"
     outgoing=True, regex="shibe$"
 )
 async def shibes(event: NewMessage.Event) -> None:
-    """Get random pictures of shibes."""
+    """
+    Get random pictures of shibes.
+
+
+    `{prefix}shibe`
+    """
     shibe = await _request('http://shibe.online/api/shibes')
     if not shibe:
         await event.answer("`Couldn't fetch a shibe for you :(`")
@@ -50,7 +55,12 @@ async def shibes(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(cat|🐈)$"
 )
 async def cats(event: NewMessage.Event) -> None:
-    """Get random pictures of cats."""
+    """
+    Get random pictures of cats.
+
+
+    `{prefix}cat` or `{prefix}🐈`
+    """
     shibe = await _request('http://shibe.online/api/cats')
     if not shibe:
         await event.answer("`Couldn't fetch a cat for you :(`")
@@ -69,7 +79,12 @@ async def cats(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(bird|🐦)$"
 )
 async def birds(event: NewMessage.Event) -> None:
-    """Get random pictures of birds."""
+    """
+    Get random pictures of birds.
+
+
+    `{prefix}bird` or `{prefix}🐦`
+    """
     shibe = await _request('http://shibe.online/api/birds')
     if not shibe:
         await event.answer("`Couldn't fetch a bird for you :(`")
@@ -88,7 +103,13 @@ async def birds(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(?:🐕|dog)(?: |$)(\w+)?(?: |$)(\w+)?"
 )
 async def dogs(event: NewMessage.Event) -> None:
-    """Get random pictures of dogs."""
+    """
+    Get random pictures of dogs.
+
+
+    `{prefix}dog` or `{prefix}🐕` or **{prefix}dog (breed) [(subbreed)]**
+        **Example:** `{prefix}dog shepard german` or `{prefix}dog chihuahua`
+    """
     breed = event.matches[0].group(1)
     subbreed = event.matches[0].group(2)
     if breed and subbreed:
@@ -117,7 +138,12 @@ async def dogs(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(fox|🦊)$"
 )
 async def foxes(event: NewMessage.Event) -> None:
-    """Get random pictures of foxes."""
+    """
+    Get random pictures of foxes.
+
+
+    `{prefix}fox` or `{prefix}🦊`
+    """
     fox = await _request('https://some-random-api.ml/img/fox')
     if not fox:
         await event.answer("`Couldn't fetch a fox for you :(`")
@@ -136,7 +162,12 @@ async def foxes(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"(panda|🐼)$"
 )
 async def pandas(event: NewMessage.Event) -> None:
-    """Get random pictures of pandas."""
+    """
+    Get random pictures of pandas.
+
+
+    `{prefix}panda` or `{prefix}🐼`
+    """
     panda = await _request('https://some-random-api.ml/img/panda')
     if not panda:
         await event.answer("`Couldn't fetch a panda for you :(`")
@@ -155,7 +186,12 @@ async def pandas(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"red(panda|🐼)$"
 )
 async def redpandas(event: NewMessage.Event) -> None:
-    """Get random pictures of red pandas."""
+    """
+    Get random pictures of red pandas.
+
+
+    `{prefix}redpanda` or `{prefix}red🐼`
+    """
     panda = await _request('https://some-random-api.ml/img/red_panda')
     if not panda:
         await event.answer("`Couldn't fetch a red panda for you :(`")

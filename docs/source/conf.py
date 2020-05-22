@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 from userbot import __version__  # noqa: E402
 
 project = 'TG-UserBot'
-copyright = '2019, Kandarp'
+copyright = '2019 - 2020, Kandarp'
 author = 'Kandarp'
 
 version = __version__
@@ -91,7 +91,7 @@ html_context = {
     'l_updated': strftime('%b %d, %Y'),
     # Enable the "Edit in GitHub link within the header of each page.
     'display_github': True,
-    'github_user': 'kandnub',
+    'github_user': 'TG-UserBot',
     'github_repo': 'TG-UserBot',
     'github_version': 'master',
     'conf_py_path': '/docs/source/'

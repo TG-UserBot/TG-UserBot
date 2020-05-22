@@ -52,7 +52,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"""
     outgoing=True, regex=r"reverse(?: |$)(\d*)"
 )
 async def reverse(event: NewMessage.Event) -> None:
-    """Reverse search supported media types on Google images."""
+    """
+    Reverse search supported media types on Google images.
+
+
+    `{prefix}reverse` in reply to a media or **{prefix}reverse (results)**
+    """
     reply = await event.get_reply_message()
     if reply and reply.media:
         ffmpeg = await is_ffmpeg_there()

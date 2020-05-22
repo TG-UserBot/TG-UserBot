@@ -16,7 +16,7 @@ Open the same and follow along.
 
 .. contents::
 
-Prerequesites
+Prerequisites
 -------------
 - API ID and Hash from `Telegram`_
 - Redis Endpoint and Password from Redis Labs:
@@ -88,7 +88,7 @@ the `support group`_.
 .. _Heroku: https://www.heroku.com
 .. _Termux: https://play.google.com/store/apps/details?id=com.termux&hl=en_IN
 .. _Telegram: https://my.telegram.org/apps
-.. _TG-UserBot repository: https://www.github.com/kandnub/TG-UserBot
+.. _TG-UserBot repository: https://www.github.com/TG-UserBot/TG-UserBot
 .. _Redis Labs: https://redislabs.com/
 .. _support group: https://t.me/tg_userbot_support
 

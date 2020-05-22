@@ -3,8 +3,8 @@ TG-UserBot's Documentation
 ==========================
 
 
-What is this?
--------------
+About the UserBot
+-----------------
 **TG-UserBot** is a modular Python script for Telegram_ which uses the
 Telethon_ library. It is made to help you do your usual client tasks without
 the hassle and also has some additional useful features. If a command is
@@ -12,8 +12,8 @@ documented, it will be on the :doc:`Available commands<userbot/commands>` page
 including it's description with an example if any.
 
 
-Prerequisites?
---------------
+Prerequisites
+-------------
 * Python_ 3.7.3 or above.
 * Git_.
 * Telegram API key (API ID and hash) from https://my.telegram.org/apps.
@@ -21,8 +21,8 @@ Prerequisites?
 * Some basic understanding would also be helpful.
 
 
-Where to look?
---------------
+Where to look
+-------------
 Everything is self-contained into it's own catergory and can be accessed
 from the sidebar or by using the :guilabel:`Previous` or :guilabel:`Next`
 buttons at the end of the page. Main topics are listed below accordingly.

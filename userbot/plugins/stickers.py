@@ -56,7 +56,12 @@ or use {}stickerpack reset for deafult packs.`"""
     outgoing=True, regex="getsticker(?: |$)(file|document)?$"
 )
 async def getsticker(event: NewMessage.Event) -> None:
-    """Convert a sticker to a png and also send it as a file if specified."""
+    """
+    Convert a sticker to a png and also send it as a file if specified.
+
+
+    `{prefix}getsticker` or **{prefix}getsticker (file|document)**
+    """
     if not event.reply_to_msg_id:
         await event.answer("`Reply to a sticker first.`")
         return
@@ -98,7 +103,13 @@ async def getsticker(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"stickerpack(?: |$)(.*)"
 )
 async def stickerpack(event: NewMessage.Event) -> None:
-    """Get your default kang's sticker packs or update them."""
+    """
+    Get your default kang's sticker packs or update them.
+
+
+    `{prefix}stickerpack` or **{prefix}stickerpack [args]**
+        **Arguments:** `basic` or `animated` and `reset`
+    """
     match = event.matches[0].group(1) or ''
     if not match:
         basic, animated = await _get_default_packs()
@@ -128,7 +139,12 @@ async def stickerpack(event: NewMessage.Event) -> None:
     outgoing=True, regex="delsticker$"
 )
 async def delsticker(event: NewMessage.Event) -> None:
-    """Remove a sticker from your existing pack."""
+    """
+    Remove a sticker from your existing pack.
+
+
+    `{prefix}delsticker` in reply to your sticker
+    """
     if not event.reply_to_msg_id:
         await event.answer("`Reply to a sticker to delete it.`")
         return
@@ -207,7 +223,13 @@ async def delsticker(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"kang(?: |$)(.*)"
 )
 async def kang(event: NewMessage.Event) -> None:
-    """Steal (AKA kang) stickers and images to your Sticker packs."""
+    """
+    Steal (AKA kang) stickers and images to your Sticker packs.
+
+
+    `{prefix}kang` or **{prefix}kang [pack] [emojis]**
+        `pack` and `emojis` can be used as arguments as well.
+    """
     match = event.matches[0].group(1) or ''
     if event.reply_to_msg_id:
         sticker_event = await event.get_reply_message()

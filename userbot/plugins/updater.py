@@ -41,7 +41,13 @@ main_repo = "https://github.com/kandnub/TG-UserBot.git"
     outgoing=True, regex="update(?: |$)(reset|add)?$", builtin=True
 )
 async def updater(event: NewMessage.Event) -> None:
-    """Pull newest changes from the official repo and update the script/app."""
+    """
+    Pull newest changes from the official repo and update the script/app.
+
+
+    `{prefix}update` or `{prefix}update reset` or `{prefix}update add`
+        Reset will reset the repository and add will commit your changes.
+    """
     arg = event.matches[0].group(1)
     await event.answer("`Checking for updates!`")
     try:
@@ -69,7 +75,7 @@ async def updater(event: NewMessage.Event) -> None:
         fetched_items = origin.fetch()
         repo.create_head('master', origin.refs.master).set_tracking_branch(
             origin.refs.master
-        ).checkout()
+        ).checkout(force=True)
     fetched_commits = repo.iter_commits(f"HEAD..{fetched_items[0].ref.name}")
     untracked_files = repo.untracked_files
     old_commit = repo.head.commit

@@ -18,6 +18,8 @@
 import datetime
 import io
 import logging
+import os
+import sys
 
 from userbot import client, LOGGER, loggingHandler
 from userbot.utils.events import NewMessage
@@ -29,7 +31,12 @@ from userbot.utils.helpers import restart
     outgoing=True, regex='ping$', builtin=True
 )
 async def ping(event: NewMessage.Event) -> None:
-    """Check how long it takes to get an update and respond to it."""
+    """
+    Check how long it takes to get an update and respond to it.
+
+
+    `{prefix}ping`
+    """
     start = datetime.datetime.now()
     await event.answer("**PONG**")
     duration = (datetime.datetime.now() - start)
@@ -42,7 +49,12 @@ async def ping(event: NewMessage.Event) -> None:
     outgoing=True, regex='shutdown$', builtin=True
 )
 async def shutdown(event: NewMessage.Event) -> None:
-    """Shutdown the userbot script."""
+    """
+    Shutdown the userbot script.
+
+
+    `{prefix}shutdown`
+    """
     await event.answer("`Disconnecting the client and exiting. Ciao!`")
     client.reconnect = False
     print()
@@ -55,7 +67,12 @@ async def shutdown(event: NewMessage.Event) -> None:
     outgoing=True, regex='restart$', builtin=True
 )
 async def restarter(event: NewMessage.Event) -> None:
-    """Restart the userbot script."""
+    """
+    Restart the userbot script.
+
+
+    `{prefix}restart`
+    """
     await event.answer(
         "`BRB disconnecting and starting the script again!`",
         log=("restart", "Restarted the userbot script")
@@ -68,7 +85,13 @@ async def restarter(event: NewMessage.Event) -> None:
     outgoing=True, regex=r'loglevel(?: |$)(\w*)', builtin=True
 )
 async def flushLevelChanger(event: NewMessage.Event) -> None:
-    """Chnage the default console logger level"""
+    """
+    Change or get the default console logger level
+
+
+    **{prefix}loglevel** or **{prefix}loglevel (level)**
+        **Example:** `{prefix}loglevel` or `{prefix}loglevel info`
+    """
     match = event.matches[0].group(1)
     if not match:
         level = logging._levelToName.get(loggingHandler.flushLevel, 'N/A')
@@ -101,7 +124,13 @@ async def flushLevelChanger(event: NewMessage.Event) -> None:
     outgoing=True, regex=r'logs(?: |$)(\d+|\w+)?', builtin=True
 )
 async def logsDump(event: NewMessage.Event) -> None:
-    """Get a text file of all the logs pending in the memory buffer"""
+    """
+    Get a text file of all the logs pending in the memory buffer
+
+
+    **{prefix}logs** or **{prefix}logs (info/debug/error)**
+        **Example:** `{prefix}logs` or `{prefix}logs info`
+    """
     match = event.matches[0].group(1)
     level = None
     if match:
@@ -122,3 +151,22 @@ async def logsDump(event: NewMessage.Event) -> None:
         await event.answer(file=output)
     else:
         await event.answer('`No logs found`')
+
+
+@client.onMessage(
+    command=('clearlogs', 'logging'),
+    outgoing=True, regex=r'(clear|flush) logs$', builtin=True
+)
+async def flushStdOut(event: NewMessage.Event) -> None:
+    """
+    Flush the logged buffers and clear the standard output
+
+
+    `{prefix}clear logs` or `{prefix}flush logs`
+    """
+    loggingHandler.flushBuffers()
+    if sys.platform.startswith('win'):
+        os.system('cls')
+    else:
+        os.system('clear')
+    await event.answer('`Successfully flushed all the logs`')

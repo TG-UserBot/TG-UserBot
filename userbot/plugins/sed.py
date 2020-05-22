@@ -41,7 +41,6 @@ pattern = (
     r'((?<!;)\w+)?'  # flags: Don't capture if it starts with a semicolon
     r'(?=;|$)'  # Ensure it ends with a semicolon for the next match
 )
-ub_sed_pattern = r"^{}(?:\d+)?s(ed)?"
 
 
 @client.onMessage(
@@ -49,7 +48,15 @@ ub_sed_pattern = r"^{}(?:\d+)?s(ed)?"
     regex=(pattern, re.MULTILINE | re.IGNORECASE | re.DOTALL)
 )
 async def sed_substitute(event: NewMessage.Event) -> None:
-    """Perfom a GNU like SED substitution of the matched text."""
+    """
+    Perfom a GNU like SED substitution of the matched text.
+
+
+    **{prefix}[line]s[ed]/(expression)/(substitution)/[flags][;]**
+        Everything inside the brackets is optional.
+        You can perform case conversions in the substitution as well.
+        The semi-colon is mandatory to perform multiple subs in one go.
+    """
     matches = event.matches
     reply = await event.get_reply_message()
 
@@ -102,7 +109,12 @@ async def sed_substitute(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"regexninja(?: |$)(on|off)?$"
 )
 async def regex_ninja(event: NewMessage.Event) -> None:
-    """Enable and disable ninja mode for @regexbot"""
+    """
+    Enable and disable ninja mode for @regexbot
+
+
+    `{prefix}regexninja` or `{prefix}regexninja on` or `{prefix}regexninja off`
+    """
     arg = event.matches[0].group(1)
     ninja = client.config['userbot'].getboolean('userbot_regexninja', False)
 

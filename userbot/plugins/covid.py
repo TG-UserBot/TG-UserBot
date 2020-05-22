@@ -34,7 +34,12 @@ critical_str = f"\n`{'Critical':<9}:`  **%(critical)s**"
     outgoing=True, regex="(?:covid|corona)(?: |$)(.*)"
 )
 async def covid19(event: NewMessage.Event) -> None:
-    """Get the current COVID-19 stats for a specific country or overall."""
+    """
+    Get the current COVID-19 stats for a specific country or overall.
+
+
+    `{prefix}covid` or `{prefix}covid USA India` or `{prefix}covid countries`
+    """
     covid = Covid(source="worldometers")
     match = event.matches[0].group(1)
     if match:

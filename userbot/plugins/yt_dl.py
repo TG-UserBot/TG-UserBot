@@ -83,7 +83,19 @@ success = "`Successfully downloaded` {}"
     outgoing=True, regex=r"ytdl(?: |$|\n)([\s\S]*)"
 )
 async def yt_dl(event):
-    """Download videos from YouTube with their url in multiple formats."""
+    """
+    Download videos from YouTube with their url in multiple formats.
+
+
+    **{prefix}ytdl link1 link2 link3 [kwargs]**
+        **Arguments:**
+            `format` (The format to convert/download the video in),
+            `delete` (Whether to delete the local files or not),
+            `upload` (Whether to upload the downloaded files or not),
+            `update` (The percentage to update the progress at),
+            `stream` (Whether to upload the files as streamable or not),
+            `progress` (Whether to update the progress by edits or not)
+    """
     match = event.matches[0].group(1)
     force_document = True
     if not match:

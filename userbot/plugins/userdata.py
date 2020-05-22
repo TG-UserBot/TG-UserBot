@@ -35,7 +35,13 @@ plugin_category = "user"
     outgoing=True, regex=r"(?:who|what)is(?: |$|\n)([\s\S]*)"
 )
 async def whois(event: NewMessage.Event) -> None:
-    """Get your or a user's/chat's information."""
+    """
+    Get your or a user's/chat's information.
+
+
+    `{prefix}whois` or **{prefix}whois user1 id1 user2 id2**
+        This works for channels and groups too.
+    """
     match = event.matches[0].group(1)
     entities = []
 
@@ -104,20 +110,35 @@ async def whois(event: NewMessage.Event) -> None:
     outgoing=True, regex="name(?: |$)(.*)$"
 )
 async def name(event: NewMessage.Event) -> None:
-    """Get your current name or update it."""
-    match = event.matches[0].group(1)
+    """
+    Get your current name or update it.
+
+
+    `{prefix}name` or **{prefix}name (first) [(last)]**
+        The name will be split from the first space unless args are used.
+        **Arguments:** `first` and `last`
+    """
+    match = event.matches[0].group(1) or ''
+    me = await client.get_me()
     if not match:
-        me = await client.get_me()
         text = f"**First name:** `{me.first_name}`"
         if me.last_name:
             text += f"\n**Last name:** `{me.last_name}`"
         await event.answer(text)
         return
 
-    split = match.split("last=")
-    first = split[0] if split[0] else None
-    last = ' '.join(split[1:]) if len(split) > 1 else ''
-    n1 = get_display_name(await client.get_me())
+    _, kwargs = await client.parse_arguments(match)
+    if kwargs:
+        first = kwargs.get('first', me.first_name)
+        last = kwargs.get('last', me.last_name)
+    else:
+        split = match.strip().split(maxsplit=1)
+        if len(split) > 1:
+            first, last = split
+        else:
+            first = split[0]
+            last = me.last_name
+    n1 = get_display_name(me)
 
     try:
         await client(functions.account.UpdateProfileRequest(
@@ -140,7 +161,12 @@ async def name(event: NewMessage.Event) -> None:
     outgoing=True, regex="bio(?: |$)(.*)$"
 )
 async def bio(event: NewMessage.Event) -> None:
-    """Get your current bio or update it."""
+    """
+    Get your current bio or update it.
+
+
+    `{prefix}bio` or **{prefix}bio (text)**
+    """
     match = event.matches[0].group(1)
     about = (await client(functions.users.GetFullUserRequest("self"))).about
     if not match:
@@ -165,7 +191,12 @@ async def bio(event: NewMessage.Event) -> None:
     outgoing=True, regex="username(?: |$)(.*)$"
 )
 async def username(event: NewMessage.Event) -> None:
-    """Get your current username or update it."""
+    """
+    Get your current username or update it.
+
+
+    `{prefix}username` or **{prefix}username (new username)**
+    """
     match = event.matches[0].group(1)
     u1 = (await client.get_me()).username
     if not match:
@@ -194,7 +225,12 @@ async def username(event: NewMessage.Event) -> None:
     outgoing=True, regex="pfp$"
 )
 async def pfp(event: NewMessage.Event) -> None:
-    """Get your current profile picture or update it."""
+    """
+    Get your current profile picture or update it.
+
+
+    `{prefix}pfp` in reply to an image
+    """
     reply = await event.get_reply_message()
     if not reply:
         photo = await client(functions.users.GetFullUserRequest("self"))
@@ -268,7 +304,12 @@ async def pfp(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"delpfp(?: |$)(\d*|all)$"
 )
 async def delpfp(event: NewMessage.Event) -> None:
-    """Get your current profile picture count or delete them."""
+    """
+    Get your current profile picture count or delete them.
+
+
+    `{prefix}delpfp` or `{prefix}delpfp all` or **{prefix}delpfp (amount)**
+    """
     match = event.matches[0].group(1)
     if not match:
         count = (await client.get_profile_photos("self")).total
@@ -296,7 +337,12 @@ async def delpfp(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"id(?: |$|\n)([\s\S]*)"
 )
 async def whichid(event: NewMessage.Event) -> None:
-    """Get the ID of a chat/channel or user."""
+    """
+    Get the ID of a chat/channel or user.
+
+
+    `{prefix}id` or **{prefix}id user1 user2**
+    """
     match = event.matches[0].group(1)
     text = ""
     if not match and not event.reply_to_msg_id:

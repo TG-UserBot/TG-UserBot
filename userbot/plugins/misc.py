@@ -63,7 +63,12 @@ def removebg_post(API_KEY: str, media: bytes or str):
     outgoing=True, regex="rmbg(?: |$)(.*)$"
 )
 async def rmbg(event: NewMessage.Event) -> None:
-    """Remove the background from an image or sticker."""
+    """
+    Remove the background from an image or sticker.
+
+
+    `{prefix}rmbg` or **{prefix}rmbg (url)**
+    """
     API_KEY = client.config['api_keys'].get('api_key_removebg', False)
     if not API_KEY:
         await event.answer("`You don't have an API key set for remove.bg!`")
@@ -72,7 +77,7 @@ async def rmbg(event: NewMessage.Event) -> None:
     match = event.matches[0].group(1)
     reply = await event.get_reply_message()
 
-    if match and match != '':
+    if match:
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(match) as response:
@@ -142,7 +147,12 @@ async def rmbg(event: NewMessage.Event) -> None:
     outgoing=True, regex="resolve(?: |$)(.*)$"
 )
 async def resolver(event: NewMessage.Event) -> None:
-    """Resolve an invite link or a username."""
+    """
+    Resolve an invite link or a username.
+
+
+    **{prefix}resolve (invite link)**
+    """
     link = event.matches[0].group(1)
     chat = None
     if not link:
@@ -230,7 +240,12 @@ async def resolver(event: NewMessage.Event) -> None:
     command=("mention", plugin_category), outgoing=True
 )
 async def bot_mention(event: NewMessage.Event) -> None:
-    """Mention a user in the bot like link with a custom name."""
+    """
+    Mention a user in the bot like link with a custom name.
+
+
+    **Hi @kandnub[kandboob]**
+    """
     newstr = event.text
     if event.entities:
         newstr = nameexp.sub(r'<a href="tg://user?id=\2">\3</a>', newstr, 0)
@@ -266,7 +281,12 @@ async def bot_mention(event: NewMessage.Event) -> None:
     outgoing=True, regex="repo$"
 )
 async def git_repo(event: NewMessage.Event) -> None:
-    """Get the repo url."""
+    """
+    Get the repo url.
+
+
+    `{prefix}repo`
+    """
     try:
         repo = git.Repo('.')
         remote_url = repo.remote().url.replace(".git", '/')
@@ -285,7 +305,12 @@ async def git_repo(event: NewMessage.Event) -> None:
     outgoing=True, regex=r'paste(?: |$|\n)([\s\S]*)'
 )
 async def deldog(event: NewMessage.Event) -> None:
-    """Paste the content to DelDog."""
+    """
+    Paste the content to DelDog.
+
+
+    `{prefix}paste` in reply to a document or **{prefix}paste (text)**
+    """
     match = event.matches[0].group(1)
     if match:
         text = match.strip()

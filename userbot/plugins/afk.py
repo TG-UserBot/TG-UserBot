@@ -51,7 +51,13 @@ currently_afk_reason = (
     outgoing=True, regex="afk(?: |$)(.*)?$"
 )
 async def awayfromkeyboard(event: NewMessage.Event) -> None:
-    """Set your status as AFK until you send a message again."""
+    """
+    Set your status as AFK until you send a message again.
+
+
+    **{prefix}afk** or **{prefix}afk (reason)**
+        **Example:** `{prefix}afk` or `{prefix}afk sleeping`
+    """
     arg = event.matches[0].group(1)
     curtime = time.time().__str__()
     os.environ['userbot_afk'] = f"{curtime}/{event.chat_id}/{event.id}"

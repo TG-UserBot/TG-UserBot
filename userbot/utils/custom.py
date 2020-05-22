@@ -172,7 +172,7 @@ async def answer(
                 raise e
     else:
         try:
-            if is_outgoing and (reply or reply_to):
+            if is_outgoing and not kwargs2['reply_to']:
                 await event.delete()
             message_out = await self.send_message(
                 entity, message, **kwargs, **kwargs2

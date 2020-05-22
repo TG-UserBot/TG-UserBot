@@ -66,7 +66,7 @@ Either submit pull requests or create an issue on here.
 
 ## Copyright & License
 
-- Copyright (C) 2020 [Kandarp](https://github.com/kandnub).
+- Copyright (C) 2019 - 2020 [Kandarp](https://github.com/kandnub).
 - Licensed under the terms of the [GNU General Public License v3.0 or later (GPLv3+)](LICENSE).
 
 [//]: # (Comment)

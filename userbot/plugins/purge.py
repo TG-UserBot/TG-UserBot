@@ -28,7 +28,14 @@ plugin_category = "user"
     outgoing=True, regex=r"purge(?: |$)(.*)"
 )
 async def purge(event: NewMessage.Event) -> None:
-    """Delete (AKA purge) multiple messages from a chat all together."""
+    """
+    Delete (AKA purge) multiple messages from a chat all together.
+
+
+    `{prefix}purge` or **{prefix}purge [kwargs]**
+        **Arguments:** `amount` and `skip`
+        **Example:** `{prefix}purge amount=10 skip=2`
+    """
     if (
         (event.is_channel or event.is_group) and
         not (event.chat.creator or event.chat.admin_rights.delete_messages)
@@ -69,7 +76,14 @@ async def purge(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"delme(?: |$)(.*)"
 )
 async def delme(event: NewMessage.Event) -> None:
-    """Delete YOUR messages in a chat. Similar to purge's logic."""
+    """
+    Delete YOUR messages in a chat. Similar to purge's logic.
+
+
+    `{prefix}delme` or **{prefix}delme [kwargs]**
+        **Arguments:** `amount` and `skip`
+        **Example:** `{prefix}delme amount=10 skip=2`
+    """
     entity = await event.get_chat()
     _, kwargs = await client.parse_arguments(event.matches[0].group(1) or '')
     amount = kwargs.get('amount', None)
@@ -100,7 +114,12 @@ async def delme(event: NewMessage.Event) -> None:
     outgoing=True, regex=r"del$"
 )
 async def delete(event: NewMessage.Event) -> None:
-    """Delete your or other's replied to message."""
+    """
+    Delete your or other's replied to message.
+
+
+    `{prefix}del` in reply to your message
+    """
     reply = await event.get_reply_message()
     if not reply:
         await event.answer("`There's nothing for me to delete!`")
