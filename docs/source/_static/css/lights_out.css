@@ -207,7 +207,7 @@ footer {
 
 .wy-side-nav-search {
 	z-index: 200;
-	background-color: #000000;
+	background-color: #141414!important;
 	text-align: center;
 	padding: .809em;
 	display: block;

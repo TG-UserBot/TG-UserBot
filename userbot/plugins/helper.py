@@ -262,7 +262,7 @@ async def helper(event: NewMessage.Event) -> None:
                     ])
         elif arg in (*enabled, *disabled, *senabled, *sdisabled):
             command = None
-            for i in (enable, disable, senabled, sdisabled):
+            for i in (enabled, disabled, senabled, sdisabled):
                 if arg in i:
                     command = i.get(arg)
                     break

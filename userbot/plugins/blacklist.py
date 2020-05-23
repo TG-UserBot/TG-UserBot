@@ -1010,10 +1010,7 @@ async def inc_listener(event: NewMessage.Event) -> None:
 
     if invite_match:
         _, invite, _ = resolve_invite_link(invite_match.group('hash'))
-        try:
-            invite = await client.get_peer_id(invite, False)
-        except Exception as e:
-            LOGGER.debug(e)
+        invite = await get_peer_id(invite)
 
     if GlobalBlacklist.txt:
         for index, value in enumerate(GlobalBlacklist.txt):
@@ -1080,7 +1077,7 @@ async def inc_listener(event: NewMessage.Event) -> None:
                     event.text[entity.offset:entity.offset+entity.length]
                 )
                 entity = entity.group('e') if entity else entity
-                value = await client.get_peer_id(entity) if entity else None
+                value = await get_peer_id(entity) if entity else None
                 counter = counter + 1
             elif isinstance(entity, types.MessageEntityMentionName):
                 value = entity.user_id
