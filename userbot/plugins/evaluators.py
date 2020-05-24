@@ -169,8 +169,7 @@ async def terminal(event: NewMessage.Event) -> None:
 
 @client.onMessage(
     command=("kill/terminate", plugin_category),
-    outgoing=True, regex=r"(kill|terminate)$",
-    info="Kill or Terminate a subprocess which is still running."
+    outgoing=True, regex=r"(kill|terminate)$"
 )
 async def killandterminate(event: NewMessage.Event) -> None:
     """

@@ -312,7 +312,7 @@ async def solve_commands(commands: dict) -> Tuple[dict, dict]:
         splat = split_exp.split(com_names)
         if splat:
             for n in splat:
-                com_tuples[n] = com_names
+                com_tuples[n] = command
             new_dict[' | '.join(splat)] = command
         else:
             new_dict[com_names] = command

@@ -48,15 +48,14 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"""
 
 
 @client.onMessage(
-    command="reverse", info="Reverse search images on Google",
-    outgoing=True, regex=r"reverse(?: |$)(\d*)"
+    command="reverse", outgoing=True, regex=r"reverse(?: |$)(\d*)"
 )
 async def reverse(event: NewMessage.Event) -> None:
     """
     Reverse search supported media types on Google images.
 
 
-    `{prefix}reverse` in reply to a media or **{prefix}reverse (results)**
+    `{prefix}reverse` in reply to a media or **{prefix}reverse (images)**
     """
     reply = await event.get_reply_message()
     if reply and reply.media:

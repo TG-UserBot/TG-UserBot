@@ -109,6 +109,10 @@ async def stickerpack(event: NewMessage.Event) -> None:
 
     `{prefix}stickerpack` or **{prefix}stickerpack [args]**
         **Arguments:** `basic` or `animated` and `reset`
+        **Examples:**
+            `{prefix}stickerpack basic=1337pack`
+            `{prefix}stickerpack animated=auto`
+            `{prefix}stickerpack reset`
     """
     match = event.matches[0].group(1) or ''
     if not match:
@@ -227,7 +231,7 @@ async def kang(event: NewMessage.Event) -> None:
     Steal (AKA kang) stickers and images to your Sticker packs.
 
 
-    `{prefix}kang` or **{prefix}kang [pack] [emojis]**
+    `{prefix}kang [pack] [emojis]` or **{prefix}kang (short)=(title) [emojis]**
         `pack` and `emojis` can be used as arguments as well.
     """
     match = event.matches[0].group(1) or ''
