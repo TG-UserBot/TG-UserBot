@@ -57,11 +57,12 @@ async def purge(event: NewMessage.Event) -> None:
     reverse = True if event.reply_to_msg_id else False
     messages = await client.get_messages(
         entity,
-        limit=int(amount) if amount else None,
+        limit=int(amount) + skip if amount else None,
         max_id=event.message.id,
-        offset_id=await _offset(event, skip),
+        offset_id=await _offset(event),
         reverse=reverse
     )
+    messages = messages[skip:]
 
     await client.delete_messages(entity, messages)
     extra = await get_chat_link(entity)
@@ -95,12 +96,13 @@ async def delme(event: NewMessage.Event) -> None:
     reverse = True if event.reply_to_msg_id else False
     messages = await client.get_messages(
         entity,
-        limit=int(amount) if amount else None,
+        limit=int(amount) + skip if amount else None,
         max_id=event.message.id,
-        offset_id=await _offset(event, skip),
+        offset_id=await _offset(event),
         reverse=reverse,
         from_user="me"
     )
+    messages = messages[skip:]
 
     await client.delete_messages(entity, messages)
     await event.answer(
@@ -139,8 +141,7 @@ async def delete(event: NewMessage.Event) -> None:
     await event.delete()
 
 
-async def _offset(event: NewMessage.Event, skip: None or int) -> int:
-    skip = int(skip) if skip is not None else 0
+async def _offset(event: NewMessage.Event) -> int:
     if event.reply_to_msg_id:
-        return event.reply_to_msg_id + skip
-    return event.message.id - skip
+        return event.reply_to_msg_id - 1
+    return event.message.id
