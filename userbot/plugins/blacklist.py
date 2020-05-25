@@ -284,9 +284,9 @@ async def blacklister(event: NewMessage.Event) -> None:
     **{prefix}[global]blacklist "string1" "string2" [kwargs]**
         By default it is set to string blacklists but you can use arguments
         **Arguments:**
-            `id` (Will look for this id in user's text or profile),
+            `tgid` (Will look for this id in user's text or profile),
             `bio` (Will look for this string in user's bio),
-            `str` or `string` (Will search for this string in new texts),
+            `txt` or `string` (Will search for this string in new texts),
             `url` or `domain` (Same as str but you can use * and ?)
     """
     if not redis:
@@ -351,10 +351,11 @@ async def unblacklister(event: NewMessage.Event) -> None:
 
     **{prefix}remove[global]blacklist "string1" "string2" [kwargs]**
         By default it is set to string blacklists but you can use arguments
+        If `type` and `index` arguments are specified, it'll remove that index
         **Arguments:**
-            `id` (Will look for this id in user's text or profile),
+            `tgid` (Will look for this id in user's text or profile),
             `bio` (Will look for this string in user's bio),
-            `str` or `string` (Will search for this string in new texts),
+            `txt` or `string` (Will search for this string in new texts),
             `url` or `domain` (Same as str but you can use * and ?)
     """
     if not redis:
@@ -379,16 +380,41 @@ async def unblacklister(event: NewMessage.Event) -> None:
     args, kwargs = await client.parse_arguments(match)
     parsed = await get_values(args, kwargs)
     reason = kwargs.get('reason', None)
+    index = kwargs.get('index', None)
+    bltype = kwargs.get('type', None)
 
-    for option, values in parsed.items():
-        if values:
-            removed, skipped = await unappend(
-                "blacklists:" + key, option, values
-            )
-            if removed:
-                removed_values.update({option: removed})
-            if skipped:
-                skipped_values.update({option: skipped})
+    if index and bltype:
+        if glb:
+            gval = getattr(GlobalBlacklist, bltype, None)
+            if gval:
+                if not len(gval) >= index:
+                    await event.answer('`Invalid index!`')
+                    return
+                removed, skipped = await unappend(
+                    "blacklists:" + key, bltype, gval[index]
+                )
+                removed_values.update({bltype: removed})
+        else:
+            if key in localBlacklists:
+                lval = getattr(localBlacklists[key], bltype, None)
+                if lval:
+                    if not len(lval) >= index:
+                        await event.answer('`Invalid index!`')
+                        return
+                    await unappend(
+                        "blacklists:" + key, bltype, lval[index]
+                    )
+                    removed_values.update({bltype: removed})
+    else:
+        for option, values in parsed.items():
+            if values:
+                removed, skipped = await unappend(
+                    "blacklists:" + key, option, values
+                )
+                if removed:
+                    removed_values.update({option: removed})
+                if skipped:
+                    skipped_values.update({option: skipped})
 
     if removed_values:
         text = f"**Removed blacklists for {key}:**\n"
@@ -1056,12 +1082,16 @@ async def inc_listener(event: NewMessage.Event) -> None:
         localid = getattr(localbl, 'tgid', []) or []
         if event.sender_id in globalid:
             index = globalid.index(event.sender_id)
+            if not isinstance(globalid[index], int):
+                pass
             if await ban_user(
                 event, 'tgid', value.sender_id, index, True
             ):
                 return
         elif event.sender_id in localid:
             index = localid.index(event.sender_id)
+            if not isinstance(globalid[index], int):
+                pass
             if await ban_user(event, 'tgid', value.sender_id, index):
                 return
         entities = getattr(event, 'entities', None) or []
@@ -1094,10 +1124,13 @@ async def inc_listener(event: NewMessage.Event) -> None:
                         index = localid.index(value)
                     else:
                         index = 0
+                    if not isinstance(value, int):
+                        continue
                     if await ban_user(event, 'tgid', value, index, g):
                         return
                     break
-
+            if not isinstance(value, int):
+                continue
             if value in globalid:
                 index = globalid.index(value)
                 if await ban_user(event, 'tgid', value, index, True):
@@ -1117,7 +1150,6 @@ async def inc_listener(event: NewMessage.Event) -> None:
 @client.on(ChatAction)
 async def bio_filter(event: ChatAction.Event) -> None:
     """Filter incoming messages for blacklisting."""
-    match = False
     broadcast = getattr(event.chat, 'broadcast', False)
 
     if not redis or event.is_private or broadcast:
@@ -1144,11 +1176,11 @@ async def bio_filter(event: ChatAction.Event) -> None:
             return
         elif GlobalBlacklist.tgid and sender_id in GlobalBlacklist.tgid:
             index = GlobalBlacklist.tgid.index(sender_id)
-            if await ban_user(event, 'tgid', match, index, True):
+            if await ban_user(event, 'tgid', sender_id, index, True):
                 return
         elif localbl and localbl.tgid and sender_id in localbl.tgid:
             index = localbl.tgid.index(sender_id)
-            if await ban_user(event, 'tgid', match, index):
+            if await ban_user(event, 'tgid', sender_id, index):
                 return
 
         user = await client(functions.users.GetFullUserRequest(id=sender))
@@ -1314,6 +1346,12 @@ async def get_values(args: list, kwargs: dict) -> Dict[str, List]:
 
     temp_id = kwargs.get('id', [])
     await append_args_to_list(tgid, temp_id, True)
+    temp_tgid = kwargs.get('tgid', [])
+    if isinstance(temp_tgid, list):
+        temp_id.extend(temp_tgid)
+    else:
+        temp_id.append(temp_tgid)
+    await append_args_to_list(tgid, temp_id, True)
 
     temp_bio = kwargs.get('bio', [])
     await append_args_to_list(bio, temp_bio)
@@ -1322,6 +1360,12 @@ async def get_values(args: list, kwargs: dict) -> Dict[str, List]:
     if not isinstance(temp_string, list):
         temp_string = [temp_string]
     temp_str = kwargs.get('str', [])
+    if isinstance(temp_str, list):
+        temp_string.extend(temp_str)
+    else:
+        temp_string.append(temp_str)
+    await append_args_to_list(txt, temp_string)
+    temp_str = kwargs.get('txt', [])
     if isinstance(temp_str, list):
         temp_string.extend(temp_str)
     else:
