@@ -88,6 +88,7 @@ async def yt_dl(event):
 
 
     **{prefix}ytdl link1 link2 link3 [kwargs]**
+        Stream and progress are set to True, while update is at 10% by default.
         **Arguments:**
             `format` (The format to convert/download the video in),
             `delete` (Whether to delete the local files or not),
@@ -111,7 +112,7 @@ async def yt_dl(event):
     round_message = kwargs.get('round_message', kwargs.get('round', False))
     update = kwargs.get('update', 10)
     supports_streaming = kwargs.get(
-        'supports_streaming', kwargs.get('stream', False)
+        'supports_streaming', kwargs.get('stream', True)
     )
     progress = kwargs.get('progress', True)
     if not upload and auto_delete:
@@ -276,11 +277,18 @@ async def fix_attributes(
             duration, width, height, round_message, supports_streaming
         )
 
+    if audio and isinstance(audio, types.DocumentAttributeAudio):
+        new_attributes.append(audio)
+    if video and isinstance(video, types.DocumentAttributeVideo):
+        new_attributes.append(video)
+
     for attr in attributes:
-        if audio and isinstance(attr, types.DocumentAttributeAudio):
-            new_attributes.append(audio)
-        elif video and isinstance(attr, types.DocumentAttributeAudio):
-            new_attributes.append(video)
+        if isinstance(attr, types.DocumentAttributeAudio):
+            if not audio:
+                new_attributes.append(attr)
+        elif isinstance(attr, types.DocumentAttributeVideo):
+            if not video:
+                new_attributes.append(attr)
         else:
             new_attributes.append(attr)
 

@@ -128,10 +128,8 @@ async def upload(event: NewMessage.Event) -> None:
     if '*' not in match:
         if fmatch.exists():
             target_files.append(fmatch)
-            pass
         elif dmatch.exists():
             target_files.append(dmatch)
-            pass
     if not target_files:
         for f in downloads.glob('*.*'):
             if f.match(match) and f.is_file():

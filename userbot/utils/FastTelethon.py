@@ -220,6 +220,9 @@ class ParallelTransferrer:
             proxy=self.client._proxy
         ))
         if not self.auth_key:
+            if self.dc_id == self.client.session.dc_id:
+                self.auth_key = self.client.session.auth_key
+                return sender
             log.debug(f"Exporting auth to DC {self.dc_id}")
             auth = await self.client(ExportAuthorizationRequest(self.dc_id))
             req = self.client._init_with(ImportAuthorizationRequest(

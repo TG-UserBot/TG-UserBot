@@ -166,7 +166,6 @@ class RedisSession(MemorySession):
     def delete(self):
         keys = self.redis_connection.keys(f"{self.sess_prefix}*")
         self.redis_connection.delete(*keys)
-        pass
 
     """
     def get_update_state(self, entity_id):

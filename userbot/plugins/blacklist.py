@@ -387,7 +387,7 @@ async def unblacklister(event: NewMessage.Event) -> None:
         if glb:
             gval = getattr(GlobalBlacklist, bltype, None)
             if gval:
-                if not len(gval) >= index:
+                if len(gval) < index:
                     await event.answer('`Invalid index!`')
                     return
                 removed, skipped = await unappend(
@@ -398,7 +398,7 @@ async def unblacklister(event: NewMessage.Event) -> None:
             if key in localBlacklists:
                 lval = getattr(localBlacklists[key], bltype, None)
                 if lval:
-                    if not len(lval) >= index:
+                    if len(lval) < index:
                         await event.answer('`Invalid index!`')
                         return
                     await unappend(
@@ -1082,18 +1082,16 @@ async def inc_listener(event: NewMessage.Event) -> None:
         localid = getattr(localbl, 'tgid', []) or []
         if event.sender_id in globalid:
             index = globalid.index(event.sender_id)
-            if not isinstance(globalid[index], int):
-                pass
-            if await ban_user(
-                event, 'tgid', value.sender_id, index, True
-            ):
-                return
+            if isinstance(globalid[index], int):
+                if await ban_user(
+                    event, 'tgid', value.sender_id, index, True
+                ):
+                    return
         elif event.sender_id in localid:
             index = localid.index(event.sender_id)
-            if not isinstance(globalid[index], int):
-                pass
-            if await ban_user(event, 'tgid', value.sender_id, index):
-                return
+            if isinstance(globalid[index], int):
+                if await ban_user(event, 'tgid', value.sender_id, index):
+                    return
         entities = getattr(event, 'entities', None) or []
         counter = 0
         for entity in entities:
@@ -1345,6 +1343,8 @@ async def get_values(args: list, kwargs: dict) -> Dict[str, List]:
                     txt.append(str(i))
 
     temp_id = kwargs.get('id', [])
+    if not isinstance(temp_id, list):
+        temp_id = [temp_id]
     await append_args_to_list(tgid, temp_id, True)
     temp_tgid = kwargs.get('tgid', [])
     if isinstance(temp_tgid, list):

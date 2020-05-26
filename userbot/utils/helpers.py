@@ -73,7 +73,6 @@ async def isRestart(client: UserBotClient) -> None:
             errors.MessageNotModifiedError, errors.MessageIdInvalidError
         ):
             LOGGER.debug(f"Failed to edit message ({message}) in {entity}.")
-            pass
 
     if updated:
         text = "`Successfully updated and restarted the userbot!`"
@@ -241,7 +240,8 @@ class ProgressCallback():
     def __init__(self, event, start=None, filen='unamed', update=5):
         self.event = event
         self.start = start or time.time()
-        self.last_edit = None
+        self.last_upload_edit = None
+        self.last_download_edit = None
         self.filen = filen
         self.upload_finished = False
         self.download_finished = False
@@ -251,8 +251,6 @@ class ProgressCallback():
 
     async def resolve_prog(self, current, total):
         """Calculate the necessary info and make a dict from it."""
-        if not self.last_edit:
-            self.last_edit = datetime.datetime.now(datetime.timezone.utc)
         now = time.time()
         elp = now - self.start
         speed = int(float(current) / elp)
@@ -280,7 +278,11 @@ class ProgressCallback():
                 self.event = await self.event.answer(edit)
                 self.upload_finished = True
         elif edit:
+            last_edit = self.last_upload_edit
+            if last_edit and time.time() - last_edit < 10:
+                return
             self.event = await self.event.answer(edit)
+            self.last_upload_edit = time.time()
 
     async def dl_progress(self, current, total):
         """Handle the download progress only."""
@@ -291,7 +293,11 @@ class ProgressCallback():
                 self.event = await self.event.answer(edit)
                 self.download_finished = True
         elif edit:
+            last_edit = self.last_download_edit
+            if last_edit and time.time() - last_edit < 10:
+                return
             self.event = await self.event.answer(edit)
+            self.last_download_edit = time.time()
 
 
 async def calc_eta(elp: float, speed: int, current: int, total: int) -> int:
