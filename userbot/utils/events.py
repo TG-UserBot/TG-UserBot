@@ -76,8 +76,8 @@ class NewMessage(events.NewMessage):
 
     def filter(self, event):
         """Overriding the default filter to check additional values"""
-        event = super().filter(event)
-        if not event:
+        _event = super().filter(event)
+        if not _event:
             return
 
         if self.inline is not None:
