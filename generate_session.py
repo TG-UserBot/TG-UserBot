@@ -24,14 +24,14 @@ else:
 
 
 async def install_pip_package(package: str) -> bool:
-    python = sys.executable
-    cmd = await asyncio.create_subprocess_shell(
-        f'{python} -m pip install --upgrade --user {package}',
+    args = ['-m', 'pip', 'install', '--upgrade', '--user', package]
+    process = await asyncio.create_subprocess_exec(
+        sys.executable.replace(' ', '\\ '), *args,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    await cmd.communicate()
-    return True if cmd.returncode == 0 else False
+    await process.communicate()
+    return True if process.returncode == 0 else False
 
 
 try:
@@ -78,7 +78,7 @@ elif os.path.exists('./config.ini'):
         password = config['telethon'].get('redis_password', False)
         if not (endpoint or password):
             print(
-                "Make sure you have redis_endpoint and redis_password"
+                "Make sure you have redis_endpoint and redis_password "
                 "in your config.ini"
             )
             sys.exit(1)

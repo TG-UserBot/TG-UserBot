@@ -421,9 +421,8 @@ async def get_pip_packages(requirements: str = None) -> list:
     if requirements:
         packages = requirements
     else:
-        python = sys.executable
-        cmd = await asyncio.create_subprocess_shell(
-            f'{python} -m pip freeze',
+        cmd = await asyncio.create_subprocess_exec(
+            sys.executable.replace(' ', '\\ '), '-m', 'pip', 'freeze',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -435,10 +434,9 @@ async def get_pip_packages(requirements: str = None) -> list:
 
 async def install_pip_packages(packages: List[str]) -> bool:
     """Install pip packages."""
-    packages = ' '.join(packages)
-    python = sys.executable
-    cmd = await asyncio.create_subprocess_shell(
-        f'{python} -m pip install --upgrade --user {packages}',
+    args = ['-m', 'pip', 'install', '--upgrade', '--user']
+    cmd = await asyncio.create_subprocess_exec(
+        sys.executable.replace(' ', '\\ '), *args, *packages,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
@@ -457,9 +455,10 @@ def run_async(func: callable):
 
 def restart_script() -> None:
     """Restart the current script."""
-    args = [sys.executable, "-m", "userbot"]
+    executable = sys.executable.replace(' ', '\\ ')
+    args = [executable, '-m', 'userbot']
     if sys.platform.startswith('win'):
-        os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
+        os.spawnle(os.P_NOWAIT, executable, *args, os.environ)
     else:
-        os.execle(sys.executable, *args, os.environ)
+        os.execle(executable, *args, os.environ)
     sys.exit(0)

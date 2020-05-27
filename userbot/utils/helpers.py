@@ -113,7 +113,8 @@ async def isRestart(client: UserBotClient) -> None:
 
 
 def restarter(client: UserBotClient) -> None:
-    args = [sys.executable, "-m", "userbot"]
+    executable = sys.executable.replace(' ', '\\ ')
+    args = [executable, '-m', 'userbot']
     if client.disabled_commands:
         disabled_list = ", ".join(client.disabled_commands.keys())
         os.environ['userbot_disabled_commands'] = disabled_list
@@ -122,9 +123,9 @@ def restarter(client: UserBotClient) -> None:
     client._kill_running_processes()
 
     if sys.platform.startswith('win'):
-        os.spawnle(os.P_NOWAIT, sys.executable, *args, os.environ)
+        os.spawnle(os.P_NOWAIT, executable, *args, os.environ)
     else:
-        os.execle(sys.executable, *args, os.environ)
+        os.execle(executable, *args, os.environ)
 
 
 async def restart(event: NewMessage.Event) -> None:

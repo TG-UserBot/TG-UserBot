@@ -236,9 +236,10 @@ async def updater(event: NewMessage.Event) -> None:
 
 
 async def update_requirements():
+    args = ['-m', 'pip', 'install', '--user', '-r', 'requirements.txt']
     try:
-        process = await asyncio.create_subprocess_shell(
-            f'{sys.executable} -m pip install --user -r requirements.txt',
+        process = await asyncio.create_subprocess_exec(
+            sys.executable.replace(' ', '\\ '), *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
