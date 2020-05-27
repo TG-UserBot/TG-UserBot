@@ -138,7 +138,11 @@ class ParallelTransferrer:
         self.upload_ticker = 0
 
     async def _cleanup(self) -> None:
-        await asyncio.gather(*[sender.disconnect() for sender in self.senders])
+        # Disconnecting from our main connection wouldn't be fun
+        await asyncio.gather(*[
+            sender.disconnect() for sender in self.senders
+            if self.dc_id != self.client.session.dc_id
+        ])
         self.senders = None
 
     @staticmethod
@@ -210,6 +214,10 @@ class ParallelTransferrer:
         )
 
     async def _create_sender(self) -> MTProtoSender:
+        # Check if we're connecting to the same DC we're connected to
+        if self.dc_id == self.client.session.dc_id:
+            return self.client._sender
+
         dc = await self.client._get_dc(self.dc_id)
         sender = MTProtoSender(
             self.auth_key, self.loop, loggers=self.client._log
@@ -220,9 +228,6 @@ class ParallelTransferrer:
             proxy=self.client._proxy
         ))
         if not self.auth_key:
-            if self.dc_id == self.client.session.dc_id:
-                self.auth_key = self.client.session.auth_key
-                return sender
             log.debug(f"Exporting auth to DC {self.dc_id}")
             auth = await self.client(ExportAuthorizationRequest(self.dc_id))
             req = self.client._init_with(ImportAuthorizationRequest(

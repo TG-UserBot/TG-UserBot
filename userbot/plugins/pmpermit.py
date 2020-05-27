@@ -222,33 +222,40 @@ async def approve(event: NewMessage.Event) -> None:
     Approve an user for PM-Permit.
 
 
-    `{prefix}approve` in reply to a user/chat or **{prefix}approve (user)**
+    **{prefix}approve [user1] .. [user n]** in reply to a user/chat
     """
     if not PM_PERMIT or not redis:
         await event.answer("PM-Permit is disabled.")
         return
-    user = await get_user(event)
-    if user:
-        if user.verified or user.support or user.bot:
-            await event.answer(
-                "`You don't need to approve bots or verified/support users.`"
-            )
-            return
-        href = await get_chat_link(user)
-        if user.id in approvedUsers:
-            await event.answer(f"{href} `is already approved.`")
-        else:
-            approvedUsers.append(user.id)
-            await update_db()
-            text = f"`Successfully approved` {href}."
-            await event.answer(text, log=('pmpermit', text))
-        if user.id in spammers:
-            _, _, sent, _ = spammers.pop(user.id)  # Reset the counter
-            await client.delete_messages(user, sent)
-            await client(functions.account.UpdateNotifySettingsRequest(
-                peer=user.id,
-                settings=DEFAULT_UNMUTE_SETTINGS
-            ))
+    users = await get_users(event)
+    approved = []
+    skipped = []
+    if users:
+        for user in users:
+            href = await get_chat_link(user)
+            if user.verified or user.support or user.bot:
+                skipped.append(href)
+                continue
+
+            if user.id in approvedUsers:
+                skipped.append(href)
+            else:
+                approvedUsers.append(user.id)
+                await update_db()
+                approved.append(href)
+            if user.id in spammers:
+                _, _, sent, _ = spammers.pop(user.id)  # Reset the counter
+                await client.delete_messages(user, sent)
+                await client(functions.account.UpdateNotifySettingsRequest(
+                    peer=user.id,
+                    settings=DEFAULT_UNMUTE_SETTINGS
+                ))
+    if approved:
+        text = "**Successfully approved:** " + ', '.join(approved)
+        await event.answer(text, log=('pmpermit', text))
+    if skipped:
+        text = "**Skipped users:** " + ', '.join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -260,22 +267,30 @@ async def disapprove(event: NewMessage.Event) -> None:
     Disapprove an user for PM-Permit.
 
 
-    `{prefix}unapprove` in reply to a user/chat or **{prefix}unapprove (user)**
+    **{prefix}unapprove [user1] .. [user n]** in reply to a user/chat
     """
     if not PM_PERMIT or not redis:
         await event.answer("PM-Permit is disabled.")
         return
-    user = await get_user(event)
-    if user:
-        href = await get_chat_link(user)
-        if user.id in approvedUsers:
-            approvedUsers.remove(user.id)
-            await update_db()
-            text = f"`Successfully disapproved` {href}."
-            await event.answer(text, log=('pmpermit', text))
-        else:
-            await event.answer(f"{href} `hasn't been approved.`")
-        spammers.pop(user.id, None)  # Reset the counter
+    users = await get_users(event)
+    disapproved = []
+    skipped = []
+    if users:
+        for user in users:
+            href = await get_chat_link(user)
+            if user.id in approvedUsers:
+                approvedUsers.remove(user.id)
+                await update_db()
+                disapproved.append(href)
+            else:
+                skipped.append(href)
+            spammers.pop(user.id, None)  # Reset the counter
+    if disapproved:
+        text = "**Successfully disapproved:** " + ', '.join(disapproved)
+        await event.answer(text, log=('pmpermit', text))
+    if skipped:
+        text = "**Skipped users:** " + ', '.join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -287,27 +302,35 @@ async def block(event: NewMessage.Event) -> None:
     Block an user and remove them from approved users.
 
 
-    `{prefix}block` in reply to a user/chat or **{prefix}block (user)**
+    **{prefix}block [user1] .. [user n]** in reply to a user/chat
     """
-    result = False
-    user = await get_user(event)
-    if user:
-        href = await get_chat_link(user)
-        try:
-            result = await client(functions.contacts.BlockRequest(
-                id=user.id
-            ))
-        except Exception:
-            pass
-        if result:
-            text = f"`Successfully blocked:` {href}."
-            if PM_PERMIT and redis and user.id in approvedUsers:
-                approvedUsers.remove(user.id)
-                await update_db()
-                text += " `and remove them from the list of approved users.`"
-            await event.answer(text, log=('pmpermit', text))
-        else:
-            await event.answer(f"`Couldn't block` {href}.")
+    users = await get_users(event)
+    blocked = []
+    skipped = []
+    if users:
+        for user in users:
+            result = None
+            href = await get_chat_link(user)
+            try:
+                result = await client(functions.contacts.BlockRequest(
+                    id=user.id
+                ))
+            except Exception:
+                pass
+            if result:
+                if PM_PERMIT and redis and user.id in approvedUsers:
+                    approvedUsers.remove(user.id)
+                    await update_db()
+                    href += " and unapproved."
+                blocked.append(href)
+            else:
+                skipped.append(href)
+    if blocked:
+        text = "**Successfully blocked:** " + ', '.join(blocked)
+        await event.answer(text, log=('pmpermit', text))
+    if skipped:
+        text = "**Skipped users:** " + ', '.join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -319,23 +342,31 @@ async def unblock(event: NewMessage.Event) -> None:
     Unblock an user.
 
 
-    `{prefix}unblock` in reply to a user/chat or **{prefix}unblock (user)**
+    **{prefix}unblock [user1] .. [user n]** in reply to a user/chat
     """
-    result = False
-    user = await get_user(event)
-    if user:
-        href = await get_chat_link(user)
-        try:
-            result = await client(functions.contacts.UnblockRequest(
-                id=user.id
-            ))
-        except Exception:
-            pass
-        if result:
-            text = f"`Successfully unblocked:` {href}."
-            await event.answer(text, log=('pmpermit', text))
-        else:
-            await event.answer(f"`Couldn't unblock` {href}.")
+    users = await get_users(event)
+    unblocked = []
+    skipped = []
+    if users:
+        for user in users:
+            result = None
+            href = await get_chat_link(user)
+            try:
+                result = await client(functions.contacts.UnblockRequest(
+                    id=user.id
+                ))
+            except Exception:
+                pass
+            if result:
+                unblocked.append(href)
+            else:
+                skipped.append(href)
+    if unblocked:
+        text = "**Successfully unblocked:** " + ', '.join(unblocked)
+        await event.answer(text, log=('pmpermit', text))
+    if skipped:
+        text = "**Skipped users:** " + ', '.join(skipped)
+        await event.answer(text, reply=True)
 
 
 @client.onMessage(
@@ -357,22 +388,24 @@ async def approved(event: NewMessage.Event) -> None:
         await event.answer("`You haven't approved anyone yet.`")
 
 
-async def get_user(event: NewMessage.Event) -> types.User or None:
+async def get_users(event: NewMessage.Event) -> types.User or None:
     match = event.matches[0].group(1)
-    user = None
+    users = []
     if match:
-        match = int(match) if match.isdigit() else match
-        try:
-            user = await client.get_entity(match)
-        except (TypeError, ValueError):
-            await event.answer("`Couldn't fetch the user!`")
-            return
+        matches, _ = await client.parse_arguments(match)
+        for match in matches:
+            try:
+                entity = await client.get_entity(match)
+                if isinstance(entity, types.User):
+                    users.append(entity)
+            except (TypeError, ValueError):
+                pass
     elif event.is_private and event.out:
-        user = await event.get_chat()
+        users = [await event.get_chat()]
     elif event.reply_to_msg_id:
         reply = await event.get_reply_message()
-        user = await reply.get_sender()
-    return user
+        users = [await reply.get_sender()]
+    return users
 
 
 async def update_db() -> None:
