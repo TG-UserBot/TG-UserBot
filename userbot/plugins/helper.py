@@ -114,15 +114,11 @@ async def enable(event: NewMessage.Event) -> None:
         for handler in command.handlers:
             client.add_event_handler(command.func, handler)
         if arg in command_list:
-            com = command_list.get(arg)
-            client.commands[com] = command
-            client.disabled_commands.pop(com)
-            enabled_coms = ', '.join(split_exp.split(com))
+            enabled_coms = ', '.join(split_exp.split(arg))
         else:
-            client.commands[arg] = command
-            client.disabled_commands.pop(arg)
             enabled_coms = arg
-
+        client.commands[arg] = command
+        client.disabled_commands.pop(arg)
         await event.answer(
             f"`Successfully enabled {enabled_coms}`",
             log=("enable", f"Enabled command(s): {enabled_coms}")
@@ -158,14 +154,11 @@ async def disable(event: NewMessage.Event) -> None:
         else:
             client.remove_event_handler(command.func)
             if arg in command_list:
-                com = command_list.get(arg)
-                client.disabled_commands[com] = command
-                client.commands.pop(com)
-                disabled_coms = ', '.join(split_exp.split(com))
+                disabled_coms = ', '.join(split_exp.split(arg))
             else:
-                client.disabled_commands[arg] = command
-                client.commands.pop(arg)
                 disabled_coms = arg
+            client.disabled_commands[arg] = command
+            client.commands.pop(arg)
             await event.answer(
                 f"`Successfully disabled {disabled_coms}`",
                 log=("disable", f"Disabled command(s): {disabled_coms}")
