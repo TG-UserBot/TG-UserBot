@@ -109,8 +109,7 @@ async def enable(event: NewMessage.Event) -> None:
         await event.answer("`Enable what? The void?`")
         return
     commands, command_list = await solve_commands(client.disabled_commands)
-    arg1 = command_list.get(arg, arg)
-    command = commands.get(arg1, False)
+    command = commands.get(arg, command_list.get(arg, False))
     if command:
         for handler in command.handlers:
             client.add_event_handler(command.func, handler)
@@ -152,8 +151,7 @@ async def disable(event: NewMessage.Event) -> None:
         await event.answer("`Disable what? The void?`")
         return
     commands, command_list = await solve_commands(client.commands)
-    arg1 = command_list.get(arg, arg)
-    command = commands.get(arg1, False)
+    command = commands.get(arg, command_list.get(arg, False))
     if command:
         if command.builtin:
             await event.answer("`Cannot disable a builtin command.`")
