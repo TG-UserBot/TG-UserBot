@@ -584,6 +584,37 @@ async def tban(event: NewMessage.Event) -> None:
         text += ', '.join((f'`{x}`' for x in skipped))
         await event.answer(text, reply=True)
 
+@client.onMessage(command=("pin", plugin_category), outgoing=True, regex=r"(loud)?pin$", require_admin=True)
+async def pin(event: NewMessage.Event) -> None:
+    """Pin the message at the top of the group or channel."""
+    if not event.is_private and not await get_rights(event, pin_messages=True):
+        await event.answer("`You do not have rights to pin messages in here!`")
+        return
+    elif event.is_private:
+        await event.answer("`You can't pin messages in private chats.`")
+        return
+
+    pinned = False
+    notify = True if event.matches[0].group(1) else False
+
+    if not event.reply_to_msg_id:
+        await event.answer("`I can't pin the void!`")
+        return
+
+    entity = await event.get_chat()
+    try:
+        await client.pin_message(entity=entity, message=event.reply_to_msg_id, notify=notify)
+        pinned = True
+    except Exception:
+        pinned = False
+    if pinned:
+        text = f"`Successfully pinned!`\n"
+        text += f"`Loud-Pin:` `{'Yes' if notify else 'No'}`"
+    else:
+        text = f"`Failed to pin the message!`\n"
+    e2 = await get_chat_link(event, event.reply_to_msg_id)
+    log_msg = text + f"\n`Chat:` {e2}"
+    await event.answer(text, log=("pin", log_msg))
 
 async def get_rights(
     event: NewMessage.Event,
