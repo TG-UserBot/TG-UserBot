@@ -445,7 +445,7 @@ Perform a Speedtest.
 
 **Usage:** ``.speedtest``
 
-Stciker Pack(s)
+Sticker Pack(s)
 -----------------------
 Show a list of all of your sticker packs
 
