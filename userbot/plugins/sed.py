@@ -30,7 +30,7 @@ from userbot.utils.events import NewMessage
 
 
 pattern = (
-    r'(?:^{prefix}|;.+?)'  # Ensure that the expression doesn't go blatant
+    r'(?:^{prefix}|;\s)'  # Ensure that the expression doesn't go blatant
     r'([1-9]+?)?'  # line: Don't match a 0, sed counts lines from 1
     r'(?:sed|s)'  # The s command (as in substitute)
     r'(?:(?P<d>[^\n\\]))'  # Unknown delimiter with a named group d
