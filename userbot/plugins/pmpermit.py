@@ -195,7 +195,7 @@ async def pm_outgoing(event: NewMessage.Event) -> None:
     ):
         return
     chat = await event.get_chat()
-    if chat.verified or chat.support or chat.bot:
+    if chat.verified or chat.support or chat.bot or chat.is_self:
         return
 
     result = await client.get_messages(
