@@ -34,18 +34,6 @@ redis = client.database
 approvedUsers: List[int] = []
 spammers: Dict[int, tuple] = {}
 
-PP_UNAPPROVED_MSG = (
-    "`Bleep blop! This is a bot. Don't fret.\n\n`"
-    "`My master hasn't approved you to PM.`"
-    "`Please wait for my master to look in, he mostly approves PMs.\n\n`"
-    "`As far as I know, he doesn't usually approve retards though.`"
-)
-FTG_UNAPPROVED_MSG = (
-    "Hey there! Unfortunately, I don't accept private messages from "
-    "strangers.\n\nPlease contact me in a group, or **wait** "
-    "for me to approve you."
-)
-
 warning = (
     "`You have only` **1** `message left, if you send the next one "
     "you will be blocked and reported!`"
@@ -163,13 +151,13 @@ async def pm_incoming(event: NewMessage.Event) -> None:
                 warning, plugin='pmpermit', name='warning'
             )
         elif (
-            event.text in [PP_UNAPPROVED_MSG, FTG_UNAPPROVED_MSG] or
+            lastmsg and event.text == lastmsg or
             re.search(esc_newdefault, event.text) or
             re.search(esc_default, event.text) or
             re.search(esc_samedefault, event.text)
         ):
             pass
-        elif lastmsg and event.text == lastmsg:
+        elif lastmsg and event.text != lastmsg:
             out = await event.resanswer(
                 samedefault, plugin='pmpermit', name='samedefault',
                 formats={'remaining': count}
