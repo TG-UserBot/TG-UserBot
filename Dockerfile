@@ -1,22 +1,22 @@
-FROM python:3.7-alpine
+FROM python:slim-buster
 
-RUN apk add --no-cache --update \
-    bash \
-    curl \
-    ffmpeg \
-    gcc \
-    git \
-    libffi-dev \
-    libjpeg \
-    libjpeg-turbo-dev \
-    libwebp-dev \
-    linux-headers \
-    musl \
-    musl-dev \
-    neofetch \
-    rsync \
-    zlib \
-    zlib-dev
+RUN apt update && apt upgrade -y && \
+    apt install --no-install-recommends -y \
+        bash \
+        curl \
+        ffmpeg \
+        gcc \
+        git \
+        libjpeg-dev \
+        libjpeg62-turbo-dev \
+        libwebp-dev \
+        musl \
+        musl-dev \
+        atomicparsley \
+        neofetch \
+        rsync \
+        zlib1g \
+        zlib1g-dev
 
 COPY . /tmp/userbot_local
 WORKDIR /usr/src/app/TG-UserBot/
@@ -27,5 +27,5 @@ RUN rsync --ignore-existing --recursive /tmp/userbot_local/ /usr/src/app/TG-User
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install --no-warn-script-location --no-cache-dir -r requirements.txt
 
-RUN rm -rf /var/cache/apk/* /tmp/*
+RUN rm -rf /var/lib/apt/lists /var/cache/apt/archives /tmp
 CMD ["python", "-m", "userbot"]
