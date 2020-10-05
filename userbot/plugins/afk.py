@@ -48,19 +48,20 @@ currently_afk_reason = (
 
 @client.onMessage(
     command="afk",
-    outgoing=True, regex="afk(?: |$)(.*)?$"
+    outgoing=True, regex="(p)?afk(?: |$)(.*)?$"
 )
 async def awayfromkeyboard(event: NewMessage.Event) -> None:
     """
     Set your status as AFK until you send a message again.
 
 
-    **{prefix}afk** or **{prefix}afk (reason)**
-        **Example:** `{prefix}afk` or `{prefix}afk sleeping`
+    **{prefix}afk** or **{prefix}afk (reason)** or **{prefix}pafk**
+        **Example:** `{prefix}afk` or `{prefix}pafk sleeping`
     """
-    arg = event.matches[0].group(1)
+    arg = event.matches[0].group(2)
     curtime = time.time().__str__()
     os.environ['userbot_afk'] = f"{curtime}/{event.chat_id}/{event.id}"
+    os.environ['userbot_afk_private'] = "True" if event.matches[0].group(1) else "False"
     extra = await get_chat_link(event, event.id)
     log = ("afk", f"You just went AFK in {extra}!")
     if arg:
@@ -162,7 +163,10 @@ async def inc_listner(event: NewMessage.Event) -> None:
         return
 
     afk = os.environ.get('userbot_afk', False)
+    private_only = os.environ.get('userbot_afk_private', "False")
     if not (afk and (event.is_private or event.mentioned)):
+        return
+    if private_only == "True" and not event.is_private:
         return
 
     since = datetime.datetime.fromtimestamp(
