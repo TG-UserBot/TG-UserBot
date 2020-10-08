@@ -187,7 +187,7 @@ Send a random image of a cat.
 **Usage:** ``.cat``
 
 Covid
----
+----
 Send info about the Covid-19 Pandemic.
 
 **Usage:** ``.covid (country)``
@@ -204,7 +204,7 @@ Delete Me
 ------------
 Deletes your message.
 
-**Usage:** ``.delme (n)`` if the number of message is not mentioned it will delete the message above it.
+**Usage:** ``.delme [amount=n] [skip=m]`` if the number of message is not mentioned it will delete the message above it.
 
 Delete Profile Picture
 ----------------------
